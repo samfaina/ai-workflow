@@ -170,6 +170,10 @@ _Avoid_: epic child, sub-project, milestone
 A stage of the workflow, owned by exactly one kit skill and producing exactly one artifact.
 _Avoid_: step, stage
 
+**Phase-free skill**:
+A skill no phase owns. No route, phase or gate requires it, and no ship or merge condition depends on it having run. It has no install switch and no `aw-setup` question.
+_Avoid_: optional skill, opt-in skill
+
 **Route**:
 The path a task takes through the phases, chosen at intake: fast, standard or epic.
 _Avoid_: track, lane, mode, flow
