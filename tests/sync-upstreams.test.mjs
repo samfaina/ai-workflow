@@ -522,13 +522,51 @@ function kitThenReplaced(replaced) {
   return dir;
 }
 
-test('a replaced skill that is also a copied skill is reported', () => {
+test('validate-kit reports a replaced entry whose kit skill has no folder, naming the upstream, the upstream skill and the kit skill', () => {
+  const dir = kitThenReplaced({ gamma: 'aw-omega' });
+
+  assertOneFinding(validate(dir), /^upstreams\.json: upstream "fixture": replaced skill "gamma" maps to "aw-omega", which has no folder under skills\//);
+});
+
+test('validate-kit reports each replaced entry whose kit skill has no folder', () => {
+  const dir = kitThenReplaced({ gamma: 'aw-omega', delta: 'aw-omega' });
+
+  const { status, findings } = validate(dir);
+
+  assert.equal(status, 1);
+  assert.deepEqual(findings, [
+    'upstreams.json: upstream "fixture": replaced skill "gamma" maps to "aw-omega", which has no folder under skills/',
+    'upstreams.json: upstream "fixture": replaced skill "delta" maps to "aw-omega", which has no folder under skills/',
+  ]);
+});
+
+test('validate-kit passes a replaced entry whose kit skill has a folder', () => {
+  const { dir } = installedKit({
+    edit: (kit) => {
+      kit['upstreams.json'].upstreams.fixture.replaced = { gamma: 'aw-omega' };
+      Object.assign(kit, manifests(['aw-alpha', 'aw-beta', 'aw-omega']));
+      kit['skills/aw-omega/SKILL.md'] = '---\nname: aw-omega\ndescription: A kit skill.\n---\n\nBody.\n';
+    },
+  });
+
+  assertNoFindings(validate(dir));
+});
+
+test('install and check pass a replaced entry whose kit skill has no folder', () => {
+  const dir = kitThenReplaced({ gamma: 'aw-omega' });
+
+  const install = sync('install', dir);
+  assert.equal(install.status, 0, install.stderr);
+  assertNoFindings(sync('check', dir));
+});
+
+test('a replaced skill that is also a copied skill gets only that finding, though its kit skill has no folder', () => {
   const dir = kitThenReplaced({ beta: 'aw-omega' });
 
   assertOneFinding(validate(dir), /^upstreams\.json: upstream "fixture": replaced skill "beta" is copied from upstream "fixture"/);
 });
 
-test('a replaced skill that maps to a name without the aw- prefix is reported', () => {
+test('a replaced skill that maps to a name without the aw- prefix gets only that finding, though it has no folder', () => {
   const dir = kitThenReplaced({ gamma: 'omega' });
 
   assertOneFinding(validate(dir), /^upstreams\.json: upstream "fixture": replaced skill "gamma" maps to "omega", which lacks the aw- prefix/);
@@ -815,7 +853,7 @@ for (const [label, replaced, listed, keep] of [
     if (keep) {
       assert.equal(read(dir, 'skills/aw-beta/SKILL.md'), adaptation);
       assert.match(result.stdout, /kept skills\/aw-beta/);
-      assert.match(result.stdout, /plugin\.json.*delete the folder/);
+      assert.match(result.stdout, /kept skills\/aw-beta: .*delete the folder/);
     }
     const lock = read(dir, 'upstreams.lock.json');
     const again = sync('install', dir);
@@ -824,6 +862,61 @@ for (const [label, replaced, listed, keep] of [
     assert.equal(read(dir, 'upstreams.lock.json'), lock);
   });
 }
+
+// Runs install on an installed kit after dropping every copy, with `replaced`
+// and the plugin's listing as given, and returns the lines about kept folders.
+function keptLinesAfterDropping({ replaced, listed, edit }) {
+  const { dir } = installedKit();
+  const manifest = JSON.parse(read(dir, 'upstreams.json'));
+  manifest.upstreams.fixture.skills = {};
+  manifest.upstreams.fixture.replaced = replaced;
+  if (edit) edit(manifest);
+  write(dir, 'upstreams.json', json(manifest));
+  const plugin = JSON.parse(read(dir, '.claude-plugin/plugin.json'));
+  plugin.skills = listed;
+  write(dir, '.claude-plugin/plugin.json', json(plugin));
+
+  const result = sync('install', dir);
+
+  assert.equal(result.status, 0, result.stderr);
+  return result.stdout.split('\n').filter((line) => line.startsWith('kept '));
+}
+
+test('the kept line for a folder both replaced and listed names the entry, the listing and deleting the folder', () => {
+  assert.deepEqual(keptLinesAfterDropping({ replaced: { beta: 'aw-beta' }, listed: ['./skills/aw-beta'] }), [
+    'kept skills/aw-beta: "replaced" maps "beta" of upstream "fixture" to it and .claude-plugin/plugin.json still lists it; ' +
+      'to remove it, remove or remap each "replaced" entry that maps to it in upstreams.json, remove its listing from .claude-plugin/plugin.json and delete the folder',
+  ]);
+});
+
+test('the kept line for a folder replaced but not listed names the entry and deleting the folder, not plugin.json', () => {
+  assert.deepEqual(keptLinesAfterDropping({ replaced: { beta: 'aw-beta' }, listed: [] }), [
+    'kept skills/aw-beta: "replaced" maps "beta" of upstream "fixture" to it; ' +
+      'to remove it, remove or remap each "replaced" entry that maps to it in upstreams.json and delete the folder',
+  ]);
+});
+
+test('the kept line for a folder only listed names the listing and deleting the folder', () => {
+  assert.deepEqual(keptLinesAfterDropping({ replaced: {}, listed: ['./skills/aw-beta'] }), [
+    'kept skills/aw-beta: .claude-plugin/plugin.json still lists it; ' +
+      'to remove it, remove its listing from .claude-plugin/plugin.json and delete the folder',
+  ]);
+});
+
+test('the kept line names every replaced entry that maps to the folder, across upstreams', () => {
+  const other = makeUpstream({ LICENSE: UPSTREAM_LICENSE });
+  const [line, ...rest] = keptLinesAfterDropping({
+    replaced: { beta: 'aw-beta', gamma: 'aw-beta', delta: 'aw-omega' },
+    listed: [],
+    edit: (manifest) => {
+      manifest.upstreams.other = { repo: other.dir, commit: other.commit, skills: {}, replaced: { epsilon: 'aw-beta' } };
+    },
+  });
+
+  assert.deepEqual(rest, []);
+  assert.match(line, /^kept skills\/aw-beta: "replaced" maps "beta" of upstream "fixture", "gamma" of upstream "fixture", "epsilon" of upstream "other" to it; /);
+  assert.doesNotMatch(line, /delta/);
+});
 
 for (const invalid of ['{', '{}', 'null']) {
   test(`invalid plugin manifest fails install before writes: ${invalid}`, () => {

@@ -90,6 +90,7 @@ claude plugin validate . --strict    # plugin and marketplace manifests
 - a template copied into another skill's `adapters/` folder under the same file name, as `aw-wayfinder` copies `aw-setup`'s local-markdown tracker so that it works when installed alone, is identical to the first copy in folder order;
 - the version in `plugin.json` is plain semver `X.Y.Z` and matches the marketplace entry;
 - every copy passes the sync `check` (below), which also requires its `LICENSE.upstream`;
+- every entry in an upstream's `replaced` in `upstreams.json` maps to a kit skill with a folder under `skills/`, so a copy that refers to a replaced skill points at a skill that exists;
 - every copy has a `NOTICE.md` entry that links its upstream `repo` and shows its pin and the kind `copy`;
 - text files use LF line endings.
 
@@ -109,7 +110,17 @@ node scripts/sync-upstreams.mjs report    # what changed upstream since each pin
 
 `install` fails, writing no copy and no lock, when a copy still refers to a skill of its own upstream in one of those forms and the kit neither copies that skill nor maps it under the upstream's `replaced`. Such a reference points nowhere once the upstream's plugin is disabled. The upstream's skills are the `name:` of every `SKILL.md` in its tree at the pin. The error lists each reference as `<file>:<line>: <mention>`; resolve one by copying the skill or mapping it under `replaced`. `check` runs offline and does not repeat this, since the lock does not hold the upstream's skill list.
 
-`install` keeps `agents/`, adds the upstream license as `LICENSE.upstream`, and removes copies no longer listed, unless an upstream’s `replaced` maps to their folder or `plugin.json` still lists it. Those folders keep their contents, including hand edits, and their stale lock entries are dropped. Each retained folder is reported; if it really should go, remove its listing from `plugin.json` and delete the folder. An invalid `plugin.json` (including a missing `skills` array) fails before any writes; a missing file lists nothing. A copy must not be edited by hand: `check` fails on any other change, and on a missing rename. An upstream's `repo` can be a local directory holding a git repo, which is how the tests run offline.
+`install` keeps `agents/`, adds the upstream license as `LICENSE.upstream`, and removes copies no longer listed, unless an upstream’s `replaced` maps to their folder or `plugin.json` still lists it. Those folders keep their contents, including hand edits, and their stale lock entries are dropped. Each retained folder is reported once, on the `install` that drops it, with advice that fits why it is still tied to the kit:
+
+| An upstream's `replaced` maps to the folder | `plugin.json` lists it | To remove the folder |
+| --- | --- | --- |
+| yes | yes | remove or remap each `replaced` entry that maps to it, remove its `plugin.json` listing, and delete it |
+| yes | no | remove or remap each `replaced` entry that maps to it, and delete it |
+| no | yes | remove its `plugin.json` listing, and delete it |
+
+The report names each `replaced` entry that maps to the folder by upstream and upstream skill. Remove or remap, because removing an entry while a copy still refers to that skill makes `install` fail with the error above. `install` and `check` accept a `replaced` entry whose kit skill has no folder; `validate-kit` reports it and fails, so deleting a folder without removing its entry does not pass unnoticed.
+
+An invalid `plugin.json` (including a missing `skills` array) fails before any writes; a missing file lists nothing. A copy must not be edited by hand: `check` fails on any other change, and on a missing rename. An upstream's `repo` can be a local directory holding a git repo, which is how the tests run offline.
 
 To move a pin, change `commit` and `reason` in `upstreams.json`, run `install`, and update the pin in the copy's `NOTICE.md` entry. New copies also need a `NOTICE.md` entry and a line in `plugin.json`'s `skills`.
 

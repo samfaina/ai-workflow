@@ -1,7 +1,7 @@
 // Upstream sync: the manifest, the lock, the mechanical transform and the
 // three modes of scripts/sync-upstreams.mjs (ADRs 0001, 0004, 0015).
 // Maintainer-only, never ships to user repos. scripts/validate-kit.mjs
-// imports `check`, `readUpstreams` and `readJsonFile` from here.
+// imports `check`, `readUpstreams`, `replacedFinding` and `readJsonFile` from here.
 //
 // upstreams.json pins each upstream and lists the skills copied from it:
 //
@@ -23,7 +23,8 @@
 //       "replaced": { "<upstream name>": "<kit skill name>" }
 //
 // A replaced name may not be a copied skill of any upstream, and its kit
-// skill carries the `aw-` prefix but is not the name of a copy.
+// skill carries the `aw-` prefix but is not the name of a copy. `install` and
+// `check` accept a kit skill with no folder; scripts/validate-kit.mjs does not.
 //
 // `release` and `reason` record the choice of pin for people; no code reads
 // them. Each copied skill lands in skills/aw-<upstream name>/.
@@ -157,21 +158,26 @@ export function readUpstreams(dir) {
 
 // Findings about each upstream's "replaced", checked once every copy is known.
 function replacedFindings(upstreams, copies) {
-  const findings = [];
-  for (const upstream of upstreams) {
-    const at = `${MANIFEST}: upstream "${upstream.key}"`;
-    for (const [from, to] of Object.entries(upstream.replaced)) {
-      const copied = copies.find((copy) => copy.name === from);
-      if (copied) {
-        findings.push(`${at}: replaced skill "${from}" is copied from upstream "${copied.upstream.key}"; a copied skill is renamed, not replaced`);
-      } else if (!to.startsWith(PREFIX) || to === PREFIX) {
-        findings.push(`${at}: replaced skill "${from}" maps to "${to}", which lacks the ${PREFIX} prefix of a kit skill`);
-      } else if (copies.some((copy) => copy.folder === to)) {
-        findings.push(`${at}: replaced skill "${from}" maps to "${to}", the copy of "${to.slice(PREFIX.length)}"; it must map to a kit skill`);
-      }
-    }
+  return upstreams.flatMap((upstream) =>
+    Object.entries(upstream.replaced)
+      .map(([from, to]) => replacedFinding(upstream, from, to, copies))
+      .filter((finding) => finding !== null));
+}
+
+// The finding about one "replaced" entry, or null when readUpstreams accepts it.
+export function replacedFinding(upstream, from, to, copies) {
+  const at = `${MANIFEST}: upstream "${upstream.key}"`;
+  const copied = copies.find((copy) => copy.name === from);
+  if (copied) {
+    return `${at}: replaced skill "${from}" is copied from upstream "${copied.upstream.key}"; a copied skill is renamed, not replaced`;
   }
-  return findings;
+  if (!to.startsWith(PREFIX) || to === PREFIX) {
+    return `${at}: replaced skill "${from}" maps to "${to}", which lacks the ${PREFIX} prefix of a kit skill`;
+  }
+  if (copies.some((copy) => copy.folder === to)) {
+    return `${at}: replaced skill "${from}" maps to "${to}", the copy of "${to.slice(PREFIX.length)}"; it must map to a kit skill`;
+  }
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -709,11 +715,30 @@ function transformFile(path, bytes, file, transform, unresolved) {
   return { content, leftAlone: transform.leftAlone(content), dangling: findReferences(content, unresolved) };
 }
 
+// The line reporting a retained folder. Its advice fits why the folder is still
+// tied to the kit: `mappedBy` is each "replaced" entry that maps to it, as text,
+// and `listedIn` is the plugin manifest that lists it, or null.
+function keptLine(path, mappedBy, listedIn) {
+  const reasons = [];
+  const steps = [];
+  if (mappedBy.length > 0) {
+    reasons.push(`"replaced" maps ${mappedBy.join(', ')} to it`);
+    steps.push(`remove or remap each "replaced" entry that maps to it in ${MANIFEST}`);
+  }
+  if (listedIn) {
+    reasons.push(`${listedIn} still lists it`);
+    steps.push(`remove its listing from ${listedIn}`);
+  }
+  return `kept ${path}: ${reasons.join(' and ')}; to remove it, ${steps.join(', ')} and delete the folder`;
+}
+
 // Installs every copy at its pin, applies the mechanical transform, adds
 // LICENSE.upstream and rewrites the lock. Copies dropped from the manifest
 // since the last install are removed unless replaced maps to their folder
 // or plugin.json still lists it. Retained folders keep their contents, but
-// their stale lock entries are removed.
+// their stale lock entries are removed. The kept line names each "replaced"
+// entry that maps to the folder and any plugin.json listing, and its removal
+// advice covers only those. It prints once, since the lock entry goes with it.
 // Everything is worked out before the first write, so a failure
 // leaves the copies and the lock as they were. It fails on a reference to a
 // skill of the copy's own upstream that the kit neither copies nor replaces,
@@ -731,7 +756,8 @@ export function install(dir) {
   }
   const listed = new Set((plugin.value?.skills ?? [])
     .filter((entry) => typeof entry === 'string').map(normalizeSkillPath));
-  const replaced = new Set(upstreams.flatMap((upstream) => Object.values(upstream.replaced)));
+  const replacedEntries = upstreams.flatMap((upstream) =>
+    Object.entries(upstream.replaced).map(([from, to]) => ({ to, text: `"${from}" of upstream "${upstream.key}"` })));
   const previous = readJsonFile(dir, LOCK).value;
   const lock = { upstreams: {} };
   const lines = [];
@@ -802,9 +828,9 @@ export function install(dir) {
       if (names.includes(name)) continue;
       const folder = PREFIX + name;
       const path = `skills/${folder}`;
-      if (replaced.has(folder) || listed.has(path)) {
-        const reason = replaced.has(folder) ? 'a replaced skill maps to it' : `${pluginPath} still lists it`;
-        lines.push(`kept ${path}: ${reason}; to remove it, remove its listing from ${pluginPath} and delete the folder`);
+      const mappedBy = replacedEntries.filter(({ to }) => to === folder).map(({ text }) => text);
+      if (mappedBy.length > 0 || listed.has(path)) {
+        lines.push(keptLine(path, mappedBy, listed.has(path) ? pluginPath : null));
         continue;
       }
       rmSync(join(dir, 'skills', folder), { recursive: true, force: true });
