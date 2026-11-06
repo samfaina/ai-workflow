@@ -560,6 +560,25 @@ test('install and check pass a replaced entry whose kit skill has no folder', ()
   assertNoFindings(sync('check', dir));
 });
 
+test('following the kept line but leaving the replaced entry fails validate-kit, while install and check still pass', () => {
+  const { dir } = installedKit();
+  const manifest = JSON.parse(read(dir, 'upstreams.json'));
+  delete manifest.upstreams.fixture.skills.beta;
+  manifest.upstreams.fixture.replaced = { beta: 'aw-beta' };
+  write(dir, 'upstreams.json', json(manifest));
+  const kept = sync('install', dir);
+  assert.equal(kept.status, 0, kept.stderr);
+  assert.match(read(dir, 'skills/aw-alpha/SKILL.md'), /`aw-beta` skill/);
+
+  writeFiles(dir, manifests(['aw-alpha']));
+  rmSync(join(dir, 'skills/aw-beta'), { recursive: true });
+
+  assertOneFinding(validate(dir), /^upstreams\.json: upstream "fixture": replaced skill "beta" maps to "aw-beta", which has no folder under skills\//);
+  const again = sync('install', dir);
+  assert.equal(again.status, 0, again.stderr);
+  assertNoFindings(sync('check', dir));
+});
+
 test('a replaced skill that is also a copied skill gets only that finding, though its kit skill has no folder', () => {
   const dir = kitThenReplaced({ beta: 'aw-omega' });
 
@@ -852,7 +871,6 @@ for (const [label, replaced, listed, keep] of [
     assert.deepEqual(JSON.parse(read(dir, 'upstreams.lock.json')).upstreams.fixture.skills, {});
     if (keep) {
       assert.equal(read(dir, 'skills/aw-beta/SKILL.md'), adaptation);
-      assert.match(result.stdout, /kept skills\/aw-beta/);
       assert.match(result.stdout, /kept skills\/aw-beta: .*delete the folder/);
     }
     const lock = read(dir, 'upstreams.lock.json');
@@ -882,14 +900,14 @@ function keptLinesAfterDropping({ replaced, listed, edit }) {
   return result.stdout.split('\n').filter((line) => line.startsWith('kept '));
 }
 
-test('the kept line for a folder both replaced and listed names the entry, the listing and deleting the folder', () => {
+test('the kept line for a listed folder a replaced skill maps to names the entry, the listing and deleting the folder', () => {
   assert.deepEqual(keptLinesAfterDropping({ replaced: { beta: 'aw-beta' }, listed: ['./skills/aw-beta'] }), [
     'kept skills/aw-beta: "replaced" maps "beta" of upstream "fixture" to it and .claude-plugin/plugin.json still lists it; ' +
       'to remove it, remove or remap each "replaced" entry that maps to it in upstreams.json, remove its listing from .claude-plugin/plugin.json and delete the folder',
   ]);
 });
 
-test('the kept line for a folder replaced but not listed names the entry and deleting the folder, not plugin.json', () => {
+test('the kept line for an unlisted folder a replaced skill maps to names the entry and deleting the folder, not plugin.json', () => {
   assert.deepEqual(keptLinesAfterDropping({ replaced: { beta: 'aw-beta' }, listed: [] }), [
     'kept skills/aw-beta: "replaced" maps "beta" of upstream "fixture" to it; ' +
       'to remove it, remove or remap each "replaced" entry that maps to it in upstreams.json and delete the folder',

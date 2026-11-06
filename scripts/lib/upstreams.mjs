@@ -1,7 +1,8 @@
 // Upstream sync: the manifest, the lock, the mechanical transform and the
 // three modes of scripts/sync-upstreams.mjs (ADRs 0001, 0004, 0015).
 // Maintainer-only, never ships to user repos. scripts/validate-kit.mjs
-// imports `check`, `readUpstreams`, `replacedFinding` and `readJsonFile` from here.
+// imports `check`, `readUpstreams`, `replacedFinding` and `readJsonFile` from
+// here.
 //
 // upstreams.json pins each upstream and lists the skills copied from it:
 //
@@ -716,8 +717,8 @@ function transformFile(path, bytes, file, transform, unresolved) {
 }
 
 // The line reporting a retained folder. Its advice fits why the folder is still
-// tied to the kit: `mappedBy` is each "replaced" entry that maps to it, as text,
-// and `listedIn` is the plugin manifest that lists it, or null.
+// tied to the kit: `mappedBy` labels each "replaced" entry that maps to it, and
+// `listedIn` is the plugin manifest that lists it, or null.
 function keptLine(path, mappedBy, listedIn) {
   const reasons = [];
   const steps = [];
@@ -757,7 +758,7 @@ export function install(dir) {
   const listed = new Set((plugin.value?.skills ?? [])
     .filter((entry) => typeof entry === 'string').map(normalizeSkillPath));
   const replacedEntries = upstreams.flatMap((upstream) =>
-    Object.entries(upstream.replaced).map(([from, to]) => ({ to, text: `"${from}" of upstream "${upstream.key}"` })));
+    Object.entries(upstream.replaced).map(([from, to]) => ({ to, label: `"${from}" of upstream "${upstream.key}"` })));
   const previous = readJsonFile(dir, LOCK).value;
   const lock = { upstreams: {} };
   const lines = [];
@@ -828,7 +829,7 @@ export function install(dir) {
       if (names.includes(name)) continue;
       const folder = PREFIX + name;
       const path = `skills/${folder}`;
-      const mappedBy = replacedEntries.filter(({ to }) => to === folder).map(({ text }) => text);
+      const mappedBy = replacedEntries.filter(({ to }) => to === folder).map(({ label }) => label);
       if (mappedBy.length > 0 || listed.has(path)) {
         lines.push(keptLine(path, mappedBy, listed.has(path) ? pluginPath : null));
         continue;

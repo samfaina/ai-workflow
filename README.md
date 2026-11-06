@@ -110,7 +110,7 @@ node scripts/sync-upstreams.mjs report    # what changed upstream since each pin
 
 `install` fails, writing no copy and no lock, when a copy still refers to a skill of its own upstream in one of those forms and the kit neither copies that skill nor maps it under the upstream's `replaced`. Such a reference points nowhere once the upstream's plugin is disabled. The upstream's skills are the `name:` of every `SKILL.md` in its tree at the pin. The error lists each reference as `<file>:<line>: <mention>`; resolve one by copying the skill or mapping it under `replaced`. `check` runs offline and does not repeat this, since the lock does not hold the upstream's skill list.
 
-`install` keeps `agents/`, adds the upstream license as `LICENSE.upstream`, and removes copies no longer listed, unless an upstream’s `replaced` maps to their folder or `plugin.json` still lists it. Those folders keep their contents, including hand edits, and their stale lock entries are dropped. Each retained folder is reported once, on the `install` that drops it, with advice that fits why it is still tied to the kit:
+`install` keeps `agents/`, adds the upstream license as `LICENSE.upstream`, and removes copies no longer listed, unless an upstream’s `replaced` maps to their folder or `plugin.json` still lists it. Those folders keep their contents, including hand edits, and their stale lock entries are dropped. Each retained folder is reported once, on the `install` that drops its lock entry, with advice that fits why it is still tied to the kit:
 
 | An upstream's `replaced` maps to the folder | `plugin.json` lists it | To remove the folder |
 | --- | --- | --- |
