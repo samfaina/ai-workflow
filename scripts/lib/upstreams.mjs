@@ -85,6 +85,11 @@ const isObject = (value) => value !== null && typeof value === 'object' && !Arra
 // `a\b/` becomes `a/b`.
 const toPosix = (path) => path.replace(/\\/g, '/').replace(/\/+$/, '');
 
+// `./skills/aw-x/` and `skills\\aw-x` both become `skills/aw-x`.
+export function normalizeSkillPath(entry) {
+  return entry.replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/+$/, '');
+}
+
 // A file named by its path from a repo's root: relative, with no `.` or `..`
 // segment and no empty one.
 const isRepoFile = (path) => path !== '' && path.split('/').every((segment) => segment !== '' && segment !== '.' && segment !== '..');
@@ -706,8 +711,10 @@ function transformFile(path, bytes, file, transform, unresolved) {
 
 // Installs every copy at its pin, applies the mechanical transform, adds
 // LICENSE.upstream and rewrites the lock. Copies dropped from the manifest
-// since the last install are removed, so the copies always match the
-// manifest. Everything is worked out before the first write, so a failure
+// since the last install are removed unless replaced maps to their folder
+// or plugin.json still lists it. Retained folders keep their contents, but
+// their stale lock entries are removed.
+// Everything is worked out before the first write, so a failure
 // leaves the copies and the lock as they were. It fails on a reference to a
 // skill of the copy's own upstream that the kit neither copies nor replaces,
 // since that reference points nowhere once the upstream's plugin is disabled.
@@ -716,6 +723,15 @@ export function install(dir) {
   const { upstreams, copies, findings } = readUpstreams(dir);
   if (findings.length > 0) throw new SyncError(findings.join('\n'));
   const names = copies.map((copy) => copy.name);
+  const pluginPath = '.claude-plugin/plugin.json';
+  const plugin = readJsonFile(dir, pluginPath);
+  if (plugin.finding) throw new SyncError(plugin.finding);
+  if (!plugin.missing && !Array.isArray(plugin.value?.skills)) {
+    throw new SyncError(`${pluginPath}: "skills" must be an array of skill folders`);
+  }
+  const listed = new Set((plugin.value?.skills ?? [])
+    .filter((entry) => typeof entry === 'string').map(normalizeSkillPath));
+  const replaced = new Set(upstreams.flatMap((upstream) => Object.values(upstream.replaced)));
   const previous = readJsonFile(dir, LOCK).value;
   const lock = { upstreams: {} };
   const lines = [];
@@ -784,8 +800,15 @@ export function install(dir) {
   for (const lockedUpstream of Object.values(isObject(previous?.upstreams) ? previous.upstreams : {})) {
     for (const name of Object.keys(isObject(lockedUpstream?.skills) ? lockedUpstream.skills : {})) {
       if (names.includes(name)) continue;
-      rmSync(join(dir, 'skills', PREFIX + name), { recursive: true, force: true });
-      lines.push(`removed skills/${PREFIX + name}, no longer listed in ${MANIFEST}`);
+      const folder = PREFIX + name;
+      const path = `skills/${folder}`;
+      if (replaced.has(folder) || listed.has(path)) {
+        const reason = replaced.has(folder) ? 'a replaced skill maps to it' : `${pluginPath} still lists it`;
+        lines.push(`kept ${path}: ${reason}; to remove it, remove its listing from ${pluginPath} and delete the folder`);
+        continue;
+      }
+      rmSync(join(dir, 'skills', folder), { recursive: true, force: true });
+      lines.push(`removed ${path}, no longer listed in ${MANIFEST}`);
     }
   }
 

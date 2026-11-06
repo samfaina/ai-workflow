@@ -13,6 +13,7 @@ import {
   check as checkCopies,
   MANIFEST as UPSTREAMS_MANIFEST,
   PREFIX,
+  normalizeSkillPath,
   readJsonFile,
   readUpstreams,
 } from './lib/upstreams.mjs';
@@ -196,11 +197,6 @@ const MARKETPLACE_MANIFEST = '.claude-plugin/marketplace.json';
 function readJson(dir, path) {
   const read = readJsonFile(dir, path);
   return read.missing ? { finding: `${path}: file is missing` } : read;
-}
-
-// `./skills/aw-x/` and `skills\aw-x` both become `skills/aw-x`.
-function normalizeSkillPath(entry) {
-  return entry.replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/+$/, '');
 }
 
 function checkManifestListing(dir, plugin) {

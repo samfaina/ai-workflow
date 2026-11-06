@@ -780,3 +780,63 @@ test('a skill replaced by the kit skill of its own aw- name installs and checks 
   assert.match(read(dir, 'skills/aw-alpha/SKILL.md'), /Follow the `aw-beta` skill\./);
   assertNoFindings(sync('check', dir));
 });
+
+for (const [label, replaced, listed, keep] of [
+  ['adaptation listed in the plugin', { beta: 'aw-beta' }, ['./skills/aw-beta'], true],
+  ['adaptation absent from the plugin', { beta: 'aw-beta' }, [], true],
+  ['folder listed without a dot prefix', {}, ['skills/aw-beta'], true],
+  ['folder listed with a trailing slash', {}, ['./skills/aw-beta/'], true],
+  ['folder listed with Windows separators', {}, ['skills\\aw-beta'], true],
+  ['replacement with a different folder', { beta: 'aw-review' }, [], false],
+  ['copy dropped from the kit', {}, [], false],
+  ['copy dropped with no plugin manifest', {}, null, false],
+]) {
+  test(`install preserves only retained folders: ${label}`, () => {
+    const { dir } = installedKit();
+    const manifest = JSON.parse(read(dir, 'upstreams.json'));
+    manifest.upstreams.fixture.skills = {};
+    manifest.upstreams.fixture.replaced = replaced;
+    write(dir, 'upstreams.json', JSON.stringify(manifest));
+    const plugin = JSON.parse(read(dir, '.claude-plugin/plugin.json'));
+    if (listed === null) {
+      rmSync(join(dir, '.claude-plugin/plugin.json'));
+    } else {
+      plugin.skills = listed;
+      write(dir, '.claude-plugin/plugin.json', JSON.stringify(plugin));
+    }
+    const adaptation = 'uncommitted adaptation edits\n';
+    write(dir, 'skills/aw-beta/SKILL.md', adaptation);
+
+    const result = sync('install', dir);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(existsSync(join(dir, 'skills/aw-beta')), keep);
+    assert.equal(existsSync(join(dir, 'skills/aw-alpha')), false);
+    assert.deepEqual(JSON.parse(read(dir, 'upstreams.lock.json')).upstreams.fixture.skills, {});
+    if (keep) {
+      assert.equal(read(dir, 'skills/aw-beta/SKILL.md'), adaptation);
+      assert.match(result.stdout, /kept skills\/aw-beta/);
+      assert.match(result.stdout, /plugin\.json.*delete the folder/);
+    }
+    const lock = read(dir, 'upstreams.lock.json');
+    const again = sync('install', dir);
+    assert.equal(again.status, 0, again.stderr);
+    assert.doesNotMatch(again.stdout, /kept skills\//);
+    assert.equal(read(dir, 'upstreams.lock.json'), lock);
+  });
+}
+
+for (const invalid of ['{', '{}', 'null']) {
+  test(`invalid plugin manifest fails install before writes: ${invalid}`, () => {
+    const { dir } = installedKit();
+    write(dir, 'skills/aw-alpha/SKILL.md', 'uncommitted copy edits\n');
+    const lock = read(dir, 'upstreams.lock.json');
+    const beta = read(dir, 'skills/aw-beta/SKILL.md');
+    write(dir, '.claude-plugin/plugin.json', invalid);
+    const result = sync('install', dir);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /plugin\.json/);
+    assert.equal(read(dir, 'skills/aw-alpha/SKILL.md'), 'uncommitted copy edits\n');
+    assert.equal(read(dir, 'skills/aw-beta/SKILL.md'), beta);
+    assert.equal(read(dir, 'upstreams.lock.json'), lock);
+  });
+}
