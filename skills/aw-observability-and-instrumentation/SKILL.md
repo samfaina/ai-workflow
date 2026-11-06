@@ -213,7 +213,7 @@ Instrumentation is code; it can be wrong. Before calling the work done, trigger 
 
 ## Red Flags
 
-- A feature PR with retries, queues, or external calls and zero new telemetry
+- A feature change with retries, queues, or external calls and zero new telemetry
 - Log lines built by string interpolation instead of structured fields
 - No correlation/request ID — each log line is an orphan
 - One log stream fed by a scheduler, a webhook, and manual runs, with no field naming which one produced the line

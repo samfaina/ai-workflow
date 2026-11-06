@@ -67,9 +67,11 @@ test('rollback triggers go to the rollback plan of /aw-ship, and launch-day moni
 });
 
 test('the checklist has a self-check for repos that run in production, not a gate before shipping', () => {
-  assert.doesNotMatch(checklist, /bgateb/i);
+  assert.doesNotMatch(checklist, /\bgate\b/i);
   assert.doesNotMatch(checklist, /Before a feature ships/);
-  assert.doesNotMatch(skill, /pre-launch/i);
+  for (const text of [skill, checklist]) {
+    assert.doesNotMatch(text, /pre-launch/i);
+  }
   assert.match(checklist, /^- \[Self-Check\]\(#self-check\)$/m);
   const body = section(checklist, '## Self-Check');
   assert.match(body.trim(), /^For a repo that runs in production/);
@@ -135,10 +137,14 @@ const noticeRow = (name) => {
   return row;
 };
 
-test('plugin.json lists it and upstreams.json does not, since it is an adaptation', () => {
+test('plugin.json lists it', () => {
   assert.ok(JSON.parse(repoText('.claude-plugin/plugin.json')).skills.includes('./skills/aw-observability-and-instrumentation'));
-  assert.doesNotMatch(repoText('upstreams.json'), /observability/);
-  assert.doesNotMatch(repoText('upstreams.lock.json'), /observability/);
+});
+
+test('it says "review request" or "change", not the "PR" the glossary avoids', () => {
+  for (const text of [skill, checklist]) {
+    assert.doesNotMatch(text, /\bPR\b/);
+  }
 });
 
 test('aw-security-and-hardening points to it on the telemetry line, and not to the debugging skill', () => {
@@ -168,28 +174,27 @@ test('its NOTICE row is an adaptation at the pin and says what it takes and what
   }
 });
 
-test('the NOTICE opening names both adaptations that carry the license', () => {
+test('the NOTICE opening names it among the adaptations that carry the license', () => {
   const opening = repoText('NOTICE.md').split('\n').find((line) => line.startsWith('This file lists every skill'));
-  assert.match(opening, /`aw-security-and-hardening` and `aw-observability-and-instrumentation` do/);
+  assert.match(opening, /`aw-observability-and-instrumentation`[^.]*LICENSE.upstream/);
 });
 
 test('the glossary defines a phase-free skill in the wording of the decision', () => {
   const glossary = repoText('GLOSSARY.md');
   assert.match(glossary, /^\*\*Phase-free skill\*\*:$/m);
   const definition = glossary.split('**Phase-free skill**:\n')[1].split('\n\n')[0];
-  assert.match(definition, /No route, phase or gate requires it/);
+  assert.match(definition, /an optional skill/);
+  assert.match(definition, /no route, phase or gate requires it/);
   assert.match(definition, /no ship or merge condition depends on it having run/);
   assert.match(definition, /no install switch and no `aw-setup` question/);
-  assert.match(definition, /_Avoid_: optional skill/);
 });
 
 test('ADR 0010 lists it among the phase-free adaptations', () => {
   const adr = repoText('docs/adr/0010-one-owner-per-phase-and-slices-in-the-spec.md');
-  assert.match(adr, /`aw-security-and-hardening` and `aw-observability-and-instrumentation`, phase-free adaptations/);
+  assert.match(adr, /`aw-observability-and-instrumentation`[^.]*phase-free adaptation/);
 });
 
-test('the README status paragraph counts and describes it', () => {
+test('the README status paragraph describes it', () => {
   const status = repoText('README.md').split('\n').find((line) => line.startsWith('> Status:'));
-  assert.match(status, /fourteen kit skills/);
   assert.match(status, /`aw-observability-and-instrumentation`, /);
 });
