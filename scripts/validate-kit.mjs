@@ -16,6 +16,7 @@ import {
   normalizeSkillPath,
   readJsonFile,
   readUpstreams,
+  replacedFinding,
 } from './lib/upstreams.mjs';
 
 const kitDir = resolve(process.argv[2] ?? '.');
@@ -313,6 +314,24 @@ function checkNotice(dir) {
   return findings;
 }
 
+// Each "replaced" entry must map to a kit skill the kit has, or a copy that
+// refers to the replaced skill points at nothing. An entry readUpstreams
+// already rejects has its finding from there. `install` and `check` accept a
+// missing folder, so this check is not part of readUpstreams.
+function checkReplacedFolders(dir) {
+  const { upstreams, copies } = readUpstreams(dir);
+  const folders = skillFolders(dir);
+  const findings = [];
+  for (const upstream of upstreams) {
+    for (const [from, to] of Object.entries(upstream.replaced)) {
+      if (replacedFinding(upstream, from, to, copies) === null && !folders.includes(to)) {
+        findings.push(`${UPSTREAMS_MANIFEST}: upstream "${upstream.key}": replaced skill "${from}" maps to "${to}", which has no folder under skills/`);
+      }
+    }
+  }
+  return findings;
+}
+
 // The closed vocabulary of canonical operations (ADR 0006), by adapter kind.
 // Read operations are always allowed; each write operation is at `write` or
 // `draft`.
@@ -509,6 +528,7 @@ function validate(dir) {
     findings.push(...checkVersions(plugin.value, marketplace.value));
   }
   findings.push(...checkCopies(dir));
+  findings.push(...checkReplacedFolders(dir));
   findings.push(...checkNotice(dir));
   findings.push(...checkLineEndings(dir));
   return findings;
