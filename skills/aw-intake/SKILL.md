@@ -50,9 +50,11 @@ Done when you can name the modules the task changes and whether it changes a con
 
 **Route**, one of:
 
-- **fast**: fits in one session and changes no contract (a public API, schema, file format, CLI flag or event), no stored data and nothing security-related (authentication, permissions, secrets, input from outside).
+- **fast**: fits in one session and changes no contract (a public API, schema, file format, CLI flag or event), no stored data and nothing security-related (authentication, permissions, secrets, input from outside, a new external service integration, CORS, rate limiting or throttling, adding a dependency, or how personal data is collected, handled or shared).
 - **standard**: everything else.
 - **epic**: several sessions or several deliverables, each of which deserves its own spec.
+
+Upgrading an existing dependency does not, on its own, keep a task off the fast route, major versions included: an upgrade that changes a contract is already kept off it by the contract rule. The fast route does not skip the Security axis: a fast-route diff still goes through `aw-review`'s Security axis, so a dependency upgrade can classify as fast and still get Security findings.
 
 An investigation changes nothing, so it never needs a spec: it takes the fast route, or the epic route when answering it spans several sessions. When two routes fit, pick the longer one: epic over standard, standard over fast. Give a reason for the type and one for the route, each naming what in the task or the code decided it. The user may choose another route; record their choice and their reason.
 
