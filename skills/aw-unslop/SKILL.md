@@ -25,7 +25,7 @@ The file or text the user names. With no argument, the last document generated i
 
 ## What it rewrites
 
-Only prose a person reads. Leave these unchanged: a term defined in the repo's `GLOSSARY.md`, even when a rule would flag it (`harness` under rule 26, the en dash in `expand–contract` under rule 13), a code identifier, a command, a path, a quotation or command output.
+Only prose, whether a person or an agent reads it. Leave these unchanged: a term defined in the repo's `GLOSSARY.md`, even when a rule would flag it (`harness` under rule 26, the en dash in `expand–contract` under rule 13), a code identifier, a command, a path, a quotation or command output.
 
 In a text not written in English, apply the rules that carry over; the word lists are English.
 
@@ -41,7 +41,7 @@ A skill, script or test depends on these, so keep their text as it is:
 | Map, map update, decision ticket | Section headings and the shape of their lines |
 | Adapter | The Operations and Levels tables, `**Default access:**` |
 | `GLOSSARY.md` | Bold terms and `_Avoid_:` lines |
-| Skill | Frontmatter, and the `## Never allowed` and `## Defaults when unconfigured` sections, which `validate-kit` compares with `docs/configuration.md` |
+| Skill | Frontmatter, headings, and the `## Never allowed` and `## Defaults when unconfigured` sections, which `validate-kit` compares with `docs/configuration.md` |
 
 ## What it refuses
 

@@ -1,6 +1,6 @@
 // aw-unslop's public contract, the text an agent loads when a person invokes
 // the skill and the places in the kit that name it or its upstream. These tests
-// hold the contract ticket #76 names.
+// hold the contract tickets #76 and #81 name.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -64,14 +64,27 @@ test('its target is what the user names, or else the last document generated in 
   assert.match(body, /With no argument, the last document generated in this conversation\./);
 });
 
-test('it rewrites only prose a person reads, and leaves glossary terms, code and quotations alone', () => {
+test('it rewrites only prose, read by a person or an agent, and leaves glossary terms, code and quotations alone', () => {
   const body = section(skill, '## What it rewrites');
-  assert.match(body, /Only prose a person reads\./);
+  assert.match(body, /^Only prose, whether a person or an agent reads it\./m);
+  assert.doesNotMatch(skill, /prose a person reads/);
   assert.match(body, /a term defined in the repo's `GLOSSARY\.md`, even when a rule would flag it/);
   assert.match(body, /`harness` under rule 26/);
   assert.match(body, /the en dash in `expand–contract` under rule 13/);
   for (const kept of ['a code identifier', 'a command', 'a path', 'a quotation', 'command output']) {
     assert.ok(body.includes(kept), `does not protect ${kept}`);
+  }
+});
+
+test('everywhere the kit describes what it rewrites, prose read by an agent counts too', () => {
+  const yaml = readFileSync(join(skillDir, 'agents/openai.yaml'), 'utf8');
+  assert.match(yaml, /^ {2}short_description: "Cut AI tells from prose a person or an agent reads"$/m);
+  const notice = readFileSync(join(repoRoot, 'NOTICE.md'), 'utf8').split('\n').find((line) => line.startsWith('| `aw-unslop` |'));
+  assert.match(notice, /the rule that it rewrites only prose, whether a person or an agent reads it, and leaves glossary terms/);
+  const status = readFileSync(join(repoRoot, 'README.md'), 'utf8').split('\n').find((line) => line.startsWith('> Status:'));
+  assert.match(status, /`aw-unslop`, pstack's rules for cutting AI tells from prose a person or an agent reads,/);
+  for (const [path, text] of [['agents/openai.yaml', yaml], ['NOTICE.md', notice], ['README.md', status]]) {
+    assert.doesNotMatch(text, /prose a person reads/, path);
   }
 });
 
@@ -93,7 +106,7 @@ test('its table states what stays exact in each document the rest of the kit rea
     'Map, map update, decision ticket': 'Section headings and the shape of their lines',
     Adapter: 'The Operations and Levels tables, `**Default access:**`',
     '`GLOSSARY.md`': 'Bold terms and `_Avoid_:` lines',
-    Skill: 'Frontmatter, and the `## Never allowed` and `## Defaults when unconfigured` sections, which `validate-kit` compares with `docs/configuration.md`',
+    Skill: 'Frontmatter, headings, and the `## Never allowed` and `## Defaults when unconfigured` sections, which `validate-kit` compares with `docs/configuration.md`',
   });
 });
 
