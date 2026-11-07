@@ -1,6 +1,7 @@
 // Seam 5: aw-observability-and-instrumentation's public contract, the text an
 // agent loads when the skill triggers and the places in the kit that name it.
-// These tests hold the contract ticket #58 names.
+// These tests hold the contract ticket #58 names, with the split of the
+// glossary term that ticket #73 made.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -20,10 +21,11 @@ function section(text, heading) {
   return lines.slice(start + 1, end === -1 ? undefined : end).join('\n');
 }
 
-test('it states that it is phase-free: no phase requires it and it creates no gate', () => {
+test('it states that it is phase-free and optional: no phase requires it and it creates no gate', () => {
   const body = section(skill, '## In the Kit');
-  assert.match(body, /phase-free/);
-  assert.match(body, /no phase requires it/i);
+  assert.match(body, /phase-free and optional/);
+  assert.match(body, /no phase requires it, nor does any route/i);
+  assert.match(body, /no ship or merge condition depends on it having run/);
   assert.match(body, /creates no gate/);
 });
 
@@ -179,14 +181,41 @@ test('the NOTICE opening names it among the adaptations that carry the license',
   assert.match(opening, /`aw-observability-and-instrumentation`[^.]*LICENSE.upstream/);
 });
 
-test('the glossary defines a phase-free skill in the wording of the decision', () => {
+// The body of a glossary entry: the lines between its term and the blank line.
+function glossaryEntry(term) {
   const glossary = repoText('GLOSSARY.md');
-  assert.match(glossary, /^\*\*Phase-free skill\*\*:$/m);
-  const definition = glossary.split('**Phase-free skill**:\n')[1].split('\n\n')[0];
-  assert.match(definition, /an optional skill/);
-  assert.match(definition, /no route, phase or gate requires it/);
-  assert.match(definition, /no ship or merge condition depends on it having run/);
-  assert.match(definition, /no install switch and no `aw-setup` question/);
+  assert.match(glossary, new RegExp(`^\\*\\*${term}\\*\\*:$`, 'm'), `no glossary entry for ${term}`);
+  return glossary.split(`**${term}**:\n`)[1].split('\n\n')[0];
+}
+
+test('the glossary defines a phase-free skill as one that owns no phase, which a phase may still require', () => {
+  const entry = glossaryEntry('Phase-free skill');
+  assert.match(entry, /^A skill that owns no phase\./);
+  assert.match(entry, /A phase may still call it, and may require it\./);
+  assert.doesNotMatch(entry, /optional/i);
+  assert.doesNotMatch(entry, /\b(nothing|no \w+)\b[^.]*\brequires it/i);
+  assert.match(entry, /^_Avoid_: \S/m);
+  assert.doesNotMatch(entry, /opt-in skill/);
+});
+
+test('the glossary defines an optional skill as a phase-free skill that nothing obliges but that can still run', () => {
+  const entry = glossaryEntry('Optional skill');
+  assert.match(entry, /^A phase-free skill that nothing obliges:/);
+  assert.match(entry, /no route, phase or gate requires it/);
+  assert.match(entry, /no ship or merge condition depends on it having run/);
+  assert.match(entry, /It runs when a task calls for it or a person invokes it\./);
+  assert.match(entry, /no install switch and no `aw-setup` question/);
+  assert.match(entry, /^_Avoid_: opt-in skill$/m);
+});
+
+test('the glossary keeps the two entries side by side and defines them without an ADR or the term kit skill', () => {
+  const glossary = repoText('GLOSSARY.md');
+  assert.match(glossary, /\*\*Phase-free skill\*\*:\n[^\n]*\n_Avoid_:[^\n]*\n\n\*\*Optional skill\*\*:\n/);
+  for (const term of ['Phase-free skill', 'Optional skill']) {
+    const entry = glossaryEntry(term);
+    assert.doesNotMatch(entry, /ADR/, `${term} cites an ADR`);
+    assert.doesNotMatch(entry, /kit skill/i, `${term} says kit skill, which excludes copies`);
+  }
 });
 
 test('ADR 0010 lists it among the phase-free adaptations', () => {

@@ -171,7 +171,11 @@ A stage of the workflow, owned by exactly one kit skill and producing exactly on
 _Avoid_: step, stage
 
 **Phase-free skill**:
-What the kit means by an optional skill: no route, phase or gate requires it, and no ship or merge condition depends on it having run. It has no install switch and no `aw-setup` question.
+A skill that owns no phase. A phase may still call it, and may require it.
+_Avoid_: standalone skill
+
+**Optional skill**:
+A phase-free skill that nothing obliges: no route, phase or gate requires it, and no ship or merge condition depends on it having run. It runs when a task calls for it or a person invokes it. It has no install switch and no `aw-setup` question.
 _Avoid_: opt-in skill
 
 **Route**:
