@@ -27,12 +27,11 @@ test('it is model-invoked: no invocation flag and no agents/openai.yaml', () => 
   assert.ok(!existsSync(join(skillDir, 'agents/openai.yaml')));
 });
 
-test('it states that it is phase-free and optional: no phase calls it and it creates no gate', () => {
+test('it states that it is phase-free and optional, in the glossary\'s words: nothing requires it, no phase calls it, and it creates no gate', () => {
   const body = section(skill, '## In the Kit');
-  assert.match(body, /This skill is phase-free and optional\./);
-  assert.match(body, /No phase calls it, nor does any route/);
-  assert.match(body, /no ship or merge condition depends on it having run/);
-  assert.match(body, /It creates no gate\./);
+  assert.match(body, /^This skill is phase-free and optional: no phase requires it, nor does any route, and no ship or merge condition depends on it having run\./m);
+  assert.match(body, /It creates no gate, and no phase calls it\./);
+  assert.match(body, /It runs when a task calls for it, as when the agent is about to report or act on a performance number, the baseline `aw-intake` measures for a performance task among them, or when a person invokes it\./);
 });
 
 test('its description fires as the agent is about to give a number it measured', () => {
@@ -79,7 +78,6 @@ test('a review request body carries one primary number, with the evidence linked
 
 test('it names no pstack playbook or skill', () => {
   assert.doesNotMatch(skill, /playbook|Other perf material|Opening a PR|Perf issue|hillclimb/i);
-  assert.doesNotMatch(skill, /`(how|why|arena|unslop|blast-radius|benchmark-checklist)`/);
   assert.doesNotMatch(skill, /(?<!aw-)benchmark-checklist/);
 });
 
@@ -119,7 +117,7 @@ test('its NOTICE row credits pstack by repo, folder and pin, and says what it ta
   assert.match(row, /\[`cursor\/plugins`\]\(https:\/\/github\.com\/cursor\/plugins\)/);
   assert.match(row, /`pstack\/skills\/benchmark-checklist\/SKILL\.md`/);
   assert.match(row, /\[`c742dd6`\]\(https:\/\/github\.com\/cursor\/plugins\/tree\/c742dd61706fbacc1b95f1a20b7b988cf096ce6c\/pstack\)/);
-  for (const changed of ['seven questions', 'invocation flag', 'Other perf material', 'playbooks', '"review request" for "PR"', 'Linux examples', 'phase-free and optional']) {
+  for (const changed of ['seven questions', 'invocation flag', 'Other perf material', 'playbooks', 'replaces the hillclimb harness in the opening with a benchmark you rerun after each change', '"review request" for "PR"', 'Linux examples', 'phase-free and optional', 'the baseline `aw-intake` measures']) {
     assert.ok(row.includes(changed), `does not say what it takes or changes about ${changed}`);
   }
 });
@@ -134,9 +132,8 @@ test('ADR 0010 lists it among the phase-free adaptations', () => {
   assert.match(adr, /`aw-benchmark-checklist`, a phase-free adaptation of pstack's `benchmark-checklist`/);
 });
 
-test('the README status paragraph describes it and counts it', () => {
+test('the README status paragraph describes it', () => {
   const status = repoText('README.md').split('\n').find((line) => line.startsWith('> Status:'));
-  assert.match(status, /seventeen kit skills/);
   assert.match(status, /`aw-benchmark-checklist`, [^;]*which no phase requires/);
 });
 

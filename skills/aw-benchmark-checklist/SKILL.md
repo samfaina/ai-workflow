@@ -13,7 +13,7 @@ The system commands below (`uptime`, `nproc`, `top`, `pidstat`, `strace`) are Li
 
 ## In the Kit
 
-This skill is phase-free and optional. No phase calls it, nor does any route, and no ship or merge condition depends on it having run. It creates no gate. It runs when the agent is about to report or act on a performance number, such as the baseline `aw-intake` measures for a performance task, or when a person invokes it.
+This skill is phase-free and optional: no phase requires it, nor does any route, and no ship or merge condition depends on it having run. It creates no gate, and no phase calls it. It runs when a task calls for it, as when the agent is about to report or act on a performance number, the baseline `aw-intake` measures for a performance task among them, or when a person invokes it.
 
 ## Before you run anything
 
