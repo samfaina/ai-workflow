@@ -1,6 +1,6 @@
 # Upstreams are pinned by commit and synced by script; releases are plain semver tags
 
-`upstreams.json` pins each upstream (repo and commit) and lists the skills copied from it. `scripts/sync-upstreams.mjs` has three modes:
+`upstreams.json` pins each upstream the kit copies from (repo and commit) and lists the skills copied from it. `scripts/sync-upstreams.mjs` has three modes:
 
 - `install` clones each upstream at its pin, applies the mechanical transform (ADR 0001) and adds `LICENSE.upstream`.
 - `check` verifies offline that each upstream skill plus the transform equals its copy, against hashes in `upstreams.lock.json`.
