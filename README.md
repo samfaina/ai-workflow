@@ -16,10 +16,10 @@ The repo is its own marketplace. Add it once, then install the kit with project 
 
 ```sh
 claude plugin marketplace add samfaina/ai-workflow
-claude plugin install ai-workflow@samfaina --scope project
+claude plugin install ai-workflow@samfaina-labs --scope project
 ```
 
-The same steps work inside Claude Code as `/plugin marketplace add samfaina/ai-workflow` and `/plugin install ai-workflow@samfaina`, choosing project scope when asked.
+The same steps work inside Claude Code as `/plugin marketplace add samfaina/ai-workflow` and `/plugin install ai-workflow@samfaina-labs`, choosing project scope when asked.
 
 Project scope writes the plugin to the repo's `.claude/settings.json`, so everyone who clones the repo gets the same kit. Updates arrive through Claude Code's plugin system whenever a release bumps the plugin version.
 
@@ -48,7 +48,7 @@ The usual setup keeps Matt Pocock's plugin installed at user scope and turns it 
 ```json
 {
   "enabledPlugins": {
-    "ai-workflow@samfaina": true,
+    "ai-workflow@samfaina-labs": true,
     "mattpocock-skills@claude-plugins-official": false
   }
 }
@@ -57,11 +57,11 @@ The usual setup keeps Matt Pocock's plugin installed at user scope and turns it 
 Use the key under which Pocock's plugin is installed on your machine. It depends on the marketplace you installed it from (`claude plugin list` shows it). From the command line:
 
 ```sh
-claude plugin enable ai-workflow@samfaina --scope project
+claude plugin enable ai-workflow@samfaina-labs --scope project
 claude plugin disable mattpocock-skills@claude-plugins-official --scope project
 ```
 
-To turn the kit off in one repo without uninstalling it, set `"ai-workflow@samfaina": false` in that repo's settings.
+To turn the kit off in one repo without uninstalling it, set `"ai-workflow@samfaina-labs": false` in that repo's settings.
 
 ## Configuring a repo
 
