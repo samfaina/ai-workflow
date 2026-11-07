@@ -24,7 +24,8 @@ function section(text, heading) {
 test('it states that it is phase-free and optional: no phase requires it and it creates no gate', () => {
   const body = section(skill, '## In the Kit');
   assert.match(body, /phase-free and optional/);
-  assert.match(body, /no phase requires it/i);
+  assert.match(body, /no phase requires it, nor does any route/i);
+  assert.match(body, /no ship or merge condition depends on it having run/);
   assert.match(body, /creates no gate/);
 });
 
@@ -192,7 +193,7 @@ test('the glossary defines a phase-free skill as one that owns no phase, which a
   assert.match(entry, /^A skill that owns no phase\./);
   assert.match(entry, /A phase may still call it, and may require it\./);
   assert.doesNotMatch(entry, /optional/i);
-  assert.doesNotMatch(entry, /no route, phase or gate requires it/);
+  assert.doesNotMatch(entry, /\b(nothing|no \w+)\b[^.]*\brequires it/i);
   assert.match(entry, /^_Avoid_: \S/m);
   assert.doesNotMatch(entry, /opt-in skill/);
 });
