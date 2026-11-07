@@ -226,6 +226,6 @@ test('the README says upstreams.json pins the upstreams the kit copies from, and
 
 test('the README status paragraph describes it and counts it', () => {
   const status = repoText('README.md').split('\n').find((line) => line.startsWith('> Status:'));
-  assert.match(status, /sixteen kit skills/);
+  assert.match(status, /seventeen kit skills/);
   assert.match(status, /`aw-unslop`, [^;]*which no phase requires/);
 });
