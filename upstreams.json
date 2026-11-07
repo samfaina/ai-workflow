@@ -17,7 +17,10 @@
         "codebase-design": "skills/engineering/codebase-design",
         "improve-codebase-architecture": "skills/engineering/improve-codebase-architecture",
         "writing-for-agents": "skills/productivity/writing-for-agents",
-        "handoff": "skills/productivity/handoff"
+        "handoff": "skills/productivity/handoff",
+        "wizard": "skills/engineering/wizard",
+        "to-questionnaire": "skills/productivity/to-questionnaire",
+        "wait-what": "skills/productivity/wait-what"
       },
       "replaced": {
         "code-review": "aw-review"
