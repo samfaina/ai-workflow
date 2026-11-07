@@ -11,6 +11,7 @@ import { repoRoot } from './fixtures.mjs';
 const skillDir = join(repoRoot, 'skills/aw-unslop');
 const skill = readFileSync(join(skillDir, 'SKILL.md'), 'utf8');
 const frontmatter = skill.split('---')[1];
+const repoText = (path) => readFileSync(join(repoRoot, path), 'utf8');
 
 // The body of the `## ` section with this exact heading.
 function section(text, heading) {
@@ -67,7 +68,6 @@ test('its target is what the user names, or else the last document generated in 
 test('it rewrites only prose, read by a person or an agent, and leaves glossary terms, code and quotations alone', () => {
   const body = section(skill, '## What it rewrites');
   assert.match(body, /^Only prose, whether a person or an agent reads it\./m);
-  assert.doesNotMatch(skill, /prose a person reads/);
   assert.match(body, /a term defined in the repo's `GLOSSARY\.md`, even when a rule would flag it/);
   assert.match(body, /`harness` under rule 26/);
   assert.match(body, /the en dash in `expand–contract` under rule 13/);
@@ -77,15 +77,13 @@ test('it rewrites only prose, read by a person or an agent, and leaves glossary 
 });
 
 test('everywhere the kit describes what it rewrites, prose read by an agent counts too', () => {
-  const yaml = readFileSync(join(skillDir, 'agents/openai.yaml'), 'utf8');
+  const files = ['skills/aw-unslop/SKILL.md', 'skills/aw-unslop/agents/openai.yaml', 'NOTICE.md', 'README.md'];
+  const texts = files.map(repoText);
+  const [, yaml, notice, readme] = texts;
   assert.match(yaml, /^ {2}short_description: "Cut AI tells from prose a person or an agent reads"$/m);
-  const notice = readFileSync(join(repoRoot, 'NOTICE.md'), 'utf8').split('\n').find((line) => line.startsWith('| `aw-unslop` |'));
-  assert.match(notice, /the rule that it rewrites only prose, whether a person or an agent reads it, and leaves glossary terms/);
-  const status = readFileSync(join(repoRoot, 'README.md'), 'utf8').split('\n').find((line) => line.startsWith('> Status:'));
-  assert.match(status, /`aw-unslop`, pstack's rules for cutting AI tells from prose a person or an agent reads,/);
-  for (const [path, text] of [['agents/openai.yaml', yaml], ['NOTICE.md', notice], ['README.md', status]]) {
-    assert.doesNotMatch(text, /prose a person reads/, path);
-  }
+  assert.match(notice, /^\| `aw-unslop` \|.*the rule that it rewrites only prose, whether a person or an agent reads it, and leaves glossary terms/m);
+  assert.match(readme, /^> Status:.*`aw-unslop`, pstack's rules for cutting AI tells from prose a person or an agent reads,/m);
+  files.forEach((path, i) => assert.doesNotMatch(texts[i], /prose a person reads/, path));
 });
 
 test('in a text not written in English, it applies the rules that carry over', () => {
@@ -167,8 +165,6 @@ test('its steps send the agent through the refusals before any rewrite, and ever
 test('it credits its upstream', () => {
   assert.match(section(skill, '## Credits'), /Adapted from Lauren Tan's `unslop` in pstack \(MIT\), as listed in the kit's `NOTICE\.md`\./);
 });
-
-const repoText = (path) => readFileSync(join(repoRoot, path), 'utf8');
 
 test('no other skill names it, so no phase refers to it', () => {
   for (const other of readdirSync(join(repoRoot, 'skills'))) {
