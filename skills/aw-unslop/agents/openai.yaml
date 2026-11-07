@@ -1,5 +1,5 @@
 interface:
   display_name: "Unslop"
-  short_description: "Cut AI tells from prose a person reads"
+  short_description: "Cut AI tells from prose a person or an agent reads"
 policy:
   allow_implicit_invocation: false

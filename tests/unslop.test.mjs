@@ -1,6 +1,6 @@
 // aw-unslop's public contract, the text an agent loads when a person invokes
 // the skill and the places in the kit that name it or its upstream. These tests
-// hold the contract ticket #76 names.
+// hold the contract tickets #76 and #81 name.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -11,6 +11,7 @@ import { repoRoot } from './fixtures.mjs';
 const skillDir = join(repoRoot, 'skills/aw-unslop');
 const skill = readFileSync(join(skillDir, 'SKILL.md'), 'utf8');
 const frontmatter = skill.split('---')[1];
+const repoText = (path) => readFileSync(join(repoRoot, path), 'utf8');
 
 // The body of the `## ` section with this exact heading.
 function section(text, heading) {
@@ -64,15 +65,25 @@ test('its target is what the user names, or else the last document generated in 
   assert.match(body, /With no argument, the last document generated in this conversation\./);
 });
 
-test('it rewrites only prose a person reads, and leaves glossary terms, code and quotations alone', () => {
+test('it rewrites only prose, read by a person or an agent, and leaves glossary terms, code and quotations alone', () => {
   const body = section(skill, '## What it rewrites');
-  assert.match(body, /Only prose a person reads\./);
+  assert.match(body, /^Only prose, whether a person or an agent reads it\./m);
   assert.match(body, /a term defined in the repo's `GLOSSARY\.md`, even when a rule would flag it/);
   assert.match(body, /`harness` under rule 26/);
   assert.match(body, /the en dash in `expand–contract` under rule 13/);
   for (const kept of ['a code identifier', 'a command', 'a path', 'a quotation', 'command output']) {
     assert.ok(body.includes(kept), `does not protect ${kept}`);
   }
+});
+
+test('everywhere the kit describes what it rewrites, prose read by an agent counts too', () => {
+  const files = ['skills/aw-unslop/SKILL.md', 'skills/aw-unslop/agents/openai.yaml', 'NOTICE.md', 'README.md'];
+  const texts = files.map(repoText);
+  const [, yaml, notice, readme] = texts;
+  assert.match(yaml, /^ {2}short_description: "Cut AI tells from prose a person or an agent reads"$/m);
+  assert.match(notice, /^\| `aw-unslop` \|.*the rule that it rewrites only prose, whether a person or an agent reads it, and leaves glossary terms/m);
+  assert.match(readme, /^> Status:.*`aw-unslop`, pstack's rules for cutting AI tells from prose a person or an agent reads,/m);
+  files.forEach((path, i) => assert.doesNotMatch(texts[i], /prose a person reads/, path));
 });
 
 test('in a text not written in English, it applies the rules that carry over', () => {
@@ -93,7 +104,7 @@ test('its table states what stays exact in each document the rest of the kit rea
     'Map, map update, decision ticket': 'Section headings and the shape of their lines',
     Adapter: 'The Operations and Levels tables, `**Default access:**`',
     '`GLOSSARY.md`': 'Bold terms and `_Avoid_:` lines',
-    Skill: 'Frontmatter, and the `## Never allowed` and `## Defaults when unconfigured` sections, which `validate-kit` compares with `docs/configuration.md`',
+    Skill: 'Frontmatter, headings, and the `## Never allowed` and `## Defaults when unconfigured` sections, which `validate-kit` compares with `docs/configuration.md`',
   });
 });
 
@@ -154,8 +165,6 @@ test('its steps send the agent through the refusals before any rewrite, and ever
 test('it credits its upstream', () => {
   assert.match(section(skill, '## Credits'), /Adapted from Lauren Tan's `unslop` in pstack \(MIT\), as listed in the kit's `NOTICE\.md`\./);
 });
-
-const repoText = (path) => readFileSync(join(repoRoot, path), 'utf8');
 
 test('no other skill names it, so no phase refers to it', () => {
   for (const other of readdirSync(join(repoRoot, 'skills'))) {
