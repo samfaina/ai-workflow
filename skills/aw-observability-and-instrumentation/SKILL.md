@@ -11,7 +11,7 @@ Code you can't observe is code you can't operate. Observability is the ability t
 
 ## In the Kit
 
-This skill is phase-free: no phase requires it, nor does any route, and no ship or merge condition depends on it having run. It serves any task that adds or changes telemetry, and it creates no gate.
+This skill is phase-free and optional: no phase requires it, nor does any route, and no ship or merge condition depends on it having run. It serves any task that adds or changes telemetry, and it creates no gate.
 
 ## When to Use
 
