@@ -219,11 +219,11 @@ What `aw-review` produces: the findings of its Spec, Standards and Security axes
 _Avoid_: code review, PR review, review comments
 
 **Defect**:
-A review finding that a run made during the review demonstrates, named with the command and its output. A finding no run demonstrates is a risk.
+A finding of `aw-review` or `aw-blast-radius` that a run made during it demonstrates, named with the command and its output. A finding no run demonstrates is a risk.
 _Avoid_: bug, issue, blocker
 
 **Risk**:
-A review finding no run demonstrates, stated with its likelihood and its cost if it happens. Every code smell is a risk.
+A finding of `aw-review` or `aw-blast-radius` that no run demonstrates, stated with its likelihood and its cost if it happens. Every code smell is a risk.
 _Avoid_: concern, warning, nit
 
 **Pre-existing finding**:
@@ -235,8 +235,20 @@ What `aw-ship` opens on the review host to propose merging the work branch: a pu
 _Avoid_: PR (alone, outside GitHub), MR, merge proposal
 
 **Merge Danger**:
-The section of a review request body that says how hard the change is to walk back: a two-way door when reverting it restores the old behaviour, a one-way door when it does not, plus its blast radius, what it can affect outside the change.
+The section of a review request body that says how hard the change is to walk back: a two-way door when reverting it restores the old behaviour, a one-way door when it does not, plus its blast radius.
 _Avoid_: risk level, impact
+
+**Blast radius**:
+What a change can affect outside itself.
+_Avoid_: impact, fallout, scope
+
+**Safety fact**:
+The one fact that a risky-looking change is safe because of. `aw-blast-radius` looks for it and tries to prove it by running real code.
+_Avoid_: key assumption, invariant
+
+**Proof level**:
+How far a safety fact has been proven, from a bare claim to a reproduction in the running app.
+_Avoid_: ladder, rung (**Ladder** already names the rungs of a control)
 
 **Rollback plan**:
 The section of a review request body that says what signal would mean undoing the change, the exact steps to undo it without rewriting history, what the change does to data, and how long undoing it takes.

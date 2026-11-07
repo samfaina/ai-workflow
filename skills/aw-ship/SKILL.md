@@ -120,7 +120,7 @@ Write the body to `.aw/review-requests/<yyyymmdd-hhmmss>-review-request.md`. It 
 
 **Door:** <one-way or two-way>, because <what makes it so>.
 
-**Blast Radius:** <what the change can affect outside the review request: none, the repo, CI, consumers of an API, stored data, …>
+**Blast Radius:** <what the change can affect outside the review request: none, the repo, CI, consumers of an API, stored data, …. When the scope is not evident, suggest `/aw-blast-radius` to the user. When it has run on this change, cite its conclusion, never its script or its report's path, since this body reaches the remote.>
 
 ## Pre-ship checklist
 
