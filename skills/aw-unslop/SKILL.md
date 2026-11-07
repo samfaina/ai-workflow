@@ -17,7 +17,7 @@ This skill is phase-free and optional: no phase requires it, nor does any route,
 1. Find the target under **Target**. Done when you know the file or text, or have asked for it.
 2. Check the target against **What it refuses** and **On a spec**. When either tells you to stop, say why and change nothing. Done when you have stopped, or know the target may be rewritten.
 3. Apply **Patterns to detect and fix** to the prose under **What it rewrites**, keeping **What stays exact** as it is. Done when every rule has been applied to all of that prose.
-4. On a draft spec, run the check under **On a spec**. Done when it reports no finding your edit caused, or you have said it ran by reading only.
+4. On a draft spec, run the check under **On a spec**. On a review request body, follow **On a review request body**. Done when the check reports no finding your edit caused, or you have said it ran by reading only, and every file that holds the body says the same.
 
 ## Target
 
@@ -46,12 +46,14 @@ A skill, script or test depends on these, so keep their text as it is:
 ## What it refuses
 
 - A copy, since `sync-upstreams check` fails on any hand edit. A copy is a skill the repo's `upstreams.json` lists.
-- A review report, verify result or retro report, since each records what happened and `aw-ship` reads the review report's `Proven defects:` line for its merge conditions.
+- A review report, verify result or retro report, since each records what happened and `/aw-ship` reads the review report's `Proven defects:` line for its merge conditions.
 - A draft under `.aw/drafts/`, since it holds an exact command or text for a person to apply, except the review request body inside a drafted `open-review`. There, rewrite the body and leave the command as it is.
 
 ## On a review request body
 
-`aw-ship` at `open-review: write` opens the review request right after writing the body, so a person who wants to run this skill first keeps `open-review` at `draft`.
+`/aw-ship` at `open-review: write` opens the review request right after writing the body, so a person who wants to run this skill first keeps `open-review` at `draft`.
+
+With `open-review` at `draft`, `/aw-ship` writes the whole body to two files: the one under `.aw/review-requests/` and the drafted `open-review`. Rewrite both, so that they stay the same.
 
 ## On a spec
 

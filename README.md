@@ -98,7 +98,7 @@ It prints one finding per line and exits non-zero when it finds any. CI runs all
 
 ### Copies and upstream sync
 
-`upstreams.json` pins each upstream the kit copies from to a commit, records why that pin was chosen, and lists the skills copied from it. pstack (`cursor/plugins`, folder `pstack`) is not in it: the kit takes only adaptations and inspired skills from it, credited in `NOTICE.md`, and nothing syncs it. `upstreams.lock.json` holds the git tree hash of each copied upstream folder at the pin and the mode and blob hash of every file in it; `check` verifies that the file hashes add up to the tree hash. Both are maintained through `scripts/sync-upstreams.mjs` (ADR 0015):
+`upstreams.json` pins each upstream the kit copies from to a commit, records why that pin was chosen, and lists the skills copied from it. pstack (`cursor/plugins`, folder `pstack`) is not in it: the kit takes only adaptations and inspired skills from it, `NOTICE.md` credits the adaptations, and nothing syncs it. `upstreams.lock.json` holds the git tree hash of each copied upstream folder at the pin and the mode and blob hash of every file in it; `check` verifies that the file hashes add up to the tree hash. Both are maintained through `scripts/sync-upstreams.mjs` (ADR 0015):
 
 ```sh
 node scripts/sync-upstreams.mjs install   # clone each upstream at its pin, write the copies and the lock

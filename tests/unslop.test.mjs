@@ -4,14 +4,13 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { repoRoot } from './fixtures.mjs';
 
 const skillDir = join(repoRoot, 'skills/aw-unslop');
-const skillFile = join(skillDir, 'SKILL.md');
-const skill = existsSync(skillFile) ? readFileSync(skillFile, 'utf8') : '';
-const frontmatter = skill.split('---')[1] ?? '';
+const skill = readFileSync(join(skillDir, 'SKILL.md'), 'utf8');
+const frontmatter = skill.split('---')[1];
 
 // The body of the `## ` section with this exact heading.
 function section(text, heading) {
@@ -102,7 +101,7 @@ test('it refuses a copy, the three records of what happened, and a draft, each w
   const body = section(skill, '## What it refuses');
   assert.match(body, /A copy, since `sync-upstreams check` fails on any hand edit\./);
   assert.match(body, /A review report, verify result or retro report, since each records what happened/);
-  assert.match(body, /`aw-ship` reads the review report's `Proven defects:` line for its merge conditions/);
+  assert.match(body, /`\/aw-ship` reads the review report's `Proven defects:` line for its merge conditions/);
   assert.match(body, /A draft under `\.aw\/drafts\/`, since it holds an exact command or text for a person to apply/);
 });
 
@@ -126,10 +125,18 @@ test('after rewriting a draft spec, it runs aw-check-spec and fixes what its own
   assert.match(body, /`Result: not script-verified`/);
 });
 
-test('it warns that aw-ship at open-review: write leaves no moment to run it on the body', () => {
+test('it warns that /aw-ship at open-review: write leaves no moment to run it on the body', () => {
   const body = section(skill, '## On a review request body');
-  assert.match(body, /`aw-ship` at `open-review: write` opens the review request right after writing the body/);
+  assert.match(body, /`\/aw-ship` at `open-review: write` opens the review request right after writing the body/);
   assert.match(body, /a person who wants to run this skill first keeps `open-review` at `draft`/);
+});
+
+test('with open-review drafted, it rewrites both files that hold the body, and a step sends the agent there', () => {
+  const body = section(skill, '## On a review request body');
+  assert.match(body, /the one under `\.aw\/review-requests\/` and the drafted `open-review`/);
+  assert.match(body, /Rewrite both/);
+  assert.ok(section(skill, '## Steps').includes('**On a review request body**'));
+  assert.ok(readFileSync(join(repoRoot, 'skills/aw-ship/SKILL.md'), 'utf8').includes('write the exact command and the whole body to `.aw/drafts/<yyyymmdd-hhmmss>-open-review.md`'));
 });
 
 test('its steps send the agent through the refusals before any rewrite, and every rule is applied', () => {
@@ -172,7 +179,7 @@ test('its NOTICE row credits pstack by repo, folder and pin, and says what it ta
   for (const taken of ['patterns', 'rule numbers']) {
     assert.ok(row.includes(taken), `does not say it takes the ${taken}`);
   }
-  for (const changed of ['phase-free', 'target', 'prose', 'stays exact', 'refuses', 'spec', '`open-review']) {
+  for (const changed of ['phase-free', 'target', 'prose', 'not written in English', 'stays exact', 'refuses', 'spec', '`open-review']) {
     assert.ok(row.includes(changed), `does not say what it changes about ${changed}`);
   }
 });
@@ -193,7 +200,7 @@ test('ADR 0004 says what was read at the source in place of the pending license 
   assert.doesNotMatch(adr, /At the time of writing that applies to pstack/);
   const line = adr.split('\n').find((candidate) => candidate.includes('pstack'));
   assert.ok(line, 'ADR 0004 no longer mentions pstack');
-  for (const fact of ['`pstack/LICENSE`', '`cursor/plugins`', '`c742dd6`', 'MIT', 'Lauren Tan', 'adaptations and inspired skills', '`NOTICE.md`', '`upstreams.json`']) {
+  for (const fact of ['`pstack/LICENSE`', '`cursor/plugins`', '`c742dd6`', 'MIT', 'Lauren Tan', 'adaptations and inspired skills', '`NOTICE.md` credits the adaptations', 'ADR 0010 names the inspired skill', '`upstreams.json`']) {
     assert.ok(line.includes(fact), `does not say ${fact}`);
   }
 });
@@ -214,7 +221,7 @@ test('the README says upstreams.json pins the upstreams the kit copies from, and
   assert.match(line, /pstack \(`cursor\/plugins`, folder `pstack`\)/);
   assert.match(line, /only adaptations and inspired skills/);
   assert.match(line, /nothing syncs it/);
-  assert.match(line, /`NOTICE\.md`/);
+  assert.match(line, /`NOTICE\.md` credits the adaptations/);
 });
 
 test('the README status paragraph describes it and counts it', () => {
