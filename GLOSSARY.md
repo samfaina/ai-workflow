@@ -227,7 +227,7 @@ A finding of `aw-review` or `aw-blast-radius` that no run demonstrates, stated w
 _Avoid_: concern, warning, nit
 
 **Pre-existing finding**:
-A defect the same run also shows at the merge-base, or a risk that rests on lines the change did not touch. The review reports it apart, since the change is not responsible for it.
+A defect the same run also shows at the merge-base, or a risk that rests on lines the change did not touch. `aw-review` and `aw-blast-radius` report it apart, since the change is not responsible for it.
 _Avoid_: legacy issue, existing bug
 
 **Review request**:
@@ -240,7 +240,7 @@ _Avoid_: risk level, impact
 
 **Blast radius**:
 What a change can affect outside itself.
-_Avoid_: impact, fallout, scope
+_Avoid_: impact, fallout
 
 **Safety fact**:
 The one fact that a risky-looking change is safe because of. `aw-blast-radius` looks for it and tries to prove it by running real code.

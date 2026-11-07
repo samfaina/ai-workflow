@@ -62,10 +62,31 @@ test('it keeps what grep will not show as the job, and proves the safety fact by
   assert.match(steps, /Write a script or test that runs the real code, run it, and paste what happened\./);
 });
 
-test('its first step reads the change with git directly', () => {
+test('its first step reads the change with git directly, with no adapter', () => {
   const first = section(skill, '## Steps').split(/^2\. /m)[0];
-  assert.match(first, /`git diff <base>\.\.\.HEAD`/);
-  assert.match(first, /`git log <base>\.\.HEAD`/);
+  assert.match(first, /`git diff <base>\.\.\.<tip>`/);
+  assert.match(first, /`git log <base>\.\.<tip>`/);
+  assert.match(first, /`git merge-base <base> <tip>`/);
+  assert.match(first, /`git symbolic-ref refs\/remotes\/origin\/HEAD`/);
+  assert.doesNotMatch(skill, /adapter|diff-base/);
+});
+
+test('it speaks of one safety fact, and a change may have none', () => {
+  assert.doesNotMatch(skill, /one or two facts|each fact/i);
+  assert.match(section(skill, '## Proof levels'), /Get the safety fact as far down this list as is cheap/);
+  const steps = section(skill, '## Steps');
+  assert.match(steps, /Prove the safety fact, when the change has one\./);
+  assert.match(report, /or say the change has none/);
+});
+
+test('its steps sort breakages before any run, and only a run makes one a defect', () => {
+  const steps = section(skill, '## Steps');
+  assert.match(steps, /Done when each one you found is a risk or cleared\./);
+  assert.match(steps, /one a run demonstrates becomes a defect, and one a run shows is fine is cleared/);
+});
+
+test('it uses the glossary\'s words, not the ones the glossary avoids', () => {
+  assert.doesNotMatch(skill, /\bbugs?\b/i);
 });
 
 test('its proof levels run from a bare claim to a reproduction in the running app, in the kit\'s words', () => {
@@ -87,17 +108,31 @@ test('a breakage a run proves is a defect, and any other is a risk with its like
   assert.match(body, /\*\*cost\*\*/);
   assert.match(body, /It is never worded as a defect\./);
   assert.match(body, /\*\*Cleared\*\*: what you checked/);
-  assert.match(body, /\*\*pre-existing\*\*/);
+});
+
+test('pre-existing findings are reported apart, under the glossary\'s two halves', () => {
+  const body = section(skill, '## Findings');
+  assert.match(body, /a defect is \*\*pre-existing\*\* when the same run, made at the merge-base, shows it too/);
+  assert.match(body, /a risk is pre-existing when it rests on no line the change touches/);
+  assert.match(body, /Otherwise the change \*\*introduced\*\* it/);
+  assert.match(body, /when the run cannot be made at the merge-base because what it calls does not exist there/);
+  assert.match(term('Pre-existing finding').definition, /`aw-review` and `aw-blast-radius` report it apart/);
 });
 
 test('every run happens in a detached worktree outside the repo, and the user\'s working tree stays as it is', () => {
   const body = section(skill, '## Where runs happen');
   assert.match(body, /Every run is made in a detached worktree outside the repo, never in the user's working tree/);
   assert.match(body, /must stay as it is/);
-  assert.match(body, /`git worktree add --detach <tmp>\/head HEAD`/);
+  assert.match(body, /`git worktree add --detach <tmp>\/tip <tip>`/);
   assert.match(body, /`git worktree add --detach <tmp>\/base <merge-base>`/);
   assert.match(body, /under the system's temporary directory/);
   assert.match(body, /`git worktree remove --force <dir>`/);
+});
+
+test('its runs cover commits only, as aw-review\'s do', () => {
+  const body = section(skill, '## Where runs happen');
+  assert.match(body, /The runs cover commits only: when the working tree holds uncommitted changes, tell the user they are outside the runs and ask whether to go on\./);
+  assert.doesNotMatch(skill, /git apply|-C <tmp>/);
 });
 
 test('it writes only its report, commits nothing, and fixes nothing', () => {
@@ -154,6 +189,7 @@ function term(name) {
 test('the glossary defines blast radius, and Merge Danger refers to it instead of defining it', () => {
   assert.equal(term('Blast radius').definition, 'What a change can affect outside itself.');
   assert.match(term('Blast radius').avoid, /^_Avoid_: /);
+  assert.doesNotMatch(term('Blast radius').avoid, /scope/);
   const danger = term('Merge Danger').definition;
   assert.match(danger, /plus its blast radius\.$/);
   assert.doesNotMatch(danger, /what it can affect/);
@@ -191,14 +227,14 @@ test('aw-ship\'s Blast Radius line suggests the skill and cites only its conclus
   assert.match(line, /When the scope is not evident, suggest `\/aw-blast-radius`/);
   assert.match(line, /cite its conclusion, never its script or its report's path/);
   assert.match(line, /this body reaches the remote/);
+  assert.match(line, /`\.aw\/blast-radius\/`/);
 });
 
 test('aw-ship neither requires the skill nor reads its report for a merge condition', () => {
   assert.doesNotMatch(section(ship, '## Merge conditions'), /blast|safety fact|proof level/i);
   const line = ship.split('\n').find((candidate) => candidate.startsWith('**Blast Radius:**'));
   const others = ship.split('\n').filter((candidate) => candidate !== line).join('\n');
-  assert.doesNotMatch(others, /aw-blast-radius/);
-  assert.doesNotMatch(ship, /\.aw\/blast-radius/);
+  assert.doesNotMatch(others, /aw-blast-radius|\.aw\/blast-radius/);
 });
 
 test('plugin.json lists it', () => {
@@ -229,9 +265,8 @@ test('ADR 0010 lists it among the phase-free adaptations', () => {
   assert.match(adr, /`aw-blast-radius`, a phase-free adaptation of pstack's `blast-radius`/);
 });
 
-test('the README status paragraph describes it and counts it', () => {
+test('the README status paragraph describes it', () => {
   const status = repoText('README.md').split('\n').find((line) => line.startsWith('> Status:'));
-  assert.match(status, /sixteen kit skills/);
   assert.match(status, /`aw-blast-radius`, [^;]*which no phase requires/);
 });
 
