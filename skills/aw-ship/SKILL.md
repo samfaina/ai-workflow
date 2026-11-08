@@ -69,15 +69,31 @@ Done when you have the branch, the base, the commits, and the spec's path or the
 List `.aw/reviews/*-review.md` and take the latest: the file names start with `<yyyymmdd-hhmmss>`, so the last in name order is the newest. Read it whole.
 
 - **No report:** stop. Nothing ships unreviewed: tell the user to run `/aw-review`.
-- **The report names another commit:** its heading reads `# Review: <branch> at <short hash>`. When that hash is not `HEAD`, the commits after it are unreviewed: stop, and tell the user to run `/aw-review` again. The one exception is a rerun of this skill, where the only commit after it is this skill's own spec commit.
+- **The report names another commit:** its heading reads `# Review: <branch> at <short hash>`. When that hash is not `HEAD`, apply **Commits after the review**. When every check in it holds, the report covers `HEAD`. When one fails, the commits after it are unreviewed: stop, and tell the user to run `/aw-review` again.
 - **An introduced defect:** stop. Name it; the user fixes it on the work branch with `/aw-build`, or with `/aw-spec` when a criterion is wrong (on the fast route, with a corrected done-when criterion the user agrees), then runs `/aw-review` again.
 - **Pre-existing defects only, or none:** go on. Note the counts on the report's `Proven defects:` line for the merge conditions, and every introduced risk for the pre-ship checklist.
 
-Done when you have the report's path, its counts, and its introduced risks, and the report covers `HEAD`.
+**Commits after the review.**
+
+1. **The reviewed commit is an ancestor of `HEAD`:** `git merge-base --is-ancestor <short hash> HEAD` exits 0. After a rebase or an amend it does not.
+2. **List the commits after it, each with its files:** `git log -m --no-renames --name-only --oneline <short hash>..HEAD`. `--no-renames` counts a rename under its old and its new path, and `-m` shows what a merge commit changed.
+3. **Set aside this skill's own spec commit,** when one is listed: its whole change, in `git show <hash>`, is step 4's edit of the spec's `status: approved` to `status: implemented`.
+4. **Every file left, taken as one set, is an exempt adapter.**
+
+**Exempt adapters** are the files the `## Agent skills` block, read at `HEAD`, points to as the tracker adapter, the VCS adapter and the domain doc, compared as exact paths from the repo root. With no block there are none, so any later commit but this skill's own spec commit stops the ship.
+
+**Not exempt.** The exempt list stays closed at those three files, so that widening it is a decision and never a side effect of an edit:
+
+- **The checks adapter:** it defines the command of the `full` level, which **Merge conditions** trusts, so a change to it always needs a review, also when a pointer names it as another adapter.
+- **The file that holds the block:** it decides which files are adapters.
+- **The spec:** its frontmatter included, apart from this skill's own spec commit.
+- **Every other file:** code or not, it needs a review.
+
+Done when you have the report's path, its counts, its introduced risks and the commits after the reviewed one, and the report covers `HEAD`.
 
 ### 3. Run the full check level
 
-Run `run-check full` on `HEAD` from the repo root: the reviewed commit, or on a rerun its spec commit, which changes only the spec. Keep the exact command, its exit code and the tail of its output for the Evidence section.
+Run `run-check full` on `HEAD` from the repo root, with every commit step 2 accepted. Keep the exact command, its exit code and the tail of its output for the Evidence section.
 
 - **It fails:** stop. Report the failure with its output; push nothing. The user fixes it with `/aw-build`, then runs `/aw-review` and this skill again.
 - **The level has no command:** propose one from the project's manifest, as the checks adapter's defaults say, run it, and say it was proposed, not configured. When nothing can be run, `full` was not run: say so. Shipping may go on, but the merge conditions do not hold.
@@ -114,6 +130,7 @@ Write the body to `.aw/review-requests/<yyyymmdd-hhmmss>-review-request.md`. It 
 - **After:** <at HEAD: the same, now passing>
 - **Checks:** `<the full command>` passed at <short hash>.
 - **Review:** `<path of the review report>`: <n> introduced defects, <m> pre-existing, <k> introduced risks.
+- **After the review:** <one line per commit in `<short hash>..HEAD`, from the report's heading: `<short hash>` <subject>, and that it changed only adapters, or, for this skill's spec commit, changed only the spec's status; or "none", when the report names `HEAD`>
 - **Criteria:** <one line per AC-n with its Traceability evidence; or, on the fast route, one line per done-when criterion with what proves it: its tests, its verify result under `.aw/verify/`, or the check by hand the user reported>
 
 ## Merge Danger

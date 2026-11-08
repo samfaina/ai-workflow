@@ -2,7 +2,7 @@
   "id": "aw-retro-approval",
   "title": "\"looks good\" approves nothing",
   "group": "aw-retro",
-  "order": 33,
+  "order": 34,
   "source": "aw-retro: \"looks good\" approved nothing",
   "continues": "aw-retro-run",
   "shell": [],

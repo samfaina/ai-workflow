@@ -1,0 +1,52 @@
+{
+  "id": "aw-ship-checks-uncovered",
+  "title": "aw-ship, a later commit to the checks adapter",
+  "group": "Feature route (loan renewal)",
+  "order": 27,
+  "source": "#93: the checks adapter defines the full level, so a change to it keeps the stop",
+  "from": {
+    "case": "aw-review-route"
+  },
+  "setup": [
+    {
+      "copy": "fixtures/review-clean.md",
+      "to": ".aw/reviews/29991231-235959-review.md"
+    },
+    {
+      "replace": "docs/agents/checks.md",
+      "pattern": "^(\\| `full` \\| `)",
+      "with": "$1echo skipped; "
+    },
+    {
+      "commit": "Change the command of the full level"
+    }
+  ],
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-ship",
+  "answers": [],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "spec is approved",
+      "file": "docs/specs/renew-loan/spec.md",
+      "frontmatter": {
+        "status": "approved"
+      }
+    },
+    {
+      "name": "nothing drafted",
+      "file": ".aw/drafts/*-push.md",
+      "exists": false
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Stopped because the later commit changed the checks adapter, told the user to run /aw-review again, and pushed nothing. The review report is a fixture, so this case tests the ship guard alone."
+    }
+  ]
+}

@@ -2,7 +2,7 @@
   "id": "aw-retro-run",
   "title": "run on the route's closed sessions",
   "group": "aw-retro",
-  "order": 32,
+  "order": 33,
   "source": "aw-retro: run on the route's closed sessions",
   "from": {
     "case": "aw-ship-write"
