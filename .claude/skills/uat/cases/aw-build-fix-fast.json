@@ -1,0 +1,70 @@
+{
+  "id": "aw-build-fix-fast",
+  "title": "aw-build, fix run on the fast route",
+  "group": "aw-build fix run",
+  "order": 36,
+  "source": "#94: an introduced defect on the fast route, whose commit must carry every Done when line",
+  "from": {
+    "ref": "review/planted"
+  },
+  "setup": [
+    {
+      "write": "src/mask-member-id.mjs",
+      "text": "// Masks a member id for a log line: only the last four characters stay.\nexport function maskMemberId(id) {\n  return id;\n}\n"
+    },
+    {
+      "commit": "feat: mask member ids in log lines\n\nDone when: a log line shows only the last four characters of a member id"
+    },
+    {
+      "copy": "fixtures/review-introduced-fast.md",
+      "to": ".aw/reviews/29991231-235959-review.md"
+    }
+  ],
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-build",
+  "answers": [
+    {
+      "when": "Which seam to test the member id masking at",
+      "intent": "A unit test of the exported maskMemberId function",
+      "reason": "the fast route has no Test strategy, so the seam is agreed here"
+    }
+  ],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "one commit on top of the reviewed one",
+      "run": "git log --format=%s -2",
+      "stdout": "^[^\\n]+\\nfeat: mask member ids in log lines$"
+    },
+    {
+      "name": "the commit carries the done-when line",
+      "run": "git log -1 --format=%B",
+      "stdout": "^Done when: a log line shows only the last four characters of a member id$"
+    },
+    {
+      "name": "the commit names the defect",
+      "run": "git log -1 --format=%B",
+      "stdout": "^Fixes: src/mask-member-id\\.mjs"
+    },
+    {
+      "name": "no spec created",
+      "run": "git diff --exit-code HEAD~1 HEAD -- docs/specs"
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Started a fix run by itself on the fast route"
+    },
+    {
+      "judge": "The defect's run became a test that failed before the fix, or a recorded test exception"
+    },
+    {
+      "judge": "Reported the defect on a Fixed: line with the commit, and named /aw-verify when the repo has a verify skill and /aw-review when it has none"
+    }
+  ]
+}

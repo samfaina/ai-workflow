@@ -1,0 +1,82 @@
+{
+  "id": "aw-build-fix-standard",
+  "title": "aw-build, fix run on the standard route",
+  "group": "aw-build fix run",
+  "order": 35,
+  "source": "#94: a defect no slice covers, in a report that names HEAD, with every slice done",
+  "from": {
+    "case": "aw-review-route"
+  },
+  "setup": [
+    {
+      "write": "src/mask-member-id.mjs",
+      "text": "// Masks a member id for a log line: only the last four characters stay.\nexport function maskMemberId(id) {\n  return id;\n}\n"
+    },
+    {
+      "write": "src/retry-delay.mjs",
+      "text": "export const retryDelayMs = 100;\n"
+    },
+    {
+      "commit": "Add member id masking"
+    },
+    {
+      "copy": "fixtures/review-introduced.md",
+      "to": ".aw/reviews/29991231-235959-review.md"
+    }
+  ],
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-build",
+  "answers": [
+    {
+      "when": "Which seam to test the member id masking at",
+      "intent": "A unit test of the exported maskMemberId function",
+      "reason": "the defect belongs to no slice, so no seam in the Test strategy reaches it"
+    }
+  ],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "one commit on top of the reviewed one",
+      "run": "git log --format=%s -2",
+      "stdout": "^[^\\n]+\\nAdd member id masking$"
+    },
+    {
+      "name": "the commit names the defect",
+      "run": "git log -1 --format=%B",
+      "stdout": "^Fixes: src/mask-member-id\\.mjs"
+    },
+    {
+      "name": "every done marker stays ticked",
+      "file": "docs/specs/renew-loan/spec.md",
+      "matches": "^\\s*\\d+\\. \\[ \\]",
+      "count": 0
+    },
+    {
+      "name": "the risk and the pre-existing finding are left alone",
+      "run": "git diff --exit-code HEAD~1 HEAD -- src/retry-delay.mjs package-lock.json"
+    },
+    {
+      "name": "spec is approved",
+      "file": "docs/specs/renew-loan/spec.md",
+      "frontmatter": {
+        "status": "approved"
+      }
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Started a fix run by itself and did not name /aw-verify as if nothing were left"
+    },
+    {
+      "judge": "The defect's run became a test that failed before the fix, or a recorded test exception"
+    },
+    {
+      "judge": "Reported the defect on a Fixed: line with the commit, and named /aw-review, since the fix touches no criterion with verify: evidence"
+    }
+  ]
+}

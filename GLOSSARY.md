@@ -242,6 +242,10 @@ _Avoid_: concern, warning, nit
 A defect the same run also shows at the merge-base, or a risk that rests on lines the change did not touch. `aw-review` and `aw-blast-radius` report it apart, since the change is not responsible for it.
 _Avoid_: legacy issue, existing bug
 
+**Fix run**:
+What `aw-build` does with the introduced defects of the latest review report: it fixes them test-first in one local commit, builds no slice and changes no done marker.
+_Avoid_: repair build, patch run
+
 **Review request**:
 What `aw-ship` opens on the review host to propose merging the work branch: a pull request on GitHub, a merge request on GitLab. With no review host, it is the body alone, a local document the user reads. Its body holds a Summary, Evidence, Merge Danger, a pre-ship checklist and a rollback plan.
 _Avoid_: PR (alone, outside GitHub), MR, merge proposal

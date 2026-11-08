@@ -24,6 +24,7 @@ const EXPECTED = [
   'aw-ship-guard-failed', 'aw-ship-guard-inconclusive', 'aw-ship-default', 'aw-ship-write-uncovered', 'aw-ship-checks-uncovered', 'aw-ship-write', 'aw-ship-merge-write',
   'aw-review-planted', 'aw-ship-planted', 'aw-review-clean',
   'aw-retro-run', 'aw-retro-approval',
+  'aw-build-fix-standard', 'aw-build-fix-fast',
 ];
 
 test('there is a case file for every result of #49 and for what it left unproven', () => {
@@ -87,6 +88,35 @@ test('a later commit to the checks adapter keeps the stop', () => {
   assert.ok(checks.assertions.some((a) => a.frontmatter?.status === 'approved'));
   assert.ok(checks.assertions.some((a) => a.file === '.aw/drafts/*-push.md' && a.exists === false));
   assert.match(JSON.stringify(checks.assertions), /\/aw-review/);
+});
+
+// A fix-run case plants its defect in a commit and then writes a report, so that
+// the report names HEAD and the defect is real at it.
+function assertReportNamesThePlantedCommit(fix) {
+  const planted = fix.setup.findIndex((op) => op.commit);
+  const reviewed = fix.setup.findIndex((op) => op.to === '.aw/reviews/29991231-235959-review.md');
+  assert.ok(planted !== -1 && reviewed > planted, `${fix.id}: the report must name the commit that plants the defect`);
+}
+
+const oneCommitOnTop = (fix) => fix.assertions.some((a) => a.run === 'git log --format=%s -2' && a.stdout);
+
+test('a fix on the standard route fixes a defect no slice covers, and changes no marker', () => {
+  const fix = byId.get('aw-build-fix-standard');
+  assert.equal(fix.from.case, 'aw-review-route', 'every slice is done there');
+  assertReportNamesThePlantedCommit(fix);
+  assert.ok(oneCommitOnTop(fix));
+  assert.ok(fix.assertions.some((a) => a.run === 'git log -1 --format=%B' && /Fixes:/.test(a.stdout)));
+  assert.ok(fix.assertions.some((a) => a.file === 'docs/specs/renew-loan/spec.md' && a.count === 0), 'every marker stays ticked');
+  assert.ok(fix.assertions.some((a) => /--exit-code/.test(a.run ?? '') && /retry-delay/.test(a.run)), 'the risk is left alone');
+  assert.match(readFileSync(join(skillDir, 'fixtures/review-introduced.md'), 'utf8'), /## Security\n\n### Defects introduced/);
+});
+
+test('a fix on the fast route writes every Done when line into its commit', () => {
+  const fix = byId.get('aw-build-fix-fast');
+  assertReportNamesThePlantedCommit(fix);
+  assert.ok(oneCommitOnTop(fix));
+  assert.match(fix.setup.find((op) => op.commit).commit, /\n\nDone when: /);
+  assert.ok(fix.assertions.some((a) => a.run === 'git log -1 --format=%B' && /Done when:/.test(a.stdout)));
 });
 
 test('fixtures named by the case files exist', () => {
