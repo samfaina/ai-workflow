@@ -1,0 +1,51 @@
+{
+  "id": "aw-ship-write-uncovered",
+  "title": "aw-ship at write, a commit the review does not cover",
+  "group": "Feature route (loan renewal)",
+  "order": 26,
+  "source": "Feature route: aw-ship at write (the first stop)",
+  "from": {
+    "case": "aw-review-route"
+  },
+  "setup": [
+    {
+      "copy": "fixtures/review-clean.md",
+      "to": ".aw/reviews/29991231-235959-review.md"
+    },
+    {
+      "copy": "fixtures/vcs-local-write.md",
+      "to": "docs/agents/vcs.md"
+    },
+    {
+      "replace": "AGENTS.md",
+      "pattern": "Base branch `main`, GitHub pull requests through `gh`, squash merges; `push`, `open-review` and `merge` are at `draft`\\.",
+      "with": "Base branch `main`, no review host; `push` and `merge` are at `write`, `open-review` at `draft`."
+    },
+    {
+      "commit": "Set push and merge to write, with no review host"
+    }
+  ],
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-ship",
+  "answers": [],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "spec is approved",
+      "file": "docs/specs/renew-loan/spec.md",
+      "frontmatter": {
+        "status": "approved"
+      }
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Stopped because a later commit is not covered by the review, and pushed nothing"
+    }
+  ]
+}

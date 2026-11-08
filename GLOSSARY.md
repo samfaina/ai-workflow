@@ -273,3 +273,17 @@ _Avoid_: hierarchy of controls, escalation levels
 **Demonstration**:
 The two runs that prove a control: it fails on a real case, an occurrence from the session put back into the code, and passes on a correct case, the code as the session fixed it. An architecture finding states the demonstration its new structure must pass instead.
 _Avoid_: proof of concept, validation, test run
+
+### Testing the kit
+
+**UAT case**:
+One call to a kit skill that a person runs in a fresh session on a scratch app, with what it starts from, the answers and turns it needs as intents, and how its result is graded. The repo-local `/uat` skill holds them as one JSON file each.
+_Avoid_: scenario, e2e test (**Verify journey** names a run on a repo's own app)
+
+**UAT restore point**:
+A saved state of the scratch app that a UAT case starts from: a commit, its branch, and the git-ignored `.aw/` folder. A step that passes leaves a new one.
+_Avoid_: checkpoint (**Human gate** names a point where a person decides), snapshot
+
+**UAT conductor**:
+The session running `/uat`. It prepares each UAT case, reads the case session's log to show each question as it appears and propose an answer, and grades the step when the person says it is done.
+_Avoid_: test runner, orchestrator

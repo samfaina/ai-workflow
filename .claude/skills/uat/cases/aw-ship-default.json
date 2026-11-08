@@ -1,0 +1,55 @@
+{
+  "id": "aw-ship-default",
+  "title": "aw-ship at default access",
+  "group": "Feature route (loan renewal)",
+  "order": 25,
+  "source": "Feature route: aw-ship at default access",
+  "from": {
+    "case": "aw-review-route"
+  },
+  "setup": [
+    {
+      "copy": "fixtures/review-clean.md",
+      "to": ".aw/reviews/29991231-235959-review.md"
+    }
+  ],
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-ship",
+  "answers": [],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "spec is implemented",
+      "file": "docs/specs/renew-loan/spec.md",
+      "frontmatter": {
+        "status": "implemented"
+      }
+    },
+    {
+      "name": "aw-check-spec passes",
+      "run": "node {{KIT}}/skills/aw-check-spec/scripts/check-spec.mjs"
+    },
+    {
+      "name": "push drafted",
+      "file": ".aw/drafts/*-push.md"
+    },
+    {
+      "name": "open-review drafted",
+      "file": ".aw/drafts/*-open-review.md"
+    },
+    {
+      "name": "merge drafted",
+      "file": ".aw/drafts/*-merge.md"
+    },
+    {
+      "name": "review request body",
+      "file": ".aw/review-requests/*-review-request.md",
+      "matches": "^## Rollback plan"
+    },
+    {
+      "judge": "Pushed nothing and set the spec to implemented. The review report is a fixture, so this case tests the ship guard alone."
+    }
+  ]
+}

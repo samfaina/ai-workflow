@@ -1,0 +1,35 @@
+{
+  "id": "aw-verify-generated",
+  "title": "aw-verify with the generated skill",
+  "group": "Feature route (loan renewal)",
+  "order": 21,
+  "source": "Feature route: aw-verify with the generated skill",
+  "from": {
+    "case": "aw-create-verify"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-verify",
+  "answers": [
+    {
+      "when": "A criterion that needs a loan due today",
+      "intent": "Record it inconclusive now",
+      "reason": "the app has no clock seam outside tests, and it keeps its test evidence"
+    }
+  ],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "results written",
+      "file": "docs/specs/renew-loan/verify/ac-1.md"
+    },
+    {
+      "name": "aw-check-spec passes",
+      "run": "node {{KIT}}/skills/aw-check-spec/scripts/check-spec.mjs"
+    },
+    {
+      "judge": "Ran the criteria on the real app and recorded results that aw-check-spec resolves"
+    }
+  ]
+}

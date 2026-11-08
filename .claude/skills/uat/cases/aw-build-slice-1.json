@@ -1,0 +1,42 @@
+{
+  "id": "aw-build-slice-1",
+  "title": "aw-build, slice 1",
+  "group": "Feature route (loan renewal)",
+  "order": 16,
+  "source": "Feature route: aw-build, slices 1 to 3",
+  "from": {
+    "case": "aw-slices"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-build",
+  "answers": [
+    {
+      "when": "Uncommitted spec and glossary",
+      "intent": "Commit them separately first",
+      "reason": "only asked when they are uncommitted; #49 kept them off main"
+    },
+    {
+      "when": "Which base to branch from",
+      "intent": "Local main",
+      "reason": "only asked if the remote and local main differ"
+    }
+  ],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "on a work branch",
+      "run": "git branch --show-current",
+      "stdout": "/"
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Completed exactly one slice in one local commit: task checks green, slice ticked, Traceability updated"
+    }
+  ]
+}

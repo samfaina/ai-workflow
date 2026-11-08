@@ -1,0 +1,70 @@
+{
+  "id": "aw-setup-local",
+  "title": "local markdown, re-run on top of none",
+  "group": "aw-setup",
+  "order": 2,
+  "source": "aw-setup: local markdown, re-run on top of none",
+  "from": {
+    "ref": "908296b"
+  },
+  "shell": [],
+  "command": "/ai-workflow:aw-setup",
+  "answers": [
+    {
+      "when": "Where tickets live",
+      "intent": "Local markdown",
+      "reason": "this case tests a re-run with a changed answer"
+    },
+    {
+      "when": "VCS conventions and access",
+      "intent": "Keep what it proposes, unchanged",
+      "reason": "this case changes only the tracker"
+    },
+    {
+      "when": "Check commands for fast, task and full",
+      "intent": "Keep what it proposes, unchanged",
+      "reason": "this case changes only the tracker"
+    },
+    {
+      "when": "Domain docs layout",
+      "intent": "Keep single-context",
+      "reason": "this case changes only the tracker"
+    },
+    {
+      "when": "Folder for the tickets",
+      "intent": "docs/tickets/",
+      "reason": "the proposed default"
+    },
+    {
+      "when": "Access for tracker writes",
+      "intent": "write",
+      "reason": "as in #49"
+    },
+    {
+      "when": "Confirmation before writing",
+      "intent": "Approve the write as shown",
+      "reason": "the case needs the files written"
+    }
+  ],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "only the tracker and its block line changed",
+      "run": "git status --porcelain",
+      "stdout": "^M AGENTS\\.md\\n M docs/agents/tracker\\.md$"
+    },
+    {
+      "name": "tracker is local",
+      "file": "docs/agents/tracker.md",
+      "matches": "docs/tickets"
+    },
+    {
+      "name": "no unfilled placeholder",
+      "run": "git grep --untracked -n \"{{\" -- docs/agents",
+      "exit": 1
+    },
+    {
+      "judge": "Updated the block and adapter in place, with no duplicated block or line"
+    }
+  ]
+}

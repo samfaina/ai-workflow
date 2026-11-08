@@ -1,0 +1,29 @@
+{
+  "id": "aw-intake-feature",
+  "title": "feature",
+  "group": "aw-intake",
+  "order": 12,
+  "source": "aw-intake: feature",
+  "from": {
+    "ref": "b0c28c8"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-intake Los socios pueden renovar un préstamo una vez, ampliando el vencimiento LOAN_DAYS días, salvo si ya está vencido.",
+  "answers": [],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Classified it standard route, for a new endpoint and a stored field"
+    },
+    {
+      "judge": "Named /aw-spec as the next skill"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "id": "aw-intake-performance",
+  "title": "performance",
+  "group": "aw-intake",
+  "order": 9,
+  "source": "aw-intake: performance",
+  "from": {
+    "ref": "uat/setup"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-intake `GET /stats/popular` tarda más de un segundo con muchos préstamos.",
+  "answers": [],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "baseline recorded",
+      "file": ".aw/baselines/*"
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Classified it fast and recorded a baseline from several runs"
+    },
+    {
+      "judge": "Said so when the measured time differed from the report"
+    }
+  ]
+}

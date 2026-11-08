@@ -1,0 +1,26 @@
+{
+  "id": "aw-intake-refactor",
+  "title": "refactor",
+  "group": "aw-intake",
+  "order": 10,
+  "source": "aw-intake: refactor",
+  "from": {
+    "ref": "uat/setup"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-intake `src/loans.ts` es un único handler que hace de todo; sepáralo sin cambiar el comportamiento.",
+  "answers": [],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Committed characterization tests at the HTTP seam before any change to src/loans.ts"
+    }
+  ]
+}

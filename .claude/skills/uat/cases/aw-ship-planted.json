@@ -1,0 +1,31 @@
+{
+  "id": "aw-ship-planted",
+  "title": "aw-ship on the planted branch",
+  "group": "aw-review on its own",
+  "order": 30,
+  "source": "aw-review on its own: aw-ship on that branch",
+  "from": {
+    "case": "aw-review-planted"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-ship",
+  "answers": [],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "name": "nothing drafted",
+      "file": ".aw/drafts/*-push.md",
+      "exists": false
+    },
+    {
+      "judge": "Refused to ship because the latest report has an introduced defect"
+    }
+  ]
+}

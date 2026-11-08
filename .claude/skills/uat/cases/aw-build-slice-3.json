@@ -1,0 +1,31 @@
+{
+  "id": "aw-build-slice-3",
+  "title": "aw-build, slice 3",
+  "group": "Feature route (loan renewal)",
+  "order": 18,
+  "source": "Feature route: aw-build, slices 1 to 3",
+  "from": {
+    "case": "aw-build-slice-2"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-build",
+  "answers": [],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "on a work branch",
+      "run": "git branch --show-current",
+      "stdout": "/"
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Completed exactly one slice in one local commit: task checks green, slice ticked, Traceability updated"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "id": "aw-retro-run",
+  "title": "run on the route's closed sessions",
+  "group": "aw-retro",
+  "order": 32,
+  "source": "aw-retro: run on the route's closed sessions",
+  "from": {
+    "case": "aw-ship-write"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-retro revisa las sesiones de la ruta del feature renew-loan: create-verify, la review y las ejecuciones de /aw-ship. Están en los logs de Claude Code de las carpetas de trabajo bajo {{RUN}}/steps.",
+  "answers": [],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "retro report",
+      "file": ".aw/retros/*-retro.md"
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Proposed a control only for an error class seen twice, at the highest rung that works, or said none qualified"
+    },
+    {
+      "judge": "Each control carries a run failing on the real case and a run passing on a correct one, made outside the working tree"
+    }
+  ]
+}
