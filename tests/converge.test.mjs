@@ -1,7 +1,7 @@
-// aw-converge and the phase procedures it runs (ADR 0016, ticket #95). The
-// command is the skills' text, so these tests hold that text: each stop
-// condition, what each round runs where, and the report lines one step reads
-// from another.
+// aw-converge, the convergence procedure behind it and the phase procedures it
+// runs (ADRs 0016 and 0017, tickets #95 and #98). The command is the skills'
+// text, so these tests hold that text: each stop condition, what each round
+// runs where, and the report lines one step reads from another.
 
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
@@ -11,7 +11,8 @@ import test from 'node:test';
 import { repoRoot } from './fixtures.mjs';
 
 const read = (path) => readFileSync(join(repoRoot, path), 'utf8').replaceAll('\r\n', '\n');
-const converge = read('skills/aw-converge/SKILL.md');
+const converge = read('skills/aw-converge-steps/SKILL.md');
+const door = read('skills/aw-converge/SKILL.md');
 const buildSteps = read('skills/aw-build-steps/SKILL.md');
 const verifySteps = read('skills/aw-verify-steps/SKILL.md');
 const reviewSteps = read('skills/aw-review-steps/SKILL.md');
@@ -43,36 +44,67 @@ const fixRun = section(buildSteps, '## The fix run');
 const fixReport = fixRun.slice(fixRun.indexOf('**Report.**'));
 const verifyReport = section(verifySteps, '### 7. Report');
 
-for (const [procedure, door, text] of [
+for (const [procedure, phase, text] of [
   ['aw-build-steps', 'aw-build', buildSteps],
   ['aw-verify-steps', 'aw-verify', verifySteps],
   ['aw-review-steps', 'aw-review', reviewSteps],
 ]) {
   test(`${procedure} is limited to its callers by its description`, () => {
     const description = line(text, 'description: ');
-    assert.match(description, new RegExp(`calls from /${door} and aw-converge only`));
+    assert.match(description, new RegExp(`calls from /${phase}, the convergence procedure and aw-implement only`));
     assert.match(description, /do not load it by your own choice/);
   });
 
   test(`${procedure} opens by refusing a call that names no caller`, () => {
     const first = section(text, '## First step: check the caller');
     assert.equal(text.split('\n').find((candidate) => candidate.startsWith('## ')), '## First step: check the caller');
-    assert.match(first, new RegExp(`\`caller: ${door}\` or \`caller: aw-converge\``));
+    assert.match(first, new RegExp(`\`caller: ${phase}\`, \`caller: aw-converge\` or \`caller: aw-implement\``));
     assert.match(first, /stop, change nothing/);
-    assert.match(first, new RegExp(`\`/${door}\``));
+    assert.match(first, new RegExp(`\`/${phase}\``));
   });
 
-  test(`${door} is a door that names itself as the caller of ${procedure}`, () => {
-    const body = read(`skills/${door}/SKILL.md`);
-    assert.match(body, new RegExp(`Call the Skill tool with "${procedure}", with \`caller: ${door}\` as the arguments`));
+  test(`${phase} is a door that names itself as the caller of ${procedure}`, () => {
+    const body = read(`skills/${phase}/SKILL.md`);
+    assert.match(body, new RegExp(`Call the Skill tool with "${procedure}", with \`caller: ${phase}\` as the arguments`));
     assert.match(body, /^disable-model-invocation: true$/m);
   });
 }
 
+test('the convergence procedure is hidden, limited to its callers, and opens by refusing a call that names no caller', () => {
+  assert.match(converge, /^user-invocable: false$/m);
+  const description = line(converge, 'description: ');
+  assert.match(description, /calls from \/aw-converge and aw-implement only/);
+  assert.match(description, /do not load it by your own choice/);
+  const first = section(converge, '## First step: check the caller');
+  assert.equal(converge.split('\n').find((candidate) => candidate.startsWith('## ')), '## First step: check the caller');
+  assert.match(first, /`caller: aw-converge` or `caller: aw-implement`/);
+  assert.match(first, /stop, change nothing/);
+  assert.match(first, /`\/aw-converge`/);
+});
+
+test('aw-converge is a thin door: it hands the arguments to the convergence procedure and holds no section', () => {
+  assert.match(door, /Call the Skill tool with "aw-converge-steps", with `caller: aw-converge` as the arguments, followed by whatever the user asked for with this command/);
+  assert.doesNotMatch(door, /^## /m);
+  for (const procedure of ['aw-build-steps', 'aw-verify-steps', 'aw-review-steps']) {
+    assert.ok(!door.includes(procedure), procedure);
+  }
+});
+
+test('the door keeps what a person reads about the command', () => {
+  assert.match(line(door, 'description: '), /up to 3 rounds, which a call can raise, as in \/aw-converge 5/);
+  assert.match(line(door, 'description: '), /Never pushes, opens a review request or merges/);
+});
+
+test('the phases of a round are still called as aw-converge, whoever started the rounds', () => {
+  assert.match(line(fixRunReading, 'Start a subagent'), /`caller: aw-converge; fix run; /);
+  assert.match(line(verifyReading, 'Start a subagent'), /`caller: aw-converge; /);
+  assert.match(reviewReading, /`caller: aw-converge; /);
+});
+
 test('the fix run and aw-verify cannot ask from a subagent: a question ends the run with a Stop line', () => {
   for (const text of [buildSteps, verifySteps]) {
     const first = section(text, '## First step: check the caller');
-    assert.match(first, /With `caller: aw-converge` you run in a subagent/);
+    assert.match(first, /With `caller: aw-converge`(?: or `caller: aw-implement`)? you run in a subagent/);
     assert.match(first, /`Stop:` line/);
   }
 });
@@ -136,16 +168,17 @@ test('under aw-converge, .aw/ is local state and not a change in the working tre
   }
 });
 
-for (const door of ['aw-build', 'aw-verify', 'aw-review']) {
-  test(`${door} says what to do when its procedure is not installed`, () => {
-    assert.match(read(`skills/${door}/SKILL.md`), new RegExp(`npx skills add samfaina/ai-workflow --skill ${door}-steps`));
+for (const skill of ['aw-build', 'aw-verify', 'aw-review', 'aw-converge']) {
+  test(`${skill} says what to do when its procedure is not installed`, () => {
+    assert.match(read(`skills/${skill}/SKILL.md`), new RegExp(`npx skills add samfaina/ai-workflow --skill ${skill}-steps`));
   });
 }
 
-test('the README says a door needs its procedure and aw-converge needs all three', () => {
+test('the README says a door needs its procedure, and aw-converge and aw-implement need all of them', () => {
   const readme = read('README.md');
   assert.match(readme, /`aw-build`, `aw-verify` and `aw-review` each need their phase procedure/);
-  assert.match(readme, /`aw-converge` needs all three/);
+  assert.match(readme, /`aw-converge` needs `aw-converge-steps` and all three/);
+  assert.match(readme, /`aw-implement` needs the same four/);
   assert.match(read('docs/configuration.md'), /a phase with a phase procedure carries them there/);
 });
 
@@ -177,11 +210,11 @@ test('a refusal of aw-verify and a repo with no verify skill end with Stop and N
 });
 
 test('under aw-converge every reviewer brief starts from the diff, not from an earlier report', () => {
-  assert.match(section(reviewSteps, '### 5. Run the three axes in parallel'), /with `caller: aw-converge`, the instruction not to read `\.aw\/reviews\/`/);
+  assert.match(section(reviewSteps, '### 5. Run the three axes in parallel'), /with `caller: aw-converge` or `caller: aw-implement`, the instruction not to read `\.aw\/reviews\/`/);
 });
 
 test('under aw-converge the review ends with the report and leaves what comes next to the command', () => {
-  assert.match(section(reviewSteps, '### 8. Report'), /caller is `aw-converge`, give the report's path and end here/);
+  assert.match(section(reviewSteps, '### 8. Report'), /caller is `aw-converge` or `aw-implement`, give the report's path and end here/);
 });
 
 test('aw-review names /aw-converge first for an introduced defect, and the manual path as the alternative', () => {
@@ -191,7 +224,7 @@ test('aw-review names /aw-converge first for an introduced defect, and the manua
 });
 
 test('aw-converge is user-invoked on both harnesses', () => {
-  assert.match(converge, /^disable-model-invocation: true$/m);
+  assert.match(door, /^disable-model-invocation: true$/m);
   assert.match(read('skills/aw-converge/agents/openai.yaml'), /allow_implicit_invocation: false/);
 });
 
@@ -286,9 +319,9 @@ test('the command never pushes, opens a review request or merges', () => {
   assert.match(converge, /never pushes, opens a review request or merges/);
 });
 
-test('the three procedures and aw-converge are listed in the plugin manifest', () => {
+test('the procedures and aw-converge are listed in the plugin manifest', () => {
   const skills = JSON.parse(read('.claude-plugin/plugin.json')).skills;
-  for (const name of ['aw-build-steps', 'aw-verify-steps', 'aw-review-steps', 'aw-converge']) {
+  for (const name of ['aw-build-steps', 'aw-verify-steps', 'aw-review-steps', 'aw-converge', 'aw-converge-steps']) {
     assert.ok(skills.includes(`./skills/${name}`), name);
     assert.ok(existsSync(join(repoRoot, 'skills', name, 'SKILL.md')), name);
   }

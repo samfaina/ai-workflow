@@ -1,6 +1,6 @@
 ---
 name: aw-build-steps
-description: "The steps of /aw-build: one slice of an approved spec, the fast route, or a fix run of the latest review report. A phase procedure for calls from /aw-build and aw-converge only: do not load it by your own choice."
+description: "The steps of /aw-build: one slice of an approved spec, the fast route, or a fix run of the latest review report. A phase procedure for calls from /aw-build, the convergence procedure and aw-implement only: do not load it by your own choice."
 user-invocable: false
 ---
 
@@ -8,9 +8,11 @@ user-invocable: false
 
 ## First step: check the caller
 
-This is the phase procedure of `/aw-build` (ADR 0016). Read the arguments before anything else. Unless they name the caller, as `caller: aw-build` or `caller: aw-converge`, stop, change nothing and say that a person starts this phase with `/aw-build`.
+This is the phase procedure of `/aw-build` (ADR 0016). Read the arguments before anything else. Unless they name the caller, as `caller: aw-build`, `caller: aw-converge` or `caller: aw-implement`, stop, change nothing and say that a person starts this phase with `/aw-build`.
 
 With `caller: aw-converge` you run in a subagent and no user can answer you. The arguments ask for a fix run and name the spec, or say the task is on the fast route. Wherever a step says to ask the user, end the run with a `Stop:` line that says what you would have asked, as the fix run's **Report** says. The one exception is the question in **Agree the seams**. `.aw/` is local state: its files are not changes in the working tree.
+
+With `caller: aw-implement` the arguments say `afk` or `hitl`, and name the spec as `spec: <path>` or say `fast route` with intake's whole report as `intake: <the report>`. In the `afk` variant you run in a subagent and no user can answer you: wherever a step says to ask the user, end the run with a `Stop:` line that says what you would have asked; the one exception is **A seam to agree in the `afk` variant**. The `hitl` variant runs in the main session and asks as the steps say. In both, seams the arguments name as `agreed seams:` count as agreed, `.aw/` is local state as above, and step 8 ends with **Closing lines for `aw-implement`**.
 
 Build **one slice** of an approved spec per call, on a work branch: test-first at the seams the spec's Test strategy agrees, then run the `task` check level, tick the slice, update Traceability and make one local commit. The commits and the spec's Traceability are this phase's artifact. Building never starts a review: review is a phase of its own. On the fast route there is no spec, and one call builds the whole task from intake's done-when criteria, as **The fast route** says.
 
@@ -70,6 +72,10 @@ Then call the Skill tool with "aw-check-spec" and run it on the repo. When it re
 
 Pick the slice: the one the user names, or else the first slice in plan order that is not done and whose blockers are all done. Refuse a slice whose blockers are not all done, and name them. When the user asks for a fix run, go to **The fix run**. When every slice is done, and the latest review report names `HEAD` and holds an introduced defect, go to **The fix run**. Otherwise, when every slice is done, say so and name `/aw-verify` as the next skill.
 
+With `caller: aw-implement` pick the first slice in plan order that is not done and whose blockers are all done, and never go to **The fix run**. When every slice is done, end with `Stop: every slice is done`, `Commit: none` and `Next: /aw-verify`.
+
+In the `afk` variant, when the slice is **HITL**, change nothing, commit nothing, and end with `Stop: HITL slice <n>: <its name>`, `Commit: none` and `Next: /aw-build`: `aw-implement` builds it in the main session.
+
 When the slice is **HITL**, tell the user now what they will be needed for, from the slice's name and Delivers line, and ask before the step that needs them.
 
 Done when you can name the spec, the one slice this call builds, its criteria, and AFK or HITL.
@@ -81,6 +87,8 @@ Check the working tree for changes. When it has changes this skill did not make,
 A slice is built on a work branch, never on a protected one (the base branch or another the VCS adapter names). When the current branch is protected, use `start-branch` to create the work branch, named by the adapter's branch naming from the spec's slug, such as `feat/<slug>`. When the current branch is already a work branch for this spec, from an earlier slice, stay on it.
 
 When `start-branch` is at `draft`, write the draft, tell the user to create the branch with it and run `/aw-build` again, and stop. This is the one write at `draft` after which this skill does not go on: every later step would land on the protected branch.
+
+In the `afk` variant, read as step 3 says and make the check in **A seam to agree in the `afk` variant** first: a run that stops on a seam must not have created a branch.
 
 Done when you are on a work branch that is not protected, with no change in the working tree that this slice did not make.
 
@@ -97,6 +105,8 @@ Done when you know the seams the slice is tested at, the files it changes, and t
 ### 4. Build test-first
 
 Call the Skill tool with "aw-tdd" and build the slice through its red-green loop, one behaviour at a time. The seams in the spec's Test strategy are the pre-agreed seams `aw-tdd` asks for: the user agreed them in `/aw-slices`, so do not ask again. A test at any other seam needs the user's agreement first; when they agree, the Test strategy needs updating, which is a spec change to report in step 8, not to make.
+
+**A seam to agree in the `afk` variant.** No one can answer here, so check before the first test, and before step 2 creates a work branch, that an agreed seam reaches every behaviour. When none does, change nothing and commit nothing, and end with `Stop: seam to agree`, `Question: <the one question, with each seam you propose and one line on what it catches and what it misses>`, `Commit: none` and `Next: none`. When it only shows later, first undo what this run changed in the working tree. `aw-implement` asks the user and starts the run again.
 
 - Name each test so that it mentions the `AC-n` it proves, such as `AC-2: a wrong password shows an error`: at `implemented`, `aw-check-spec` checks that each `test:` file mentions its criterion.
 - When you are unsure how an API, framework or library behaves, call the Skill tool with "aw-source-driven-development" and ground the code in its official documentation before writing it.
@@ -163,6 +173,14 @@ Report in chat:
 
 Then name the next skill: `/aw-build` again for the next slice whose blockers are all done, or `/aw-verify` when every slice is done. Tell the user to run it; this skill never runs it, and review waits for `/aw-review`.
 
+**Closing lines for `aw-implement`.** With `caller: aw-implement`, close the report with these lines, and no other line that opens with them: `aw-implement` reads them.
+
+- `Commit: <hash> <subject>`, `Commit: draft <path>` or `Commit: none`
+- `Spec change: <the change>`, one line for each spec change the run found
+- `Stop: <reason>`, when the run ended before its commit: a refusal of step 1, a stop above, `Stop: spec change needed`, on the fast route `Stop: criterion correction needed`, `Stop: check failed on code the slice did not touch`, or what you would have asked
+- `Question: <the question>`, only with `Stop: seam to agree`
+- `Next: <skill>`, the skill named above or the one a stop names, or `Next: none`
+
 ## When the spec is wrong
 
 When building shows that the spec is wrong (a criterion cannot be built as stated, contradicts the Design or the code, or needs behaviour the spec rules out), stop at once:
@@ -177,11 +195,11 @@ Tell the user to make the change with `/aw-spec`, then to run `/aw-slices` when 
 
 On the fast route (ADR 0013) there is no spec and no slice plan. `/aw-intake` stated 1 to 3 **done-when criteria**, and they are the definition of done: this call builds the whole task until each one holds, and never creates a spec. The phase's artifact is then the commits alone, which carry the criteria, in place of the commits and Traceability that ADR 0010 names. Follow the steps above with these changes; where a step or its "Done when" line names the spec, a slice or Traceability, read the task and its criteria.
 
-**Step 1: take the task, not a spec.** The task is on the fast route when `/aw-intake` reported `Route: fast` for it in this conversation, or when the work branch's commits since the diff base carry `Done when:` lines and touch no spec under `docs/specs/`. Take the task, its type, its pre-step result and its done-when criteria from intake's report, or else the criteria from the latest of those commits that carries `Done when:` lines (`git log <base>..HEAD --format=%B`), or else ask the user to paste intake's report or to run `/aw-intake` first. Never write the criteria yourself. There is no `status` to check, no slice to pick and no `aw-check-spec` run.
+**Step 1: take the task, not a spec.** The task is on the fast route when `/aw-intake` reported `Route: fast` for it in this conversation, or when the work branch's commits since the diff base carry `Done when:` lines and touch no spec under `docs/specs/`. Take the task, its type, its pre-step result and its done-when criteria from intake's report, the arguments' `intake:` included, or else the criteria from the latest of those commits that carries `Done when:` lines (`git log <base>..HEAD --format=%B`), or else ask the user to paste intake's report or to run `/aw-intake` first. Never write the criteria yourself. There is no `status` to check, no slice to pick and no `aw-check-spec` run.
 
 Refuse to go on, and tell the user to run `/aw-intake` again, when there are no done-when criteria, or when meeting a criterion would change a contract (a public API, schema, file format, CLI flag or event), stored data or anything security-related (authentication, permissions, secrets, input from outside, a new external service integration, CORS, rate limiting or throttling, adding a dependency, or how personal data is collected, handled or shared): such a task is not on the fast route, and intake sends it to the standard route. Upgrading an existing dependency does not, on its own, keep a task off the fast route, major versions included.
 
-**Fix run.** When the user asks for one, or when the latest review report names `HEAD` and holds an introduced defect, go to **The fix run**: with no slices, there is nothing else to wait for.
+**Fix run.** When the user asks for one, or when the latest review report names `HEAD` and holds an introduced defect, go to **The fix run**: with no slices, there is nothing else to wait for. With `caller: aw-implement` there is no fix run: build the task.
 
 Done when you can name the task, its type and its done-when criteria, and whether this call is a fix run.
 
@@ -191,7 +209,7 @@ Done when you can name the task, its type and its done-when criteria, and whethe
 
 Done when you know the seams to propose, the files the task changes, and that every criterion can be met.
 
-**Step 4: test-first.** No Test strategy agreed the seams, so agree them now, before the first test: propose a seam for each criterion, with one line on what it catches and what it misses, and ask the user to confirm them in one question. Then build through `aw-tdd` at those seams, one behaviour at a time.
+**Step 4: test-first.** No Test strategy agreed the seams, so agree them now, before the first test: propose a seam for each criterion, with one line on what it catches and what it misses, and ask the user to confirm them in one question. In the `afk` variant no one can answer: unless the arguments' `agreed seams:` cover them, end with `Stop: seam to agree` as step 4 says. Then build through `aw-tdd` at those seams, one behaviour at a time.
 
 - Name each test so that it quotes the criterion it proves, such as `done when: a wrong password shows an error`.
 - The pre-step's evidence comes first: a bug's reproduction becomes the first failing test, a refactor's characterization tests pass before and after every change, and a performance change is measured again against the baseline.
@@ -205,7 +223,7 @@ Done when every criterion has a passing test at an agreed seam or a recorded tes
 
 Done when the task is in a local commit on the work branch whose message carries every criterion, or in a draft whose path you gave the user.
 
-**Step 8: report each criterion.** In place of the slice, report the task and each done-when criterion with what proves it: its tests, or its test exception. Then name the next skill: `/aw-verify` when the repo has a verify skill at `.claude/skills/verify-<app>/`, and `/aw-review` when it has none. With no verify skill, a criterion with a test exception needs the user to check it by hand: name what to check, and say that `/aw-ship` asks for it and records what they report.
+**Step 8: report each criterion.** In place of the slice, report the task and each done-when criterion with what proves it: its tests, or its test exception. Then name the next skill: `/aw-verify` when the repo has a verify skill at `.claude/skills/verify-<app>/`, and `/aw-review` when it has none. With no verify skill, a criterion with a test exception needs the user to check it by hand: name what to check, and say that `/aw-ship` asks for it and records what they report. With `caller: aw-implement`, end with **Closing lines for `aw-implement`**.
 
 ### When the criteria are wrong
 

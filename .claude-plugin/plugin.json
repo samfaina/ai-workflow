@@ -51,6 +51,8 @@
     "./skills/aw-review",
     "./skills/aw-review-steps",
     "./skills/aw-converge",
+    "./skills/aw-converge-steps",
+    "./skills/aw-implement",
     "./skills/aw-ship",
     "./skills/aw-retro"
   ]

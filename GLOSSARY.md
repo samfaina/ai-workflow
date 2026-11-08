@@ -175,7 +175,7 @@ A stage of the workflow, owned by exactly one kit skill and producing exactly on
 _Avoid_: step, stage
 
 **Phase procedure**:
-The steps of a phase, held in a skill the model can call so that a convergence run can run them. The phase keeps its one owner, the skill a person invokes, which is its door: a thin skill that hands the phase to its procedure. Only the door and `aw-converge` may call the procedure.
+The steps of a phase, held in a skill the model can call so that a convergence run can run them. The phase keeps its one owner, the skill a person invokes, which is its door: a thin skill that hands the phase to its procedure. Only the door, the convergence procedure and `aw-implement` may call the procedure.
 _Avoid_: shared phase, internal skill
 
 **Phase-free skill**:
@@ -254,9 +254,17 @@ _Avoid_: repair build, patch run
 What `aw-converge` does: it repeats rounds on a work branch until the latest review report holds no introduced defect, it reaches its limit of rounds, or something stops it that a round cannot resolve. It builds no slice and never ships.
 _Avoid_: fix loop, build loop, review loop
 
+**Convergence procedure**:
+The rounds of a convergence run, held in a skill the model can call, behind the door `aw-converge`. `aw-implement` calls it too, so the rounds keep one owner.
+_Avoid_: shared loop, converge steps
+
 **Round**:
 One pass of a convergence run: a fix run, `aw-verify` when the fix calls for it, and `aw-review`.
 _Avoid_: iteration, cycle, attempt
+
+**Implementation run**:
+What `aw-implement` does: it builds what is left of an approved spec or a fast-route task, verifies it, reviews it, and starts a convergence run when that review holds an introduced defect. It never ships.
+_Avoid_: full run, auto-build, pipeline
 
 **Review request**:
 What `aw-ship` opens on the review host to propose merging the work branch: a pull request on GitHub, a merge request on GitLab. With no review host, it is the body alone, a local document the user reads. Its body holds a Summary, Evidence, Merge Danger, a pre-ship checklist and a rollback plan.

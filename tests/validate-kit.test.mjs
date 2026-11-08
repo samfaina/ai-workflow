@@ -481,32 +481,145 @@ test('calling a model-invoked skill, or naming a user-invoked one as a slash com
   assertNoFindings(runOn(kit));
 });
 
-// A phase procedure holds the steps of one phase so that aw-converge can run
-// them, and its door stays the phase's one owner (ADR 0016).
+// A phase procedure holds the steps of one phase so that a convergence run can
+// run them, and its door stays the phase's one owner (ADR 0016). The rounds
+// live in the convergence procedure, behind the door aw-converge, and
+// aw-implement may call both kinds (ADR 0017).
+
+const userInvokedSkill = (name, body) =>
+  `---\nname: ${name}\ndescription: A skill.\ndisable-model-invocation: true\n---\n\n${body}\n`;
+const hiddenSkill = (name, body) =>
+  `---\nname: ${name}\ndescription: A procedure.\nuser-invocable: false\n---\n\n# Steps\n\n## Steps\n\n${body}\n`;
+const NO_IMPLICIT = 'policy:\n  allow_implicit_invocation: false\n';
 
 function kitWithProcedure() {
   const kit = validKit();
-  kit['.claude-plugin/plugin.json'].skills.push('./skills/aw-build', './skills/aw-build-steps', './skills/aw-converge');
-  kit['skills/aw-build/SKILL.md'] =
-    '---\nname: aw-build\ndescription: Build.\ndisable-model-invocation: true\n---\n\n# Build\n\nCall the Skill tool with "aw-build-steps".\n';
-  kit['skills/aw-build/agents/openai.yaml'] = 'policy:\n  allow_implicit_invocation: false\n';
-  kit['skills/aw-build-steps/SKILL.md'] =
-    '---\nname: aw-build-steps\ndescription: The steps of the build phase.\nuser-invocable: false\n---\n\n# Build steps\n\n## Steps\n\nBody.\n';
-  kit['skills/aw-converge/SKILL.md'] =
-    '---\nname: aw-converge\ndescription: Repeat rounds.\ndisable-model-invocation: true\n---\n\nCall the Skill tool with "aw-build-steps".\n';
-  kit['skills/aw-converge/agents/openai.yaml'] = 'policy:\n  allow_implicit_invocation: false\n';
+  kit['.claude-plugin/plugin.json'].skills.push(
+    './skills/aw-build',
+    './skills/aw-build-steps',
+    './skills/aw-converge',
+    './skills/aw-converge-steps',
+  );
+  kit['skills/aw-build/SKILL.md'] = userInvokedSkill('aw-build', '# Build\n\nCall the Skill tool with "aw-build-steps".');
+  kit['skills/aw-build/agents/openai.yaml'] = NO_IMPLICIT;
+  kit['skills/aw-build-steps/SKILL.md'] = hiddenSkill('aw-build-steps', 'Body.');
+  kit['skills/aw-converge/SKILL.md'] = userInvokedSkill('aw-converge', '# Converge\n\nCall the Skill tool with "aw-converge-steps".');
+  kit['skills/aw-converge/agents/openai.yaml'] = NO_IMPLICIT;
+  kit['skills/aw-converge-steps/SKILL.md'] = hiddenSkill('aw-converge-steps', 'Call the Skill tool with "aw-build-steps".');
   return kit;
 }
 
-test('a phase procedure called by its door and aw-converge passes', () => {
+function withImplement(kit, body) {
+  kit['.claude-plugin/plugin.json'].skills.push('./skills/aw-implement');
+  kit['skills/aw-implement/SKILL.md'] = userInvokedSkill('aw-implement', body);
+  kit['skills/aw-implement/agents/openai.yaml'] = NO_IMPLICIT;
+  return kit;
+}
+
+test('a phase procedure called by its door and the convergence procedure passes', () => {
   assertNoFindings(runOn(kitWithProcedure()));
+});
+
+test('aw-implement may call a phase procedure and the convergence procedure', () => {
+  assertNoFindings(runOn(withImplement(kitWithProcedure(), 'Call "aw-build-steps", then "aw-converge-steps".')));
 });
 
 test('any other skill that names a phase procedure is reported', () => {
   const kit = kitWithProcedure();
   kit['skills/aw-alpha/SKILL.md'] += '\nCall the Skill tool with "aw-build-steps".\n';
 
-  assertOneFinding(runOn(kit), /^skills\/aw-alpha\/SKILL\.md: names the phase procedure "aw-build-steps".*only aw-build and aw-converge.*ADR 0016/);
+  assertOneFinding(runOn(kit), /^skills\/aw-alpha\/SKILL\.md: names the phase procedure "aw-build-steps".*only aw-build, aw-converge-steps and aw-implement/);
+});
+
+test('aw-converge is a door, so naming a phase procedure from it is reported', () => {
+  const kit = kitWithProcedure();
+  kit['skills/aw-converge/SKILL.md'] += '\nThe rounds run "aw-build-steps".\n';
+
+  assertOneFinding(runOn(kit), /^skills\/aw-converge\/SKILL\.md: names the phase procedure "aw-build-steps"/);
+});
+
+test('a skill outside the allowed callers that names the convergence procedure is reported', () => {
+  const kit = kitWithProcedure();
+  kit['skills/aw-alpha/SKILL.md'] += '\nCall the Skill tool with "aw-converge-steps".\n';
+
+  assertOneFinding(runOn(kit), /^skills\/aw-alpha\/SKILL\.md: names the convergence procedure "aw-converge-steps".*only aw-converge and aw-implement/);
+});
+
+test('a phase procedure that names the convergence procedure is reported', () => {
+  const kit = kitWithProcedure();
+  kit['skills/aw-build-steps/SKILL.md'] += '\nThen "aw-converge-steps" reads this.\n';
+
+  assertOneFinding(runOn(kit), /^skills\/aw-build-steps\/SKILL\.md: names the convergence procedure/);
+});
+
+test('a convergence procedure that the / menu would show is reported', () => {
+  const kit = kitWithProcedure();
+  kit['skills/aw-converge-steps/SKILL.md'] = kit['skills/aw-converge-steps/SKILL.md'].replace('user-invocable: false\n', '');
+
+  assertOneFinding(runOn(kit), /^skills\/aw-converge-steps\/SKILL\.md: .*"user-invocable: false"/);
+});
+
+test('an aw-converge that does not call its procedure, or keeps a section, is reported', () => {
+  const uncalled = kitWithProcedure();
+  uncalled['skills/aw-converge/SKILL.md'] = uncalled['skills/aw-converge/SKILL.md'].replace('"aw-converge-steps"', 'the steps');
+  assertOneFinding(runOn(uncalled), /^skills\/aw-converge\/SKILL\.md: .*"aw-converge-steps"/);
+
+  const sectioned = kitWithProcedure();
+  sectioned['skills/aw-converge/SKILL.md'] += '\n## Steps\n\nRounds here.\n';
+  assertOneFinding(runOn(sectioned), /^skills\/aw-converge\/SKILL\.md: .*a door holds no section/);
+});
+
+test('aw-implement declaring neither invocation flag is reported', () => {
+  const kit = withImplement(kitWithProcedure(), 'Body.');
+  kit['skills/aw-implement/SKILL.md'] = kit['skills/aw-implement/SKILL.md'].replace('disable-model-invocation: true\n', '');
+  delete kit['skills/aw-implement/agents/openai.yaml'];
+
+  assertOneFinding(runOn(kit), /^skills\/aw-implement\/SKILL\.md: .*user-invoked.*disable-model-invocation: true/);
+});
+
+// A skill that lives in the main session must fit in what the harness keeps of
+// it after compaction (ADR 0017).
+
+const SIZE_LIMIT = 20000;
+
+// The text made exactly `size` characters long by padding its last line.
+function sized(text, size) {
+  assert.ok(text.length < size);
+  return text.slice(0, -1) + 'x'.repeat(size - text.length) + '\n';
+}
+
+function kitWithMainSessionSkills() {
+  const kit = withImplement(kitWithProcedure(), 'Body.');
+  kit['.claude-plugin/plugin.json'].skills.push('./skills/aw-review', './skills/aw-review-steps');
+  kit['skills/aw-review/SKILL.md'] = userInvokedSkill('aw-review', '# Review\n\nCall the Skill tool with "aw-review-steps".');
+  kit['skills/aw-review/agents/openai.yaml'] = NO_IMPLICIT;
+  kit['skills/aw-review-steps/SKILL.md'] = hiddenSkill('aw-review-steps', 'Body.');
+  return kit;
+}
+
+for (const skill of ['aw-implement', 'aw-converge-steps', 'aw-review-steps']) {
+  test(`${skill} at exactly 20,000 characters passes`, () => {
+    const kit = kitWithMainSessionSkills();
+    const at = `skills/${skill}/SKILL.md`;
+    kit[at] = sized(kit[at], SIZE_LIMIT);
+
+    assertNoFindings(runOn(kit));
+  });
+
+  test(`${skill} over 20,000 characters is reported, naming its size`, () => {
+    const kit = kitWithMainSessionSkills();
+    const at = `skills/${skill}/SKILL.md`;
+    kit[at] = sized(kit[at], SIZE_LIMIT + 1);
+
+    assertOneFinding(runOn(kit), new RegExp(`^skills/${skill}/SKILL\\.md: 20001 characters.*20000.*ADR 0017`));
+  });
+}
+
+test('the size rule leaves other skills alone', () => {
+  const kit = validKit();
+  kit['skills/aw-alpha/SKILL.md'] = sized(kit['skills/aw-alpha/SKILL.md'], SIZE_LIMIT + 1);
+
+  assertNoFindings(runOn(kit));
 });
 
 test('a phase procedure that the / menu would show is reported', () => {

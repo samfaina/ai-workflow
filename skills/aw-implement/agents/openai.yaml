@@ -1,0 +1,5 @@
+interface:
+  display_name: "Implement"
+  short_description: "Take a spec or fast-route task to a review with no introduced defect"
+policy:
+  allow_implicit_invocation: false

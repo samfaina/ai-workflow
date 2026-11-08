@@ -26,6 +26,7 @@ const EXPECTED = [
   'aw-retro-run', 'aw-retro-approval',
   'aw-build-fix-standard', 'aw-build-fix-fast',
   'aw-converge-clean', 'aw-converge-limit',
+  'aw-implement-clean', 'aw-implement-hitl', 'aw-implement-stop', 'aw-implement-relaunch',
 ];
 
 test('there is a case file for every result of #49 and for what it left unproven', () => {
@@ -139,6 +140,32 @@ for (const [id, fixCommits] of [['aw-converge-clean', 1], ['aw-converge-limit', 
     assert.ok(converge.assertions.some((a) => a.run === 'git rev-list --count --grep=Fixes: HEAD' && a.stdout === `^${fixCommits}$`));
   });
 }
+
+test('aw-implement-clean ends with every slice ticked and no introduced defect', () => {
+  const clean = byId.get('aw-implement-clean');
+  assert.ok(clean.setup.some((op) => op.commit), 'the run refuses uncommitted changes, so the spec must be committed first');
+  assert.ok(clean.assertions.some((a) => a.count === 0 && a.file === 'docs/specs/renew-loan/spec.md'), 'no unset marker is left');
+  assert.ok(clean.assertions.some((a) => a.file === '.aw/reviews/*-review.md' && /0 introduced/.test(a.matches)));
+  assert.ok(clean.assertions.some((a) => a.judge && /\/aw-ship/.test(a.judge)));
+});
+
+test('aw-implement-hitl turns the first slice HITL and checks it ran in the main session', () => {
+  const hitl = byId.get('aw-implement-hitl');
+  const planted = hitl.setup.find((op) => op.replace === 'docs/specs/renew-loan/spec.md');
+  assert.match(planted.with, /HITL\.$/);
+  assert.ok(hitl.setup.some((op) => op.commit));
+  assert.ok(hitl.assertions.some((a) => a.judge && /main session/.test(a.judge)));
+  assert.ok(hitl.assertions.some((a) => a.judge && /start of the run named/.test(a.judge)));
+});
+
+test('a stop and its relaunch: the same session goes on under a new journal heading', () => {
+  const stop = byId.get('aw-implement-stop');
+  const relaunch = byId.get('aw-implement-relaunch');
+  assert.equal(relaunch.continues, 'aw-implement-stop');
+  assert.ok(stop.assertions.some((a) => a.exists === false), 'the stopped build changes nothing');
+  assert.ok(relaunch.assertions.some((a) => a.count === 2 && /##/.test(a.matches)), 'one heading per call');
+  assert.ok(relaunch.assertions.some((a) => /Agreed seam/.test(a.matches ?? '')));
+});
 
 test('fixtures named by the case files exist', () => {
   for (const c of cases) {

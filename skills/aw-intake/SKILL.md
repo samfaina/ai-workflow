@@ -91,7 +91,7 @@ The fast route has no spec, so for every type but investigation, state 1 to 3 **
 
 **Next**, by route:
 
-- **fast**: `/aw-build`, which works from the done-when criteria with no spec; then `/aw-verify` only when the repo has a verify skill at `.claude/skills/verify-*/`, `/aw-review` and `/aw-ship`, each naming the next. For an investigation, see below.
+- **fast**: `/aw-build`, which works from the done-when criteria with no spec, or `/aw-implement`, which runs the build, `/aw-verify` and `/aw-review` in one call; by hand, `/aw-verify` only when the repo has a verify skill at `.claude/skills/verify-*/`, `/aw-review` and `/aw-ship`, each naming the next. For an investigation, see below.
 - **standard**: `/aw-spec`.
 - **epic**: `/aw-wayfinder`, which charts the deliverables; each one then goes to `/aw-spec`.
 - **investigation**: on the fast route, none, unless the answer shows work to do; then `/aw-intake` again with that work as the task. On the epic route, `/aw-wayfinder`, which charts the questions.
