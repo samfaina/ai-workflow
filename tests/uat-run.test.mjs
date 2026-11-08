@@ -3,7 +3,7 @@
 
 import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { isAbsolute, join } from 'node:path';
+import { dirname, isAbsolute, join } from 'node:path';
 import test from 'node:test';
 
 import { git, makeRun } from './uat-fixtures.mjs';
@@ -331,6 +331,66 @@ test('next says when the run is over', (t) => {
   record(run, pass());
 
   assert.equal(run.cli('next').output.status, 'done');
+});
+
+function finishedRun(t) {
+  const run = makeRun(t, [caseFile('intake'), caseFile('spec', { from: undefined, continues: 'intake' })]);
+  const { workdir, stepDir } = run.cli('next').output;
+  run.cli('check');
+  record(run, pass());
+  run.cli('next');
+  run.cli('check');
+  record(run, pass());
+  run.cli('report');
+  const projects = join(dirname(run.runDir), 'config', 'projects');
+  const caseLogs = join(projects, workdir.replace(/[^A-Za-z0-9]/g, '-'));
+  const otherLogs = join(projects, 'some-other-project');
+  for (const dir of [caseLogs, otherLogs]) {
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, 'session.jsonl'), '{}\n');
+  }
+  return { run, workdir, stepDir, caseLogs, otherLogs };
+}
+
+test('clean deletes the working copies, restore points and case logs, and keeps the record of the run', (t) => {
+  const { run, stepDir, caseLogs, otherLogs } = finishedRun(t);
+  const before = run.sourceState();
+
+  const { status, output } = run.cli('clean');
+
+  assert.equal(status, 0, output?.message);
+  assert.equal(output.status, 'cleaned');
+  for (const gone of [stepDir, join(run.runDir, 'steps'), join(run.runDir, 'points.git'), join(run.runDir, 'points'), caseLogs]) {
+    assert.equal(existsSync(gone), false, gone);
+  }
+  for (const kept of ['summary.md', 'state.json', join('results', 'intake.json'), join('results', 'spec.json')]) {
+    assert.ok(existsSync(join(run.runDir, kept)), kept);
+  }
+  assert.ok(existsSync(join(otherLogs, 'session.jsonl')));
+  assert.deepEqual(run.sourceState(), before);
+});
+
+test('a cleaned run can be cleaned again and still reports', (t) => {
+  const { run } = finishedRun(t);
+  run.cli('clean');
+
+  assert.equal(run.cli('clean').status, 0);
+  assert.equal(run.cli('next').output.status, 'done');
+  assert.equal(run.cli('report').status, 0);
+});
+
+test('clean refuses while a case has no result, and deletes nothing', (t) => {
+  const run = makeRun(t, [caseFile('c1'), caseFile('c2')]);
+  const { workdir } = run.cli('next').output;
+  run.cli('check');
+  record(run, pass());
+
+  const { status, output } = run.cli('clean');
+
+  assert.equal(status, 1);
+  assert.match(output.message, /c2/);
+  assert.ok(existsSync(workdir));
+  assert.ok(existsSync(join(run.runDir, 'points.git')));
 });
 
 test('a case that continues a session reuses that step\'s working copy and restores nothing', (t) => {
