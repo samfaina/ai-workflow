@@ -202,6 +202,14 @@ _Avoid_: e2e skill, test harness
 The table in a verify skill that lists the features a user reaches in the app, each with its entry point, how to drive it and what to observe. `aw-verify` turns an acceptance criterion into a verify journey through it.
 _Avoid_: route list, sitemap
 
+**Citation**:
+A `file:line` reference in a verify skill, with the text of that line quoted beside it and checked against the file.
+_Avoid_: source link, reference (alone)
+
+**Process identity**:
+What a verify skill records for each process it starts: the process id with the process's command line or start time, so that it signals only that process.
+_Avoid_: PID file, process handle
+
 **Verify journey**:
 The run that proves one acceptance criterion on the real app through the verify skill: set up its "given", perform its "when", and observe its "then". Called a journey for short in the verify skills.
 _Avoid_: scenario, e2e test
