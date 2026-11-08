@@ -2,7 +2,7 @@
   "id": "aw-ship-write",
   "title": "aw-ship at write, a pre-existing defect",
   "group": "Feature route (loan renewal)",
-  "order": 27,
+  "order": 28,
   "source": "Feature route: aw-ship at write",
   "from": {
     "case": "aw-review-route"

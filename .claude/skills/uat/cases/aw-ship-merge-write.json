@@ -2,7 +2,7 @@
   "id": "aw-ship-merge-write",
   "title": "aw-ship at write, merge",
   "group": "Feature route (loan renewal)",
-  "order": 28,
+  "order": 29,
   "source": "Left unproven by #49: the merge at write access, moved to #86",
   "from": {
     "ref": "49d218e",

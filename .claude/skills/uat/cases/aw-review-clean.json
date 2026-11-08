@@ -2,7 +2,7 @@
   "id": "aw-review-clean",
   "title": "clean branch",
   "group": "aw-review on its own",
-  "order": 31,
+  "order": 32,
   "source": "aw-review on its own: clean branch",
   "from": {
     "ref": "review/clean"

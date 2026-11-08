@@ -2,7 +2,7 @@
   "id": "aw-review-planted",
   "title": "planted defect",
   "group": "aw-review on its own",
-  "order": 29,
+  "order": 30,
   "source": "aw-review on its own: planted defect",
   "from": {
     "ref": "review/planted"

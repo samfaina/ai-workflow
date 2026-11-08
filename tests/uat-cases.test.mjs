@@ -21,7 +21,7 @@ const EXPECTED = [
   'aw-intake-bug', 'aw-intake-performance', 'aw-intake-refactor', 'aw-intake-investigation', 'aw-intake-feature',
   'aw-spec-approval-traps', 'aw-slices', 'aw-build-contradiction', 'aw-build-slice-1', 'aw-build-slice-2', 'aw-build-slice-3',
   'aw-verify-no-skill', 'aw-create-verify', 'aw-verify-generated', 'aw-review-route',
-  'aw-ship-guard-failed', 'aw-ship-guard-inconclusive', 'aw-ship-default', 'aw-ship-write-uncovered', 'aw-ship-write', 'aw-ship-merge-write',
+  'aw-ship-guard-failed', 'aw-ship-guard-inconclusive', 'aw-ship-default', 'aw-ship-write-uncovered', 'aw-ship-checks-uncovered', 'aw-ship-write', 'aw-ship-merge-write',
   'aw-review-planted', 'aw-ship-planted', 'aw-review-clean',
   'aw-retro-run', 'aw-retro-approval',
 ];
@@ -65,6 +65,28 @@ test('the two cases #49 left unproven exist and test what #86 asks', () => {
   assert.match(inconclusive, /AC-2 \| verify/);
   const merge = byId.get('aw-ship-merge-write');
   assert.ok(merge.assertions.some((a) => a.run === 'git branch --merged main'));
+});
+
+test('a later commit that changes only the VCS adapter goes on, and takes the access levels from its Operations table', () => {
+  const uncovered = byId.get('aw-ship-write-uncovered');
+  assert.ok(uncovered.setup.some((op) => op.to === 'docs/agents/vcs.md'));
+  assert.ok(!uncovered.setup.some((op) => op.replace === 'AGENTS.md'), 'the commit must change the adapter alone');
+  assert.ok(uncovered.assertions.some((a) => a.frontmatter?.status === 'implemented'));
+  assert.ok(uncovered.assertions.some((a) => a.run === 'git ls-remote --heads origin' && a.stdout));
+  assert.ok(uncovered.assertions.some((a) => a.file?.includes('review-requests') && /only .*adapter/.test(a.matches)));
+  assert.doesNotMatch(JSON.stringify(uncovered), /Stopped/);
+});
+
+test('a later commit to the checks adapter keeps the stop', () => {
+  const checks = byId.get('aw-ship-checks-uncovered');
+  const edited = checks.setup.findIndex((op) => op.replace === 'docs/agents/checks.md');
+  const reviewed = checks.setup.findIndex((op) => op.to === '.aw/reviews/29991231-235959-review.md');
+  const committed = checks.setup.findIndex((op) => op.commit);
+  assert.ok(reviewed !== -1 && reviewed < edited && edited < committed, 'the report must name the commit before the adapter change');
+  assert.equal(checks.setup.filter((op) => op.replace || op.write).length, 1, 'the commit must change the checks adapter alone');
+  assert.ok(checks.assertions.some((a) => a.frontmatter?.status === 'approved'));
+  assert.ok(checks.assertions.some((a) => a.file === '.aw/drafts/*-push.md' && a.exists === false));
+  assert.match(JSON.stringify(checks.assertions), /\/aw-review/);
 });
 
 test('fixtures named by the case files exist', () => {

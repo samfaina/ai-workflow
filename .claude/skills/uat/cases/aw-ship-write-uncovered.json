@@ -1,9 +1,9 @@
 {
   "id": "aw-ship-write-uncovered",
-  "title": "aw-ship at write, a commit the review does not cover",
+  "title": "aw-ship at write, a later commit to the VCS adapter alone",
   "group": "Feature route (loan renewal)",
   "order": 26,
-  "source": "Feature route: aw-ship at write (the first stop)",
+  "source": "Feature route: aw-ship at write (the first stop), accepted since #93",
   "from": {
     "case": "aw-review-route"
   },
@@ -17,11 +17,6 @@
       "to": "docs/agents/vcs.md"
     },
     {
-      "replace": "AGENTS.md",
-      "pattern": "Base branch `main`, GitHub pull requests through `gh`, squash merges; `push`, `open-review` and `merge` are at `draft`\\.",
-      "with": "Base branch `main`, no review host; `push` and `merge` are at `write`, `open-review` at `draft`."
-    },
-    {
       "commit": "Set push and merge to write, with no review host"
     }
   ],
@@ -33,19 +28,24 @@
   "turns": [],
   "assertions": [
     {
-      "name": "spec is approved",
+      "name": "spec is implemented",
       "file": "docs/specs/renew-loan/spec.md",
       "frontmatter": {
-        "status": "approved"
+        "status": "implemented"
       }
     },
     {
-      "name": "working tree unchanged",
-      "run": "git status --porcelain",
-      "stdout": "^$"
+      "name": "branch pushed to the local origin",
+      "run": "git ls-remote --heads origin",
+      "stdout": "refs/heads/[a-z]+/"
     },
     {
-      "judge": "Stopped because a later commit is not covered by the review, and pushed nothing"
+      "name": "Evidence names the adapter commit",
+      "file": ".aw/review-requests/*-review-request.md",
+      "matches": "Set push and merge to write[^\\n]*only [^\\n]*adapter"
+    },
+    {
+      "judge": "Went on past the later commit because it changed only the VCS adapter, ran the full level on HEAD, and took the access levels from the adapter's Operations table. The review report is a fixture, so this case tests the ship guard alone."
     }
   ]
 }

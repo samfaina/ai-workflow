@@ -2,7 +2,7 @@
   "id": "aw-ship-planted",
   "title": "aw-ship on the planted branch",
   "group": "aw-review on its own",
-  "order": 30,
+  "order": 31,
   "source": "aw-review on its own: aw-ship on that branch",
   "from": {
     "case": "aw-review-planted"
