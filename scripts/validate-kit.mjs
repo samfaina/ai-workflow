@@ -102,13 +102,14 @@ function disablesImplicitInvocation(yaml) {
   return false;
 }
 
-// Skills that are user-invoked whatever they declare: aw-setup, aw-converge
-// and the phase skills, which the user runs one after another (ADRs 0010,
-// 0013 and 0016, and the v1 spec's naming decisions). A user-invoked skill
-// cannot be called by another skill (ADR 0012).
+// Skills that are user-invoked whatever they declare: aw-setup, aw-converge,
+// aw-implement and the phase skills, which the user runs one after another
+// (ADRs 0010, 0013, 0016 and 0017, and the v1 spec's naming decisions). A
+// user-invoked skill cannot be called by another skill (ADR 0012).
 const USER_INVOKED_SKILLS = [
   'aw-setup',
   'aw-converge',
+  'aw-implement',
   'aw-intake',
   'aw-wayfinder',
   'aw-spec',
@@ -150,7 +151,7 @@ function checkInvocation(dir, folder, fields) {
     return [`${at}/SKILL.md: openai.yaml disables implicit invocation, so the frontmatter must set "disable-model-invocation: true"`];
   }
   if (userInvoked && !claude) {
-    return [`${at}/SKILL.md: aw-setup, aw-converge and the phase skills are user-invoked, so the frontmatter must set "disable-model-invocation: true" and ${yamlPath} "policy: allow_implicit_invocation: false"`];
+    return [`${at}/SKILL.md: aw-setup, aw-converge, aw-implement and the phase skills are user-invoked, so the frontmatter must set "disable-model-invocation: true" and ${yamlPath} "policy: allow_implicit_invocation: false"`];
   }
   return [];
 }
@@ -193,61 +194,97 @@ function checkSkillToolCalls(dir) {
 }
 
 // Each phase procedure, with the phase whose steps it holds: its door, and the
-// one owner of the phase (ADR 0016). aw-converge is the only other caller.
+// one owner of the phase (ADR 0016).
 const PHASE_PROCEDURES = {
   'aw-build-steps': 'aw-build',
   'aw-verify-steps': 'aw-verify',
   'aw-review-steps': 'aw-review',
 };
-const PROCEDURE_CALLER = 'aw-converge';
 
-// Nothing at runtime stops the model from loading a phase procedure, so no
-// skill but its door and aw-converge may name it.
-function checkProcedureCallers(dir, procedure, door) {
-  const allowed = [procedure, door, PROCEDURE_CALLER].map((folder) => `skills/${folder}/`);
+// The rounds of a convergence run, behind the door aw-converge (ADR 0017).
+const CONVERGENCE_PROCEDURE = 'aw-converge-steps';
+const CONVERGENCE_DOOR = 'aw-converge';
+const IMPLEMENTATION_COMMAND = 'aw-implement';
+
+// The files under `skills/` that name `procedure` from outside its callers.
+// Nothing at runtime stops the model from loading a procedure, so no other
+// skill may name it.
+function filesNamingFromOutside(dir, procedure, callers) {
+  const allowed = [procedure, ...callers].map((folder) => `skills/${folder}/`);
   return kitFiles(dir)
     .filter((path) => path.startsWith('skills/') && !allowed.some((prefix) => path.startsWith(prefix)))
     .sort()
-    .filter((path) => readFileSync(join(dir, path), 'utf8').includes(procedure))
-    .map((path) => `${path}: names the phase procedure "${procedure}", which only ${door} and ${PROCEDURE_CALLER} may call (ADR 0016)`);
+    .filter((path) => readFileSync(join(dir, path), 'utf8').includes(procedure));
 }
 
-// The `/` menu must not show a phase procedure: a person starts its door.
-function checkProcedureHidden(dir, procedure) {
+// The `/` menu must not show a procedure: a person starts its door.
+function checkProcedureHidden(dir, procedure, kind) {
   const at = `skills/${procedure}/SKILL.md`;
   const file = join(dir, at);
   if (!existsSync(file)) return [];
   const fields = frontmatter(readFileSync(file, 'utf8'));
   return fields?.['user-invocable'] === 'false'
     ? []
-    : [`${at}: a phase procedure must set "user-invocable: false" (ADR 0016)`];
+    : [`${at}: a ${kind} must set "user-invocable: false" (ADR 0016)`];
 }
 
-// A door hands the whole phase to its procedure and keeps no steps of its
-// own, so that no procedure exists in two skills (ADR 0010).
-function checkDoor(dir, procedure, door) {
+// A door hands the whole of its work to its procedure and keeps no steps of
+// its own, so that no procedure exists in two skills (ADR 0010).
+function checkDoor(dir, procedure, door, kind) {
   const at = `skills/${door}/SKILL.md`;
   const file = join(dir, at);
   const body = existsSync(file) ? withoutFrontmatter(readFileSync(file, 'utf8')) : '';
   const findings = [];
   if (!body.includes(`"${procedure}"`)) {
-    findings.push(`${at}: the door of a phase must call its phase procedure "${procedure}" through the Skill tool (ADR 0016)`);
+    findings.push(`${at}: a door must call its ${kind} "${procedure}" through the Skill tool (ADR 0016)`);
   }
   if (/^##\s/m.test(body)) {
-    findings.push(`${at}: a door holds no section of its own; the phase's text belongs in "${procedure}" (ADR 0016)`);
+    findings.push(`${at}: a door holds no section of its own; its text belongs in "${procedure}" (ADR 0016)`);
   }
   return findings;
 }
 
 function checkPhaseProcedures(dir) {
   const folders = skillFolders(dir);
+  const kind = 'phase procedure';
   return Object.entries(PHASE_PROCEDURES)
     .filter(([procedure]) => folders.includes(procedure))
     .flatMap(([procedure, door]) => [
-      ...checkProcedureCallers(dir, procedure, door),
-      ...checkProcedureHidden(dir, procedure),
-      ...checkDoor(dir, procedure, door),
+      ...filesNamingFromOutside(dir, procedure, [door, CONVERGENCE_PROCEDURE, IMPLEMENTATION_COMMAND]).map(
+        (path) => `${path}: names the ${kind} "${procedure}", which only ${door}, ${CONVERGENCE_PROCEDURE} and ${IMPLEMENTATION_COMMAND} may call (ADR 0017)`,
+      ),
+      ...checkProcedureHidden(dir, procedure, kind),
+      ...checkDoor(dir, procedure, door, kind),
     ]);
+}
+
+function checkConvergenceProcedure(dir) {
+  if (!skillFolders(dir).includes(CONVERGENCE_PROCEDURE)) return [];
+  const kind = 'convergence procedure';
+  return [
+    ...filesNamingFromOutside(dir, CONVERGENCE_PROCEDURE, [CONVERGENCE_DOOR, IMPLEMENTATION_COMMAND]).map(
+      (path) => `${path}: names the ${kind} "${CONVERGENCE_PROCEDURE}", which only ${CONVERGENCE_DOOR} and ${IMPLEMENTATION_COMMAND} may call (ADR 0017)`,
+    ),
+    ...checkProcedureHidden(dir, CONVERGENCE_PROCEDURE, kind),
+    ...checkDoor(dir, CONVERGENCE_PROCEDURE, CONVERGENCE_DOOR, kind),
+  ];
+}
+
+// The harness keeps only the first 5,000 tokens of each skill after
+// compaction, so a skill that lives in the main session must fit in them.
+const MAIN_SESSION_SKILLS = [IMPLEMENTATION_COMMAND, CONVERGENCE_PROCEDURE, 'aw-review-steps'];
+const MAIN_SESSION_SKILL_LIMIT = 20000;
+
+function checkMainSessionSkillSizes(dir) {
+  return MAIN_SESSION_SKILLS.flatMap((folder) => {
+    const at = `skills/${folder}/SKILL.md`;
+    const file = join(dir, at);
+    if (!existsSync(file)) return [];
+    const size = readFileSync(file, 'utf8').length;
+    return size > MAIN_SESSION_SKILL_LIMIT
+      ? [`${at}: ${size} characters, over the limit of ${MAIN_SESSION_SKILL_LIMIT} for a skill that lives in the main session and must survive compaction (ADR 0017)`]
+      : [];
+  });
 }
 
 const PLUGIN_MANIFEST = '.claude-plugin/plugin.json';
@@ -577,6 +614,8 @@ function validate(dir) {
   const findings = checkSkills(dir);
   findings.push(...checkSkillToolCalls(dir));
   findings.push(...checkPhaseProcedures(dir));
+  findings.push(...checkConvergenceProcedure(dir));
+  findings.push(...checkMainSessionSkillSizes(dir));
   findings.push(...checkAdapterTemplates(dir));
   findings.push(...checkRestatedSections(dir));
   const plugin = readJson(dir, PLUGIN_MANIFEST);

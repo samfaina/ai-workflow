@@ -1,0 +1,50 @@
+{
+  "id": "aw-implement-stop",
+  "title": "aw-implement, stops on a declined seam",
+  "group": "aw-implement",
+  "order": 41,
+  "source": "#98: a fast-route build asks to agree a seam, the person declines, and the run stops having changed nothing",
+  "from": {
+    "ref": "review/clean"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-intake Añade loanCountLabel(count) en src/loan-count-label.mjs: para 1 devuelve 1 loan, y para cualquier otro número, el número seguido de loans.",
+  "answers": [
+    {
+      "when": "Which seam to test the loan count wording at",
+      "intent": "Decline for now: none of those seams, stop here",
+      "reason": "a declined seam ends the run, which is the stop this case tests"
+    }
+  ],
+  "turns": [
+    {
+      "intent": "Run /ai-workflow:aw-implement",
+      "reason": "starts the implementation run from intake's fast-route report in this conversation"
+    }
+  ],
+  "assertions": [
+    {
+      "name": "the build changed nothing",
+      "file": "src/loan-count-label.mjs",
+      "exists": false
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "name": "the journal holds intake's report",
+      "file": ".aw/implement/*.md",
+      "matches": "^Intake: "
+    },
+    {
+      "judge": "The build in its subagent returned the seam question, and the main session asked it"
+    },
+    {
+      "judge": "When the person declined, the run stopped, said at which point and why, and said that running /aw-implement again resumes"
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "id": "aw-implement-hitl",
+  "title": "aw-implement, with a HITL slice",
+  "group": "aw-implement",
+  "order": 40,
+  "source": "#98: a HITL slice runs in the main session and asks, with no extra command",
+  "from": {
+    "case": "aw-slices"
+  },
+  "setup": [
+    {
+      "replace": "docs/specs/renew-loan/spec.md",
+      "pattern": "^(1\\. \\[ \\] .*)(?:AFK|HITL)\\.$",
+      "with": "$1HITL."
+    },
+    {
+      "commit": "chore: commit the approved spec, with a HITL first slice"
+    }
+  ],
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-implement docs/specs/renew-loan/spec.md",
+  "answers": [
+    {
+      "when": "What the HITL slice needs from the person",
+      "intent": "Whatever the agent proposes is fine, go ahead",
+      "reason": "the case tests that the question reaches the person during the slice, not what they answer"
+    },
+    {
+      "when": "Which seam to test at, when a build or a fix run returns a seam question",
+      "intent": "A unit test of the exported function the slice changes",
+      "reason": "only asked when no seam in the Test strategy reaches the behaviour"
+    }
+  ],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "every slice is ticked",
+      "file": "docs/specs/renew-loan/spec.md",
+      "matches": "^\\d+\\. \\[ \\] ",
+      "count": 0
+    },
+    {
+      "name": "the latest review ran",
+      "file": ".aw/reviews/*-review.md",
+      "matches": "Proven defects:"
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "The start of the run named slice 1 as HITL and what the person would be needed for"
+    },
+    {
+      "judge": "The AFK variant chose slice 1, left the working tree and the commits unchanged, and returned a Stop line naming it, and the run went on"
+    },
+    {
+      "judge": "Slice 1 was built in the main session and asked the person, with no extra command needed, and the later AFK slices each ran in a subagent"
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+interface:
+  display_name: "Convergence procedure"
+  short_description: "Convergence procedure, called by aw-converge and aw-implement"

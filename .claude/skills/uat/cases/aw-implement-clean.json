@@ -1,0 +1,73 @@
+{
+  "id": "aw-implement-clean",
+  "title": "aw-implement, an approved spec to a clean review",
+  "group": "aw-implement",
+  "order": 39,
+  "source": "#98: one call builds every AFK slice, verifies, reviews and ends clean",
+  "from": {
+    "case": "aw-slices"
+  },
+  "setup": [
+    {
+      "write": "docs/notes/uat-implement.md",
+      "text": "The spec is committed before an implementation run starts.\n"
+    },
+    {
+      "commit": "chore: commit the approved spec before implementing it"
+    }
+  ],
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-implement docs/specs/renew-loan/spec.md",
+  "answers": [
+    {
+      "when": "Which seam to test at, when a build or a fix run returns a seam question",
+      "intent": "A unit test of the exported function the slice changes",
+      "reason": "only asked when no seam in the Test strategy reaches the behaviour"
+    }
+  ],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "on a work branch",
+      "run": "git branch --show-current",
+      "stdout": "/"
+    },
+    {
+      "name": "every slice is ticked",
+      "file": "docs/specs/renew-loan/spec.md",
+      "matches": "^\\d+\\. \\[ \\] ",
+      "count": 0
+    },
+    {
+      "name": "the latest review holds no introduced defect",
+      "file": ".aw/reviews/*-review.md",
+      "matches": "Proven defects: 0 introduced"
+    },
+    {
+      "name": "the journal names the work branch",
+      "file": ".aw/implement/renew-loan.md",
+      "matches": "^Work branch: .*/"
+    },
+    {
+      "name": "the journal was not committed",
+      "run": "git log --all --format=%H -- .aw/implement",
+      "stdout": "^$"
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Each slice was built in a subagent of its own, one at a time, and each was followed by one progress line such as Slice 1/3 built"
+    },
+    {
+      "judge": "Verify ran in a subagent and the first review in the main session, with one progress line each"
+    },
+    {
+      "judge": "The final report gave the state, what is left and every Spec change line, named /aw-ship and did not run it, and the run neither pushed nor opened a review request"
+    }
+  ]
+}

@@ -161,7 +161,7 @@ Report in chat:
 - the mirror tickets: their keys, the draft paths, or "skipped: no tracker";
 - the `aw-check-spec` result.
 
-Then name the next skill: `/aw-build`, to build the first slice whose blockers are all done. Tell the user to run it; this skill never runs it.
+Then name the next skill: `/aw-build`, to build the first slice whose blockers are all done, or `/aw-implement`, to build every slice and take the spec to a review with no introduced defect in one call. Tell the user to run it; this skill never runs it.
 
 ## Credits
 

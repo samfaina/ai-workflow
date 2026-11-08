@@ -1,6 +1,6 @@
 ---
 name: aw-review-steps
-description: "The steps of /aw-review: review the diff on the Spec, Standards and Security axes and write the review report. A phase procedure for calls from /aw-review and aw-converge only: do not load it by your own choice."
+description: "The steps of /aw-review: review the diff on the Spec, Standards and Security axes and write the review report. A phase procedure for calls from /aw-review, the convergence procedure and aw-implement only: do not load it by your own choice."
 user-invocable: false
 ---
 
@@ -8,9 +8,9 @@ user-invocable: false
 
 ## First step: check the caller
 
-This is the phase procedure of `/aw-review` (ADR 0016). Read the arguments before anything else. Unless they name the caller, as `caller: aw-review` or `caller: aw-converge`, stop, change nothing and say that a person starts this phase with `/aw-review`.
+This is the phase procedure of `/aw-review` (ADR 0016). Read the arguments before anything else. Unless they name the caller, as `caller: aw-review`, `caller: aw-converge` or `caller: aw-implement`, stop, change nothing and say that a person starts this phase with `/aw-review`.
 
-With `caller: aw-converge` you run in the main session of a convergence run. The arguments name the spec, or say the task is on the fast route.
+With `caller: aw-converge` or `caller: aw-implement` you run in the main session of a convergence run or an implementation run. The arguments name the spec, or say the task is on the fast route.
 
 Review the change on the work branch, the diff from the VCS adapter's `diff-base`, on three axes:
 
@@ -129,7 +129,7 @@ Every brief holds:
 - the **Findings** section above, pasted in full, with **Where runs happen**;
 - the check commands from the checks adapter, or the ones the project's manifest suggests, for its runs;
 - the instruction to change nothing in the user's working tree, commit nothing, push nothing and post nothing;
-- with `caller: aw-converge`, the instruction not to read `.aw/reviews/`: the review starts from the diff, not from an earlier report;
+- with `caller: aw-converge` or `caller: aw-implement`, the instruction not to read `.aw/reviews/`: the review starts from the diff, not from an earlier report;
 - the output shape: three headings, `Defects introduced`, `Risks introduced` and `Pre-existing`, each holding its findings or "None."; or "No findings." alone when all three are empty. Each defect gives the file and line, what is wrong, the run, and its quoted output; each risk gives the file and line, what may go wrong, its likelihood and its cost. Under 400 words, runs' output excepted.
 
 Then, per axis:
@@ -188,7 +188,7 @@ Done when the report is written and every defect in it names the run that proves
 
 ### 8. Report
 
-When the caller is `aw-converge`, give the report's path and end here: the command reads the report and decides what comes next.
+When the caller is `aw-converge` or `aw-implement`, give the report's path and end here: the command reads the report and decides what comes next.
 
 Otherwise give the report in chat, with its path. Then name what comes next, and tell the user to run it; this skill never runs it:
 

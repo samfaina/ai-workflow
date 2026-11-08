@@ -1,0 +1,52 @@
+{
+  "id": "aw-implement-relaunch",
+  "title": "aw-implement, a relaunch after the stop",
+  "group": "aw-implement",
+  "order": 42,
+  "source": "#98: running the command again continues the journal and takes the task to a review",
+  "continues": "aw-implement-stop",
+  "shell": [],
+  "command": "/ai-workflow:aw-implement",
+  "answers": [
+    {
+      "when": "Which seam to test the loan count wording at",
+      "intent": "A unit test of the exported loanCountLabel function",
+      "reason": "this time the person agrees, so the build can land"
+    }
+  ],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "the task is built",
+      "run": "node -e \"import('./src/loan-count-label.mjs').then((m) => console.log(m.loanCountLabel(1)))\"",
+      "stdout": "^1 loan$"
+    },
+    {
+      "name": "the commit carries the criteria",
+      "run": "git log -1 --format=%B --grep=\"Done when:\"",
+      "stdout": "Done when:"
+    },
+    {
+      "name": "the journal has one heading per call",
+      "file": ".aw/implement/*.md",
+      "matches": "^## \\d{4}-\\d{2}-\\d{2} ",
+      "count": 2
+    },
+    {
+      "name": "the journal records the seam",
+      "file": ".aw/implement/*.md",
+      "matches": "^Agreed seam: "
+    },
+    {
+      "name": "the review ran",
+      "file": ".aw/reviews/*-review.md",
+      "matches": "Proven defects:"
+    },
+    {
+      "judge": "The relaunch continued the same journal under a new heading, took the task from intake's report without asking for it again, and started no second copy of the work"
+    },
+    {
+      "judge": "The final report gave the state, what is left and the next command, and the run did not ship"
+    }
+  ]
+}
