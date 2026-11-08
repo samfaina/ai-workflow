@@ -1,0 +1,37 @@
+{
+  "id": "aw-create-verify",
+  "title": "aw-create-verify",
+  "group": "Feature route (loan renewal)",
+  "order": 20,
+  "source": "Feature route: aw-create-verify (Fail in #49, see #88)",
+  "from": {
+    "case": "aw-build-slice-3"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-create-verify",
+  "answers": [],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "verify skill committed",
+      "run": "git ls-files .claude/skills",
+      "stdout": "verify-.*/SKILL\\.md"
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Ran the generated skill once end to end: start, drive one feature, stop"
+    },
+    {
+      "judge": "Every citation in the skill matches the file it cites"
+    },
+    {
+      "judge": "Start and stop touch only the process the skill started"
+    }
+  ]
+}

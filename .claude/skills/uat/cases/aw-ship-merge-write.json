@@ -1,0 +1,57 @@
+{
+  "id": "aw-ship-merge-write",
+  "title": "aw-ship at write, merge",
+  "group": "Feature route (loan renewal)",
+  "order": 28,
+  "source": "Left unproven by #49: the merge at write access, moved to #86",
+  "from": {
+    "ref": "49d218e",
+    "branch": "feat/renew-loan",
+    "base": "ef0ddf0"
+  },
+  "setup": [
+    {
+      "copy": "fixtures/vcs-local-write.md",
+      "to": "docs/agents/vcs.md"
+    },
+    {
+      "replace": "AGENTS.md",
+      "pattern": "Base branch `main`, GitHub pull requests through `gh`, squash merges; `push`, `open-review` and `merge` are at `draft`\\.",
+      "with": "Base branch `main`, no review host; `push` and `merge` are at `write`, `open-review` at `draft`."
+    },
+    {
+      "commit": "Set push and merge to write, with no review host"
+    },
+    {
+      "copy": "fixtures/review-clean.md",
+      "to": ".aw/reviews/29991231-235959-review.md"
+    }
+  ],
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-ship",
+  "answers": [],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "branch merged into main",
+      "run": "git branch --merged main",
+      "stdout": "feat/renew-loan"
+    },
+    {
+      "name": "spec is implemented",
+      "file": "docs/specs/renew-loan/spec.md",
+      "frontmatter": {
+        "status": "implemented"
+      }
+    },
+    {
+      "name": "aw-check-spec passes",
+      "run": "node {{KIT}}/skills/aw-check-spec/scripts/check-spec.mjs"
+    },
+    {
+      "judge": "With no proven defect and full passing, it merged at write access. The review report is a fixture, so this case tests the ship guard alone."
+    }
+  ]
+}

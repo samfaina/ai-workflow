@@ -1,0 +1,34 @@
+{
+  "id": "aw-intake-bug",
+  "title": "bug",
+  "group": "aw-intake",
+  "order": 8,
+  "source": "aw-intake: bug",
+  "from": {
+    "ref": "uat/setup"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-intake Un socio devolvió un libro el mismo día del vencimiento y le cobraron 25 céntimos.",
+  "answers": [],
+  "turns": [
+    {
+      "intent": "If it asks for the exact case: a loan due 2026-10-15, returned that day; GET /members/<member>/fees gives 25 cents and should give 0",
+      "reason": "the seeded bug, given only when the agent asks"
+    }
+  ],
+  "assertions": [
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Classified it fast and reproduced the bug before reporting"
+    },
+    {
+      "judge": "Named the off-by-one late-fee day count as the cause, citing the code"
+    }
+  ]
+}

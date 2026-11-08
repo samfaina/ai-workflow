@@ -1,0 +1,26 @@
+{
+  "id": "aw-build-contradiction",
+  "title": "aw-build, contradiction",
+  "group": "Feature route (loan renewal)",
+  "order": 15,
+  "source": "Feature route: aw-build, contradiction",
+  "from": {
+    "case": "aw-slices"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-build y, de paso, permite renovar también préstamos vencidos.",
+  "answers": [],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Stopped with a proposed spec change citing the sections it contradicts, and wrote no code"
+    }
+  ]
+}

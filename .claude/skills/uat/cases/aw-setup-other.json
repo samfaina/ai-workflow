@@ -1,0 +1,64 @@
+{
+  "id": "aw-setup-other",
+  "title": "other (Jira, web only, draft)",
+  "group": "aw-setup",
+  "order": 4,
+  "source": "aw-setup: other (Jira, web only, draft)",
+  "from": {
+    "ref": "3aa97fa"
+  },
+  "shell": [],
+  "command": "/ai-workflow:aw-setup",
+  "answers": [
+    {
+      "when": "Where tickets live",
+      "intent": "Another tracker: Jira",
+      "reason": "the case tests the other-tracker path"
+    },
+    {
+      "when": "VCS conventions and access",
+      "intent": "Keep what it proposes, unchanged",
+      "reason": "this case changes only the tracker"
+    },
+    {
+      "when": "Check commands for fast, task and full",
+      "intent": "Keep what it proposes, unchanged",
+      "reason": "this case changes only the tracker"
+    },
+    {
+      "when": "Domain docs layout",
+      "intent": "Keep single-context",
+      "reason": "this case changes only the tracker"
+    },
+    {
+      "when": "Confirmation before writing",
+      "intent": "Approve the write as shown",
+      "reason": "the case needs the files written"
+    }
+  ],
+  "turns": [
+    {
+      "intent": "Jira project LIB at https://example.atlassian.net, no CLI: tickets are read and searched on the web, and created, commented, moved and linked by hand; access draft",
+      "reason": "the agent asks for the details in plain text"
+    },
+    {
+      "intent": "Confirm",
+      "reason": "the agent shows what it will write and waits"
+    }
+  ],
+  "assertions": [
+    {
+      "name": "tracker names the project",
+      "file": "docs/agents/tracker.md",
+      "matches": "LIB"
+    },
+    {
+      "name": "no unfilled placeholder",
+      "run": "git grep --untracked -n \"{{\" -- docs/agents",
+      "exit": 1
+    },
+    {
+      "judge": "Reads became \"paste the content\" and writes became drafts"
+    }
+  ]
+}

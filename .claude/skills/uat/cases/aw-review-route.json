@@ -1,0 +1,45 @@
+{
+  "id": "aw-review-route",
+  "title": "aw-review on the route",
+  "group": "Feature route (loan renewal)",
+  "order": 22,
+  "source": "Feature route: aw-review on the route",
+  "from": {
+    "case": "aw-verify-generated"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-review",
+  "answers": [
+    {
+      "when": "Which base to diff against",
+      "intent": "Local main",
+      "reason": "only asked if the remote and local main differ"
+    },
+    {
+      "when": "An uncommitted change to the spec",
+      "intent": "Discard it if it only realigns the table, and go on",
+      "reason": "what #49 did"
+    }
+  ],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "report written",
+      "file": ".aw/reviews/*-review.md",
+      "matches": "Proven defects:"
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "The three axes appear side by side, each from its own subagent"
+    },
+    {
+      "judge": "Speculative concerns appear only as risks, and every defect names the run that proves it"
+    }
+  ]
+}

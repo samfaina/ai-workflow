@@ -1,0 +1,65 @@
+{
+  "id": "aw-setup-github",
+  "title": "GitHub",
+  "group": "aw-setup",
+  "order": 5,
+  "source": "aw-setup: GitHub",
+  "from": {
+    "ref": "eb1d0dc"
+  },
+  "setup": [
+    {
+      "remote": "https://github.com/samfaina/aw-scratch.git"
+    }
+  ],
+  "shell": [],
+  "command": "/ai-workflow:aw-setup",
+  "answers": [
+    {
+      "when": "Where tickets live",
+      "intent": "GitHub Issues",
+      "reason": "the case tests the GitHub adapter"
+    },
+    {
+      "when": "VCS conventions and access",
+      "intent": "Keep what it proposes, unchanged",
+      "reason": "this case changes only the tracker"
+    },
+    {
+      "when": "Check commands for fast, task and full",
+      "intent": "Keep what it proposes, unchanged",
+      "reason": "this case changes only the tracker"
+    },
+    {
+      "when": "Domain docs layout",
+      "intent": "Keep single-context",
+      "reason": "this case changes only the tracker"
+    },
+    {
+      "when": "Confirmation and access level",
+      "intent": "Approve at write",
+      "reason": "#49 expected the adapter at write"
+    }
+  ],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "tracker names the repo",
+      "file": "docs/agents/tracker.md",
+      "matches": "samfaina/aw-scratch"
+    },
+    {
+      "name": "tracker at write",
+      "file": "docs/agents/tracker.md",
+      "matches": "Default access:\\*\\* `write`"
+    },
+    {
+      "name": "no unfilled placeholder",
+      "run": "git grep --untracked -n \"{{\" -- docs/agents",
+      "exit": 1
+    },
+    {
+      "judge": "Found the repo with gh repo view rather than asking for it"
+    }
+  ]
+}

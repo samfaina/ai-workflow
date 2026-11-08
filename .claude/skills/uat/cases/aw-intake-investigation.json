@@ -1,0 +1,26 @@
+{
+  "id": "aw-intake-investigation",
+  "title": "investigation",
+  "group": "aw-intake",
+  "order": 11,
+  "source": "aw-intake: investigation",
+  "from": {
+    "ref": "uat/setup"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-intake ¿Qué pasa con los préstamos de un libro cuando se borra el libro?",
+  "answers": [],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Answered with cited code: deleteBook leaves the loans orphaned, with title null and fees still charged"
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "id": "aw-ship-guard-inconclusive",
+  "title": "aw-ship guard, an inconclusive result with no other evidence",
+  "group": "Feature route (loan renewal)",
+  "order": 24,
+  "source": "Left unproven by #49: aw-ship guard, moved to #86",
+  "from": {
+    "ref": "49d218e",
+    "branch": "feat/renew-loan",
+    "base": "ef0ddf0"
+  },
+  "setup": [
+    {
+      "replace": "docs/specs/renew-loan/spec.md",
+      "pattern": "\\| AC-2 \\| test: `tests/loans\\.test\\.ts`; verify",
+      "with": "| AC-2 | verify"
+    },
+    {
+      "commit": "Drop the test evidence of AC-2"
+    },
+    {
+      "copy": "fixtures/review-clean.md",
+      "to": ".aw/reviews/29991231-235959-review.md"
+    }
+  ],
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-ship",
+  "answers": [],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "spec is approved",
+      "file": "docs/specs/renew-loan/spec.md",
+      "frontmatter": {
+        "status": "approved"
+      }
+    },
+    {
+      "name": "nothing drafted",
+      "file": ".aw/drafts/*-push.md",
+      "exists": false
+    },
+    {
+      "judge": "Refused to set the spec to implemented on a branch whose HEAD the review covers, because the (inconclusive) result has no test: or manual: entry. The review report is a fixture, so this case tests the ship guard alone."
+    }
+  ]
+}

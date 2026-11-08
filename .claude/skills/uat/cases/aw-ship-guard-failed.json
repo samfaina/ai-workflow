@@ -1,0 +1,54 @@
+{
+  "id": "aw-ship-guard-failed",
+  "title": "aw-ship guard, a failed verify result",
+  "group": "Feature route (loan renewal)",
+  "order": 23,
+  "source": "Left unproven by #49: aw-ship guard, moved to #86",
+  "from": {
+    "ref": "49d218e",
+    "branch": "feat/renew-loan",
+    "base": "ef0ddf0"
+  },
+  "setup": [
+    {
+      "replace": "docs/specs/renew-loan/spec.md",
+      "pattern": "(verify/ac-3\\.md` )\\(passed\\)",
+      "with": "$1(failed)"
+    },
+    {
+      "replace": "docs/specs/renew-loan/verify/ac-3.md",
+      "pattern": "^# AC-3: passed",
+      "with": "# AC-3: failed"
+    },
+    {
+      "commit": "Record a failed verify result for AC-3"
+    },
+    {
+      "copy": "fixtures/review-clean.md",
+      "to": ".aw/reviews/29991231-235959-review.md"
+    }
+  ],
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-ship",
+  "answers": [],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "spec is approved",
+      "file": "docs/specs/renew-loan/spec.md",
+      "frontmatter": {
+        "status": "approved"
+      }
+    },
+    {
+      "name": "nothing drafted",
+      "file": ".aw/drafts/*-push.md",
+      "exists": false
+    },
+    {
+      "judge": "Refused to set the spec to implemented on a branch whose HEAD the review covers, because of the (failed) verify result. The review report is a fixture, so this case tests the ship guard alone."
+    }
+  ]
+}

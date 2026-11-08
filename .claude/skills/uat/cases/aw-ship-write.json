@@ -1,0 +1,55 @@
+{
+  "id": "aw-ship-write",
+  "title": "aw-ship at write, a pre-existing defect",
+  "group": "Feature route (loan renewal)",
+  "order": 27,
+  "source": "Feature route: aw-ship at write",
+  "from": {
+    "case": "aw-review-route"
+  },
+  "setup": [
+    {
+      "copy": "fixtures/vcs-local-write.md",
+      "to": "docs/agents/vcs.md"
+    },
+    {
+      "replace": "AGENTS.md",
+      "pattern": "Base branch `main`, GitHub pull requests through `gh`, squash merges; `push`, `open-review` and `merge` are at `draft`\\.",
+      "with": "Base branch `main`, no review host; `push` and `merge` are at `write`, `open-review` at `draft`."
+    },
+    {
+      "commit": "Set push and merge to write, with no review host"
+    },
+    {
+      "copy": "fixtures/review-preexisting.md",
+      "to": ".aw/reviews/29991231-235959-review.md"
+    }
+  ],
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-ship",
+  "answers": [],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "spec is implemented",
+      "file": "docs/specs/renew-loan/spec.md",
+      "frontmatter": {
+        "status": "implemented"
+      }
+    },
+    {
+      "name": "branch pushed to the local origin",
+      "run": "git ls-remote --heads origin",
+      "stdout": "refs/heads/[a-z]+/"
+    },
+    {
+      "name": "merge drafted",
+      "file": ".aw/drafts/*-merge.md"
+    },
+    {
+      "judge": "Pushed, then left the merge to a person because of the pre-existing defect. The review report is a fixture, so this case tests the ship guard alone."
+    }
+  ]
+}

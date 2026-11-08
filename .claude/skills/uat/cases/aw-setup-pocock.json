@@ -1,0 +1,61 @@
+{
+  "id": "aw-setup-pocock",
+  "title": "Pocock enabled in settings.local.json",
+  "group": "aw-setup",
+  "order": 7,
+  "source": "aw-setup: Pocock enabled in settings.local.json",
+  "from": {
+    "ref": "uat/setup"
+  },
+  "setup": [
+    {
+      "write": ".claude/settings.local.json",
+      "text": "{\n  \"enabledPlugins\": {\n    \"mattpocock-skills@claude-plugins-official\": true\n  }\n}\n"
+    }
+  ],
+  "shell": [],
+  "command": "/ai-workflow:aw-setup",
+  "answers": [
+    {
+      "when": "Where tickets live",
+      "intent": "Keep the current tracker",
+      "reason": "only the plugin setting should change"
+    },
+    {
+      "when": "VCS conventions and access",
+      "intent": "Keep what it proposes, unchanged",
+      "reason": "only the plugin setting should change"
+    },
+    {
+      "when": "Check commands for fast, task and full",
+      "intent": "Keep what it proposes, unchanged",
+      "reason": "only the plugin setting should change"
+    },
+    {
+      "when": "Domain docs layout",
+      "intent": "Keep single-context",
+      "reason": "only the plugin setting should change"
+    },
+    {
+      "when": "Whether to turn the Pocock plugin off here",
+      "intent": "Yes, in settings.local.json",
+      "reason": "the case tests the override detection"
+    }
+  ],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "key flipped",
+      "file": ".claude/settings.local.json",
+      "matches": "\"mattpocock-skills@claude-plugins-official\": false"
+    },
+    {
+      "name": "tracked files unchanged",
+      "run": "git diff --stat",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Detected that settings.local.json overrides settings.json and left the user-level install alone"
+    }
+  ]
+}

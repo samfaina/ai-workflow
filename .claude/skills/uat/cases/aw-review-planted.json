@@ -1,0 +1,40 @@
+{
+  "id": "aw-review-planted",
+  "title": "planted defect",
+  "group": "aw-review on its own",
+  "order": 29,
+  "source": "aw-review on its own: planted defect",
+  "from": {
+    "ref": "review/planted"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-review",
+  "answers": [
+    {
+      "when": "What to judge the Spec axis against",
+      "intent": "Nothing: no spec and no done-when criteria",
+      "reason": "the branch has neither"
+    }
+  ],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "one introduced defect",
+      "file": ".aw/reviews/*-review.md",
+      "matches": "Proven defects: 1 introduced"
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Proved the defect with a run failing at HEAD and passing at the merge base: a fourth active loan is accepted"
+    },
+    {
+      "judge": "Reported the Spec axis as not run"
+    }
+  ]
+}

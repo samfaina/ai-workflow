@@ -1,0 +1,26 @@
+{
+  "id": "aw-verify-no-skill",
+  "title": "aw-verify without a verify skill",
+  "group": "Feature route (loan renewal)",
+  "order": 19,
+  "source": "Feature route: aw-verify without a verify skill",
+  "from": {
+    "case": "aw-build-slice-3"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-verify",
+  "answers": [],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Listed every criterion with its test: evidence and ran nothing on the app"
+    }
+  ]
+}

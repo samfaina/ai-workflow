@@ -1,0 +1,37 @@
+{
+  "id": "aw-review-clean",
+  "title": "clean branch",
+  "group": "aw-review on its own",
+  "order": 31,
+  "source": "aw-review on its own: clean branch",
+  "from": {
+    "ref": "review/clean"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-review",
+  "answers": [
+    {
+      "when": "What to judge the Spec axis against",
+      "intent": "Nothing: no spec and no done-when criteria",
+      "reason": "the branch has neither"
+    }
+  ],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "no proven defect",
+      "file": ".aw/reviews/*-review.md",
+      "matches": "Proven defects: 0 introduced, 0 pre-existing"
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Said \"No findings.\" on Standards and Security, and reported Spec as not run"
+    }
+  ]
+}

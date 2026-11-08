@@ -1,0 +1,57 @@
+{
+  "id": "aw-setup-node-warning",
+  "title": "Node warning with a fake node reporting v16",
+  "group": "aw-setup",
+  "order": 6,
+  "source": "aw-setup: Node warning with a fake node reporting v16",
+  "from": {
+    "ref": "eb1d0dc"
+  },
+  "setup": [
+    {
+      "copy": "fixtures/fake-node/node",
+      "to": ".aw/fake-node/node"
+    },
+    {
+      "copy": "fixtures/fake-node/node.cmd",
+      "to": ".aw/fake-node/node.cmd"
+    }
+  ],
+  "shell": [
+    "$env:PATH = \"$PWD\\.aw\\fake-node;$env:PATH\""
+  ],
+  "command": "/ai-workflow:aw-setup",
+  "answers": [
+    {
+      "when": "Where tickets live",
+      "intent": "Keep the current tracker",
+      "reason": "nothing should change in this case"
+    },
+    {
+      "when": "VCS conventions and access",
+      "intent": "Keep what it proposes, unchanged",
+      "reason": "nothing should change in this case"
+    },
+    {
+      "when": "Check commands for fast, task and full",
+      "intent": "Keep what it proposes, unchanged",
+      "reason": "nothing should change in this case"
+    },
+    {
+      "when": "Domain docs layout",
+      "intent": "Keep single-context",
+      "reason": "nothing should change in this case"
+    }
+  ],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Warned that aw-check-spec cannot run its script on this Node version"
+    }
+  ]
+}

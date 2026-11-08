@@ -1,0 +1,33 @@
+{
+  "id": "aw-slices",
+  "title": "aw-slices",
+  "group": "Feature route (loan renewal)",
+  "order": 14,
+  "source": "Feature route: aw-slices",
+  "from": {
+    "case": "aw-spec-approval-traps"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-slices",
+  "answers": [],
+  "turns": [
+    {
+      "intent": "Accept the slice plan and the test strategy",
+      "reason": "the plan itself is what the assertions check"
+    }
+  ],
+  "assertions": [
+    {
+      "name": "mirror tickets written",
+      "file": "docs/tickets/*"
+    },
+    {
+      "judge": "Filled in the slice plan and Test strategy and reported coverage gaps, or none"
+    },
+    {
+      "judge": "Published the mirror tickets at the tracker access level, with their dependencies"
+    }
+  ]
+}

@@ -1,0 +1,83 @@
+{
+  "id": "aw-setup-none",
+  "title": "none (first run)",
+  "group": "aw-setup",
+  "order": 1,
+  "source": "aw-setup: none (first run)",
+  "from": {
+    "ref": "uat/base"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-setup",
+  "answers": [
+    {
+      "when": "Where tickets live",
+      "intent": "No tracker",
+      "reason": "this case tests the first run with no tracker"
+    },
+    {
+      "when": "VCS conventions and access",
+      "intent": "Keep what it proposes, unchanged",
+      "reason": "checks and conventions must come from package.json, CI and the log"
+    },
+    {
+      "when": "Check commands for fast, task and full",
+      "intent": "Keep what it proposes, unchanged",
+      "reason": "checks and conventions must come from package.json, CI and the log"
+    },
+    {
+      "when": "Domain docs layout",
+      "intent": "Keep single-context",
+      "reason": "checks and conventions must come from package.json, CI and the log"
+    },
+    {
+      "when": "Confirmation and where the permissions.deny entries go",
+      "intent": "Approve, with the deny entries in the shared settings.json",
+      "reason": "#49 expected the 16 entries in .claude/settings.json"
+    }
+  ],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "pointer block",
+      "file": "AGENTS.md",
+      "matches": "^## Agent skills"
+    },
+    {
+      "name": "tracker adapter",
+      "file": "docs/agents/tracker.md"
+    },
+    {
+      "name": "vcs adapter",
+      "file": "docs/agents/vcs.md"
+    },
+    {
+      "name": "checks adapter",
+      "file": "docs/agents/checks.md"
+    },
+    {
+      "name": "domain adapter",
+      "file": "docs/agents/domain.md"
+    },
+    {
+      "name": "no unfilled placeholder",
+      "run": "git grep --untracked -n \"{{\" -- docs/agents",
+      "exit": 1
+    },
+    {
+      "name": ".aw ignored",
+      "file": ".gitignore",
+      "matches": "^\\.aw/?$"
+    },
+    {
+      "name": "deny entries",
+      "file": ".claude/settings.json",
+      "matches": "git push --force"
+    },
+    {
+      "judge": "Took the check commands from package.json and CI and asked only what the repo could not answer"
+    }
+  ]
+}

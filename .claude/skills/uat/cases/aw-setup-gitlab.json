@@ -1,0 +1,55 @@
+{
+  "id": "aw-setup-gitlab",
+  "title": "GitLab without glab or a GitLab remote",
+  "group": "aw-setup",
+  "order": 3,
+  "source": "aw-setup: GitLab without glab or a GitLab remote",
+  "from": {
+    "ref": "b0c28c8"
+  },
+  "shell": [],
+  "command": "/ai-workflow:aw-setup",
+  "answers": [
+    {
+      "when": "Where tickets live",
+      "intent": "GitLab at write, project samfaina/aw-scratch on gitlab.com, typed in if it is not an option",
+      "reason": "the tracker tab shows four options, and GitLab may only be reachable by typing"
+    },
+    {
+      "when": "VCS conventions and access",
+      "intent": "Keep what it proposes, unchanged",
+      "reason": "this case changes only the tracker"
+    },
+    {
+      "when": "Check commands for fast, task and full",
+      "intent": "Keep what it proposes, unchanged",
+      "reason": "this case changes only the tracker"
+    },
+    {
+      "when": "Domain docs layout",
+      "intent": "Keep single-context",
+      "reason": "this case changes only the tracker"
+    },
+    {
+      "when": "Confirmation before writing",
+      "intent": "Approve the write as shown",
+      "reason": "the case needs the files written"
+    }
+  ],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "tracker is GitLab",
+      "file": "docs/agents/tracker.md",
+      "matches": "GitLab"
+    },
+    {
+      "name": "no unfilled placeholder",
+      "run": "git grep --untracked -n \"{{\" -- docs/agents",
+      "exit": 1
+    },
+    {
+      "judge": "Wrote the adapter anyway and warned that every tracker operation fails until glab auth login"
+    }
+  ]
+}
