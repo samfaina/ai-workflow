@@ -15,7 +15,7 @@ Every command below is `node <this skill>/scripts/<script> <mode> --run <run>` f
 The argument is a run folder to resume, or the path of the scratch app's clone. The clone may also be in `UAT_SOURCE`. Its path stays out of this repo: never write it to a committed file.
 
 - **A folder holding `state.json`:** resume it. `next` returns the first step without a result, and a step already under way comes back with `resumed: true`, its working copy untouched.
-- **A clone:** `init --run <run> --source <clone>`, with `<run>` a new short folder outside any repo, such as `~/aw-uat/<yyyymmdd>`. `--cases a,b` runs a subset.
+- **A clone:** ask the person where to create the run, and suggest `~/aw-uat/<yyyymmdd>` in their home folder. It must be a new folder with a short path, outside any repo. Then `init --run <that folder> --source <clone>`. `--cases a,b` runs a subset.
 - **Neither reachable:** stop and ask. The run needs this machine's clone.
 
 Done when `next` can run against a run folder.

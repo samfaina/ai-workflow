@@ -6,7 +6,7 @@
   "source": "Feature route: aw-spec",
   "continues": "aw-intake-feature",
   "shell": [],
-  "command": "/ai-workflow:aw-spec",
+  "command": "/ai-workflow:aw-spec usa el slug renew-loan",
   "answers": [],
   "turns": [
     {
