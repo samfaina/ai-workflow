@@ -19,8 +19,8 @@ function skillLine(skill, start) {
 }
 
 const intakeDefinition = skillLine('aw-intake', '- **fast**:');
-const buildRefusal = skillLine('aw-build', 'Refuse to go on, and tell the user to run `/aw-intake` again');
-const buildMidBuildStop = skillLine('aw-build', 'When building shows that a done-when criterion is wrong');
+const buildRefusal = skillLine('aw-build-steps', 'Refuse to go on, and tell the user to run `/aw-intake` again');
+const buildMidBuildStop = skillLine('aw-build-steps', 'When building shows that a done-when criterion is wrong');
 
 // Each Ask First item of aw-security-and-hardening, and the wording that names
 // the work behind it.
@@ -45,7 +45,7 @@ test('every Ask First item has its wording here', () => {
   assert.deepEqual(items, askFirstWording.map(([item]) => item));
 });
 
-for (const [skill, text] of [['aw-intake', intakeDefinition], ['aw-build', buildRefusal]]) {
+for (const [skill, text] of [['aw-intake', intakeDefinition], ['aw-build-steps', buildRefusal]]) {
   for (const [item, wording] of askFirstWording) {
     test(`${skill} keeps "${item}" off the fast route`, () => {
       assert.match(text, wording);

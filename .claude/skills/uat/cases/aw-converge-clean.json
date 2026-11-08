@@ -1,0 +1,66 @@
+{
+  "id": "aw-converge-clean",
+  "title": "aw-converge, ends with a clean review",
+  "group": "aw-converge",
+  "order": 37,
+  "source": "#95: one introduced defect on the fast route, on a branch that otherwise reviews clean",
+  "from": {
+    "ref": "review/clean"
+  },
+  "setup": [
+    {
+      "write": "src/loan-count-label.mjs",
+      "text": "// Words a count of loans for a status line.\nexport function loanCountLabel(count) {\n  return `${count} loans`;\n}\n"
+    },
+    {
+      "commit": "feat: word the loan count for the status line\n\nDone when: a count of one reads 1 loan, and any other count reads the number and loans"
+    },
+    {
+      "copy": "fixtures/review-introduced-fast.md",
+      "to": ".aw/reviews/20000101-000000-review.md"
+    }
+  ],
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-converge",
+  "answers": [
+    {
+      "when": "Which seam to test the loan count wording at",
+      "intent": "A unit test of the exported loanCountLabel function",
+      "reason": "the fix run in its subagent returns this question and the main session asks it"
+    }
+  ],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "the defect is gone",
+      "run": "node -e \"import('./src/loan-count-label.mjs').then((m) => console.log(m.loanCountLabel(1)))\"",
+      "stdout": "^1 loan$"
+    },
+    {
+      "name": "the latest review holds no introduced defect",
+      "file": ".aw/reviews/*-review.md",
+      "matches": "Proven defects: 0 introduced"
+    },
+    {
+      "name": "one fix commit",
+      "run": "git rev-list --count --grep=Fixes: HEAD",
+      "stdout": "^1$"
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "The fix run ran in a subagent of its own, and the review in the main session with each axis in its own subagent"
+    },
+    {
+      "judge": "The main session asked the seam question the fix run returned, and started the fix run again with the answer"
+    },
+    {
+      "judge": "Ended clean after one round, named /aw-ship and did not run it, and neither pushed nor opened a review request"
+    }
+  ]
+}

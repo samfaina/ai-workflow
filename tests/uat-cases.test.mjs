@@ -25,6 +25,7 @@ const EXPECTED = [
   'aw-review-planted', 'aw-ship-planted', 'aw-review-clean',
   'aw-retro-run', 'aw-retro-approval',
   'aw-build-fix-standard', 'aw-build-fix-fast',
+  'aw-converge-clean', 'aw-converge-limit',
 ];
 
 test('there is a case file for every result of #49 and for what it left unproven', () => {
@@ -126,6 +127,18 @@ test('a fix on the fast route writes every Done when line into its commit', () =
   assert.doesNotMatch(message, /member|personal/i, 'a criterion on personal data is refused off the fast route');
   assert.ok(fix.assertions.some((a) => a.run === 'git log -1 --format=%B' && /Done when:/.test(a.stdout)));
 });
+
+// A later review report must sort after the planted one, or the command would
+// keep reading the planted one as the latest.
+for (const [id, fixCommits] of [['aw-converge-clean', 1], ['aw-converge-limit', 3]]) {
+  test(`${id} plants a report that a later review sorts after, and counts ${fixCommits} fix commit(s)`, () => {
+    const converge = byId.get(id);
+    const planted = converge.setup.findIndex((op) => op.commit);
+    const reviewed = converge.setup.findIndex((op) => op.to === '.aw/reviews/20000101-000000-review.md');
+    assert.ok(planted !== -1 && reviewed > planted, `${id}: the report must name the commit that plants the defect`);
+    assert.ok(converge.assertions.some((a) => a.run === 'git rev-list --count --grep=Fixes: HEAD' && a.stdout === `^${fixCommits}$`));
+  });
+}
 
 test('fixtures named by the case files exist', () => {
   for (const c of cases) {

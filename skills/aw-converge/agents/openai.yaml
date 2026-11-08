@@ -1,0 +1,5 @@
+interface:
+  display_name: "Converge"
+  short_description: "Repeat fix, verify and review until no introduced defect is left"
+policy:
+  allow_implicit_invocation: false

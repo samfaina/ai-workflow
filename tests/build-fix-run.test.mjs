@@ -12,7 +12,8 @@ import { repoRoot, writeFiles } from './fixtures.mjs';
 import { git, tempDir } from './uat-fixtures.mjs';
 
 const read = (path) => readFileSync(join(repoRoot, path), 'utf8').replaceAll('\r\n', '\n');
-const skill = read('skills/aw-build/SKILL.md');
+const skill = read('skills/aw-build-steps/SKILL.md');
+const door = read('skills/aw-build/SKILL.md');
 
 // The text from a heading up to the next heading of its level or above.
 function section(heading) {
@@ -217,7 +218,7 @@ test('the fix run never starts a review or a verify run itself', () => {
 });
 
 for (const [skillName, start] of [
-  ['aw-review', '- **An introduced defect:**'],
+  ['aw-review-steps', '- **An introduced defect:**'],
   ['aw-ship', '- **An introduced defect:**'],
 ]) {
   test(`${skillName} sends an introduced defect to the fix run`, () => {
@@ -232,7 +233,7 @@ test('the glossary defines the fix run', () => {
 });
 
 test('the skill description and the README mention the fix run', () => {
-  assert.match(skill.split('---')[1], /introduced defects/);
+  assert.match(door.split('---')[1], /introduced defects/);
   assert.match(read('README.md'), /`aw-build`[^;]*introduced defects/);
 });
 
