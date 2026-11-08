@@ -1,6 +1,6 @@
 ---
 name: aw-build
-description: "Build one slice of an approved spec per call: on a work branch, test-first with aw-tdd at the agreed seams, then run the task checks, tick the slice, update Traceability and commit locally. Stops with a proposed spec change when the spec is wrong. On the fast route, builds the whole task from intake's done-when criteria with no spec. Run after /aw-slices, once per slice, or after /aw-intake on the fast route."
+description: "Build one slice of an approved spec per call: on a work branch, test-first with aw-tdd at the agreed seams, then run the task checks, tick the slice, update Traceability and commit locally. Stops with a proposed spec change when the spec is wrong. On the fast route, builds the whole task from intake's done-when criteria with no spec. A fix run fixes the introduced defects of the latest review report. Run after /aw-slices, once per slice, after /aw-intake on the fast route, or after /aw-review reports an introduced defect."
 disable-model-invocation: true
 ---
 
@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 Build **one slice** of an approved spec per call, on a work branch: test-first at the seams the spec's Test strategy agrees, then run the `task` check level, tick the slice, update Traceability and make one local commit. The commits and the spec's Traceability are this phase's artifact. Building never starts a review: review is a phase of its own. On the fast route there is no spec, and one call builds the whole task from intake's done-when criteria, as **The fast route** says.
 
-This skill edits only three things in the spec: done markers (the slice's own, and the unset markers a plan without any needs, as **The done marker** says), a **test exception** in the slice it builds, and the Traceability rows of the criteria that slice covers. Anything else the spec needs is a **spec change**: stop, as **When the spec is wrong** says.
+This skill edits only three things in the spec: done markers (the slice's own, and the unset markers a plan without any needs, as **The done marker** says), a **test exception** in the slice it builds, and the Traceability rows of the criteria that slice covers. Anything else the spec needs is a **spec change**: stop, as **When the spec is wrong** says. A fix run edits the spec only as **The fix run** says.
 
 ## Configuration
 
@@ -56,13 +56,13 @@ Read the spec's frontmatter. **Refuse to go on unless `status` is `approved`**, 
 
 - `draft`: the spec has not passed spec approval. Tell the user to finish it with `/aw-spec` and approve it there.
 - `implemented`: the spec is built. To change it, run `/aw-spec`, which sets it back to `draft` for the change and asks for approval again.
-- `superseded`: name the spec its `superseded-by` points to.
+- `superseded`: name the spec its `superseded-by` points to, where `/aw-spec` makes any change.
 
 Never set or change `status` yourself. Refuse as well when the Slice plan holds no numbered slices: tell the user to run `/aw-slices`.
 
 Then call the Skill tool with "aw-check-spec" and run it on the repo. When it reports a finding on this spec, stop: report the findings; fixing them is a spec change. When it reports `Result: not script-verified`, Node is missing: say so, and go on.
 
-Pick the slice: the one the user names, or else the first slice in plan order that is not done and whose blockers are all done. Refuse a slice whose blockers are not all done, and name them. When every slice is done, say so and name `/aw-verify` as the next skill.
+Pick the slice: the one the user names, or else the first slice in plan order that is not done and whose blockers are all done. Refuse a slice whose blockers are not all done, and name them. When the user asks for a fix run, go to **The fix run**. When every slice is done, and the latest review report names `HEAD` and holds an introduced defect, go to **The fix run**. Otherwise, when every slice is done, say so and name `/aw-verify` as the next skill.
 
 When the slice is **HITL**, tell the user now what they will be needed for, from the slice's name and Delivers line, and ask before the step that needs them.
 
@@ -175,7 +175,9 @@ On the fast route (ADR 0013) there is no spec and no slice plan. `/aw-intake` st
 
 Refuse to go on, and tell the user to run `/aw-intake` again, when there are no done-when criteria, or when meeting a criterion would change a contract (a public API, schema, file format, CLI flag or event), stored data or anything security-related (authentication, permissions, secrets, input from outside, a new external service integration, CORS, rate limiting or throttling, adding a dependency, or how personal data is collected, handled or shared): such a task is not on the fast route, and intake sends it to the standard route. Upgrading an existing dependency does not, on its own, keep a task off the fast route, major versions included.
 
-Done when you can name the task, its type and its done-when criteria.
+**Fix run.** When the user asks for one, or when the latest review report names `HEAD` and holds an introduced defect, go to **The fix run**: with no slices, there is nothing else to wait for.
+
+Done when you can name the task, its type and its done-when criteria, and whether this call is a fix run.
 
 **Step 2: the work branch.** Name it by the adapter's branch naming from a slug of the task, such as `fix/<slug>`. On a rerun, stay on the work branch the earlier call made.
 
@@ -202,3 +204,57 @@ Done when the task is in a local commit on the work branch whose message carries
 ### When the criteria are wrong
 
 When building shows that a done-when criterion is wrong (it cannot be met as stated, contradicts the code, or needs a change Step 1 refuses), stop as **When the spec is wrong** says: commit nothing, write no more code, and list the files changed. Then propose the corrected criterion with the evidence that the old one is wrong. The fast route has no spec to change: the user agrees the new criteria in the conversation, and the next `/aw-build` builds from them and writes them into its commit. When the correction moves the task off the fast route, tell the user to run `/aw-intake` again, which sends it to `/aw-spec`.
+
+## The fix run
+
+A **fix run** fixes the introduced defects of the latest review report and builds no slice: one call, one commit, every defect it can fix. Step 1 has taken the spec, or **The fast route** the task, and every refusal there holds. These steps replace steps 2 to 8.
+
+**Read the report.** List `.aw/reviews/*-review.md` and take the last in name order: the file names start with `<yyyymmdd-hhmmss>`. Its heading reads `# Review: <branch> at <short hash>`, and `git rev-parse --verify <short hash>^{commit}` gives the commit it names.
+
+- **No report:** stop, and name `/aw-review`.
+- **Another commit:** when the hash does not resolve, or resolves to anything but `HEAD`, the report is out of date. Stop, change nothing, and name `/aw-review`. `/aw-ship`'s exemption for adapters does not apply: a fix starts from the code the report ran on.
+- **No introduced defect:** when the report's `Proven defects:` line counts 0 introduced, say there is nothing to fix, and stop.
+
+**Take the defects.** The input is every defect under a `Defects introduced` heading, in every axis of the report, each with its file and line, what is wrong, its run and its quoted output. A defect from the Standards or Security axis, which no slice covers, is fixed like any other. Leave `Risks introduced` and `Pre-existing` as they are: they are not this run's.
+
+Done when you can list every introduced defect with its axis and its run.
+
+**The work branch.** Follow step 2. The fix lands on the branch the report reviewed.
+
+**Explore.** Read each defect's run and quoted output, the code at its file and line, and the criterion it names, if any: step 3's reading, for the defects alone. Keep to the spec's Boundaries as step 3 says. Then check each defect against the criteria:
+
+- **A defect that shows a criterion is wrong:** fixing it would break or contradict the criterion, or the criterion cannot be met as stated. Stop as **When the spec is wrong** says, with no commit and a proposed spec change; on the fast route, follow **When the criteria are wrong**. No defect of this run is fixed then: report each as not fixed.
+
+Done when you know, for each defect, the code it changes and that no criterion stands against the fix.
+
+**Agree the seams.** The seams in the spec's Test strategy are agreed; on the fast route, the seams the user agreed for this task are. When no agreed seam reaches a defect, as with most Standards or Security defects, propose one with one line on what it catches and what it misses, and ask the user, in one question for all such defects. When they agree on the standard route, the Test strategy needs updating: a spec change to report, not to make.
+
+**Fix test-first.** Call the Skill tool with "aw-tdd" and take one defect at a time: its run becomes a failing test at an agreed seam, one that fails before the fix with the wrong behaviour the review quoted, and passes after it. Fix what the defect needs and no more. A test for a defect against a criterion names it as step 4 says, or on the fast route quotes it; any other test names the defect. Run `run-check fast` as you go. When neither a failing test nor the review's run shows the defect at `HEAD`, report it as not fixed, with the output.
+
+**Test exception.** When step 4's rule applies, record a test exception instead of the test. A defect against a criterion: in the slice that covers it, as step 4 says, or on the fast route as a line of the commit message, as **Step 4** of **The fast route** says. A defect no criterion covers, on either route: a line of the commit message, ``Test exception: <file:line>. <why a test at the agreed seam would cost too much>; proven by `manual:` evidence instead: <the review's run, and what it must now show>``; make that run and put its output in the report. Leave Traceability as it is: only a new test adds to it.
+
+Done when every defect has a test that failed before its fix and passes now, a test exception, or a reason it is not fixed.
+
+**Run the `task` checks.** Run `run-check task` as step 5 says, on the test files this run added or changed. Step 5's rules on a failure hold.
+
+Done when `run-check task` passed in this session.
+
+**Record in the spec.** Tick and untick no done marker, and leave the spec as it is but for two edits: a test exception in the slice that covers its criterion, and in Traceability a `test:` entry beside the row's others, only when a new test proves a criterion. Run `aw-check-spec` again when you edited the spec, as step 6 says. On the fast route there is no spec: skip this.
+
+Done when the spec holds only those edits and the check reports no finding on it, or ran by reading only and you said so.
+
+**Commit.** Use `commit` for one local commit with the fix, its tests and any spec edit, staging only the paths this run changed, as step 7 says. The message names the fix, such as `fix: <what the defects had in common>`, and its body holds one `Fixes: <file:line>: <what was wrong> (<axis>)` line per defect fixed, then any `Test exception:` lines. On the fast route the body also writes the whole current set of `Done when:` lines, in intake's words, as **Step 7** of **The fast route** says, ahead of the `Fixes:` lines. With no defect fixed, commit nothing.
+
+Done when the fixes are in one local commit on the work branch, or in a draft whose path you gave the user, or no defect was fixed.
+
+**Report.** Report in chat in this shape, with one line per defect, in the report's order, and no other line that opens with `Fixed:` or `Not fixed:`: a later command reads them.
+
+- `Fix run: <the spec's path, or on the fast route the task>`
+- `Review report: <its path>`
+- `Fixed: <file:line>: <what was wrong> (<axis>). Evidence: <the test that failed before the fix, or its test exception>`
+- `Not fixed: <file:line>: <what was wrong> (<axis>). Reason: <why>`
+- `Commit: <hash> <subject>`, `Commit: draft <path>` or `Commit: none`
+- `Task checks: <result>`, and `Spec check: <result>` when it ran
+- any spec change the run found, for the user to make with `/aw-spec`
+
+**Then name the next skill:** `/aw-verify` when the fix touches a criterion whose Traceability row holds a `verify:` entry, or on the fast route when the repo has a verify skill at `.claude/skills/verify-<app>/`, and `/aw-review` otherwise. Tell the user to run it; this skill never runs it (ADR 0010). After a stop on a wrong criterion, name what **When the spec is wrong** or **When the criteria are wrong** names instead.

@@ -70,7 +70,7 @@ List `.aw/reviews/*-review.md` and take the latest: the file names start with `<
 
 - **No report:** stop. Nothing ships unreviewed: tell the user to run `/aw-review`.
 - **The report names another commit:** its heading reads `# Review: <branch> at <short hash>`. When that hash is not `HEAD`, apply **Commits after the review**. When every check in it holds, the report covers `HEAD`. When one fails, the commits after it are unreviewed: stop, and tell the user to run `/aw-review` again.
-- **An introduced defect:** stop. Name it; the user fixes it on the work branch with `/aw-build`, or with `/aw-spec` when a criterion is wrong (on the fast route, with a corrected done-when criterion the user agrees), then runs `/aw-review` again.
+- **An introduced defect:** stop. Name it; the user fixes it on the work branch with the fix run of `/aw-build`, or with `/aw-spec` when a criterion is wrong (on the fast route, with a corrected done-when criterion the user agrees), then runs `/aw-review` again.
 - **Pre-existing defects only, or none:** go on. Note the counts on the report's `Proven defects:` line for the merge conditions, and every introduced risk for the pre-ship checklist.
 
 **Commits after the review.**
