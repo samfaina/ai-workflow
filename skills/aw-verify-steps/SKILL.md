@@ -10,7 +10,7 @@ user-invocable: false
 
 This is the phase procedure of `/aw-verify` (ADR 0016). Read the arguments before anything else. Unless they name the caller, as `caller: aw-verify` or `caller: aw-converge`, stop, change nothing and say that a person starts this phase with `/aw-verify`.
 
-With `caller: aw-converge` you run in a subagent and no user can answer you. The arguments name the spec, or say the task is on the fast route. A journey that needs something from the user is inconclusive. Wherever a step says to ask the user anything else, end the run with a `Stop:` line that says what you would have asked.
+With `caller: aw-converge` you run in a subagent and no user can answer you. The arguments name the spec, or say the task is on the fast route. A journey that needs something from the user is inconclusive. Wherever a step says to ask the user anything else, end the run with a `Stop:` line that says what you would have asked. `.aw/` is local state: its files are not changes in the working tree.
 
 Prove each acceptance criterion of a spec on the **real app**, through the repo's verify skill at `.claude/skills/verify-<app>/` (ADR 0011), and record each result as `verify:` evidence in the spec's Traceability. The result files under `docs/specs/<slug>/verify/` and the Traceability rows that point to them are this phase's artifact; on the fast route, which has no spec, it proves intake's done-when criteria instead, as **The fast route** says.
 

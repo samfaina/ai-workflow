@@ -113,6 +113,51 @@ test('a seam no agreed seam reaches comes back as the one question, and the answ
   assert.match(seams, /seams the arguments name as agreed/);
 });
 
+test('a fix run stop that names no skill says Next: none, so no command runs a skill after it', () => {
+  assert.match(line(fixReport, '- `Next: <skill>`'), /`Next: none` after any stop that names no skill/);
+});
+
+test('a spec change the fix run found reaches the user even when the run ends clean', () => {
+  assert.match(fixReport, /^- `Spec change: <the change>`/m);
+  assert.match(fixRunReading, /Keep every `Spec change:` line/);
+  assert.match(report, /every `Spec change:` line the fix runs reported, for the user to make with `\/aw-spec` before shipping/);
+});
+
+test('every procedure takes the spec or the fast route from the arguments of aw-converge', () => {
+  assert.match(section(reviewSteps, '## First step: check the caller'), /The arguments name the spec, or say the task is on the fast route/);
+  const specLine = line(reviewSteps, '**Standard or epic route: the spec.**');
+  assert.match(specLine, /the user names or the arguments name/);
+  assert.match(line(reviewSteps, 'First find the route.'), /when the arguments say so/);
+});
+
+test('under aw-converge, .aw/ is local state and not a change in the working tree', () => {
+  for (const text of [buildSteps, verifySteps]) {
+    assert.match(section(text, '## First step: check the caller'), /`\.aw\/` is local state: its files are not changes in the working tree/);
+  }
+});
+
+for (const door of ['aw-build', 'aw-verify', 'aw-review']) {
+  test(`${door} says what to do when its procedure is not installed`, () => {
+    assert.match(read(`skills/${door}/SKILL.md`), new RegExp(`npx skills add samfaina/ai-workflow --skill ${door}-steps`));
+  });
+}
+
+test('the README says a door needs its procedure and aw-converge needs all three', () => {
+  const readme = read('README.md');
+  assert.match(readme, /`aw-build`, `aw-verify` and `aw-review` each need their phase procedure/);
+  assert.match(readme, /`aw-converge` needs all three/);
+  assert.match(read('docs/configuration.md'), /a phase with a phase procedure carries them there/);
+});
+
+test('NOTICE credits the review adaptation where its text now lives', () => {
+  assert.match(read('NOTICE.md'), /^\| `aw-review-steps` \| Matt Pocock/m);
+  assert.doesNotMatch(read('NOTICE.md'), /^\| `aw-review` \|/m);
+});
+
+test('the glossary defines the door of a phase', () => {
+  assert.match(read('GLOSSARY.md'), /its door/);
+});
+
 test('every aw-verify ending has its Next line, and those a round cannot resolve a Stop line', () => {
   assert.match(verifyReport, /\*\*every criterion passed\*\*[^\n]*`Next: \/aw-review`/);
   assert.match(verifyReport, /\*\*a criterion failed\*\*[^\n]*`Stop: criterion failed`[^\n]*`Next: \/aw-build`/);
@@ -131,8 +176,8 @@ test('a refusal of aw-verify and a repo with no verify skill end with Stop and N
   assert.match(section(verifySteps, '## The fast route'), /no verify skill means no phase[^\n]*`Next: \/aw-review`/);
 });
 
-test('every reviewer brief starts from the diff, not from an earlier report', () => {
-  assert.match(section(reviewSteps, '### 5. Run the three axes in parallel'), /instruction not to read `\.aw\/reviews\/`/);
+test('under aw-converge every reviewer brief starts from the diff, not from an earlier report', () => {
+  assert.match(section(reviewSteps, '### 5. Run the three axes in parallel'), /with `caller: aw-converge`, the instruction not to read `\.aw\/reviews\/`/);
 });
 
 test('under aw-converge the review ends with the report and leaves what comes next to the command', () => {
@@ -142,7 +187,7 @@ test('under aw-converge the review ends with the report and leaves what comes ne
 test('aw-review names /aw-converge first for an introduced defect, and the manual path as the alternative', () => {
   const next = line(reviewSteps, '- **An introduced defect:**');
   assert.ok(next.indexOf('`/aw-converge`') !== -1 && next.indexOf('`/aw-converge`') < next.indexOf('fix run of `/aw-build`'), next);
-  assert.match(next, /Or take the steps by hand/);
+  assert.match(next, /Or run the phases by hand/);
 });
 
 test('aw-converge is user-invoked on both harnesses', () => {
@@ -193,7 +238,7 @@ for (const [name, where, wording] of [
   });
 }
 
-test('a seam to agree stays inside the loop: the main session asks and starts the fix run again', () => {
+test('a seam to agree stays inside the run: the main session asks and starts the fix run again', () => {
   const seam = line(fixRunReading, '1. **`Stop: seam to agree`**');
   assert.match(seam, /Ask the user/);
   assert.match(seam, /start the fix run again/);
@@ -227,7 +272,7 @@ test('zero introduced defects ends the run clean, and the limit ends it with wha
   assert.match(line(reviewReading, '- **More, at the limit:**'), /ends the run/);
 });
 
-test('pre-existing defects and risks never keep the loop going', () => {
+test('pre-existing defects and risks never keep a run going', () => {
   assert.match(converge, /Pre-existing defects and risks never keep a run going/);
 });
 

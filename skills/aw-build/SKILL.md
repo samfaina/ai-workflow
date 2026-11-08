@@ -6,4 +6,4 @@ disable-model-invocation: true
 
 # Build
 
-This phase's steps live in its phase procedure (ADR 0016). Call the Skill tool with "aw-build-steps", with `caller: aw-build` as the arguments, followed by whatever the user asked for with this command. Then follow what it returns. Do not start this phase's work any other way.
+This phase's steps live in its phase procedure (ADR 0016). Call the Skill tool with "aw-build-steps", with `caller: aw-build` as the arguments, followed by whatever the user asked for with this command. Then follow what it returns. Do not start this phase's work any other way. When that skill is not installed, stop and tell the user to install it with `npx skills add samfaina/ai-workflow --skill aw-build-steps`.

@@ -37,7 +37,7 @@ To install a single skill, name it:
 npx skills add samfaina/ai-workflow --skill aw-<name>
 ```
 
-Each skill folder is self-contained, with its license, references and scripts, so a single skill works on its own.
+Each skill folder is self-contained, with its license, references and scripts, so a single skill works on its own. The exceptions are the phases that hand their steps to a phase procedure: `aw-build`, `aw-verify` and `aw-review` each need their phase procedure (`aw-build-steps`, and so on) installed too, and `aw-converge` needs all three.
 
 ## Switching plugins on or off per repo
 

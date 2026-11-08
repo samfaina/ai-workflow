@@ -1,6 +1,6 @@
 # The configuration layer
 
-How kit skills find a repo's configuration, what they may do with it, and what they do when there is none. This page is for whoever writes a phase skill; the decisions behind it are ADRs 0006, 0007 and 0013. A phase skill installed through `npx skills` cannot read this page or `aw-setup`'s files, so each one carries the parts it needs in its own text.
+How kit skills find a repo's configuration, what they may do with it, and what they do when there is none. This page is for whoever writes a phase skill; the decisions behind it are ADRs 0006, 0007 and 0013. A phase skill installed through `npx skills` cannot read this page or `aw-setup`'s files, so each one carries the parts it needs in its own text; a phase with a phase procedure carries them there.
 
 ## Finding the adapters
 

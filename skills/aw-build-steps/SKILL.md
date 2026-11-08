@@ -10,7 +10,7 @@ user-invocable: false
 
 This is the phase procedure of `/aw-build` (ADR 0016). Read the arguments before anything else. Unless they name the caller, as `caller: aw-build` or `caller: aw-converge`, stop, change nothing and say that a person starts this phase with `/aw-build`.
 
-With `caller: aw-converge` you run in a subagent and no user can answer you. The arguments ask for a fix run and name the spec, or say the task is on the fast route. Wherever a step says to ask the user, end the run with a `Stop:` line that says what you would have asked, as the fix run's **Report** says. The one exception is the question in **Agree the seams**.
+With `caller: aw-converge` you run in a subagent and no user can answer you. The arguments ask for a fix run and name the spec, or say the task is on the fast route. Wherever a step says to ask the user, end the run with a `Stop:` line that says what you would have asked, as the fix run's **Report** says. The one exception is the question in **Agree the seams**. `.aw/` is local state: its files are not changes in the working tree.
 
 Build **one slice** of an approved spec per call, on a work branch: test-first at the seams the spec's Test strategy agrees, then run the `task` check level, tick the slice, update Traceability and make one local commit. The commits and the spec's Traceability are this phase's artifact. Building never starts a review: review is a phase of its own. On the fast route there is no spec, and one call builds the whole task from intake's done-when criteria, as **The fast route** says.
 
@@ -253,7 +253,7 @@ Done when the spec holds only those edits and the check reports no finding on it
 
 Done when the fixes are in one local commit on the work branch, or in a draft whose path you gave the user, or no defect was fixed.
 
-**Report.** Report in chat in this shape, with one line per defect, in the report's order, and no other line that opens with `Fixed:`, `Not fixed:`, `Commit:`, `Stop:`, `Question:` or `Next:`: a later command reads them.
+**Report.** Report in chat in this shape, with one line per defect, in the report's order, and no other line that opens with `Fixed:`, `Not fixed:`, `Commit:`, `Spec change:`, `Stop:`, `Question:` or `Next:`: a later command reads them.
 
 - `Fix run: <the spec's path, or on the fast route the task>`
 - `Review report: <its path>`
@@ -261,9 +261,9 @@ Done when the fixes are in one local commit on the work branch, or in a draft wh
 - `Not fixed: <file:line>: <what was wrong> (<axis>). Reason: <why>`
 - `Commit: <hash> <subject>`, `Commit: draft <path>` or `Commit: none`
 - `Task checks: <result>`, and `Spec check: <result>` when it ran
-- any spec change the run found, for the user to make with `/aw-spec`
+- `Spec change: <the change>`, one line for each spec change the run found, for the user to make with `/aw-spec`
 - `Stop: <reason>`, when the run ended before its commit: one of the reasons this section names, or else what stopped it, such as a refusal of step 1 or a question no one could answer
 - `Question: <the question>`, only with `Stop: seam to agree`
-- `Next: <skill>`, the skill named below, or `Next: none` after `Stop: nothing to fix`
+- `Next: <skill>`, the skill named below, the skill a refusal of step 1 names, or `Next: none` after any stop that names no skill, such as `Stop: nothing to fix`, `Stop: seam to agree` or `Stop: check failed on code the fix did not touch`
 
 **Then name the next skill:** `/aw-verify` when the fix touches a criterion whose Traceability row holds a `verify:` entry, or on the fast route when the repo has a verify skill at `.claude/skills/verify-<app>/`, and `/aw-review` otherwise. Tell the user to run it; this skill never runs it (ADR 0010). After a stop on a wrong criterion, name what **When the spec is wrong** or **When the criteria are wrong** names instead: `/aw-spec`, or on the fast route `/aw-build` once the corrected criterion is agreed.

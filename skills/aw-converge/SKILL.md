@@ -44,7 +44,7 @@ Check these before any work. When one holds, refuse, say which and what to do, a
 - **No subagents.** Refuse when this harness cannot start subagents: the fix run and `/aw-verify` each need one of their own.
 - **No report at `HEAD`.** List `.aw/reviews/*-review.md` and take the last in name order. Its heading reads `# Review: <branch> at <short hash>`. When there is no report, or `git rev-parse --verify <short hash>^{commit}` gives anything but `HEAD`, name `/aw-review`.
 - **No introduced defect.** When the report's `Proven defects:` line counts 0 introduced, there is nothing to converge: name `/aw-ship`.
-- **`commit` at `draft`.** When the VCS adapter has `commit` at `draft`, no fix can land: tell the user to raise it, or to take the steps by hand.
+- **`commit` at `draft`.** When the VCS adapter has `commit` at `draft`, no fix can land: tell the user to raise it, or to run the phases by hand.
 - **Uncommitted changes.** When `git status --porcelain` shows anything outside `.aw/`, tell the user to commit it or set it aside first.
 
 Take the report's `Spec axis judged against:` line. When it names a spec's path, each procedure's arguments below carry `spec: <path>`; otherwise they carry `fast route`.
@@ -59,9 +59,9 @@ Number the rounds from 1. Each round runs these three in order. The fix run and 
 
 Start a subagent, in the foreground, with this brief: call the Skill tool with "aw-build-steps", with `caller: aw-converge; fix run; <spec or fast route>` as the arguments, adding `agreed seams: <the user's answer>` once there is one; follow it to its end; return its report with every line as written.
 
-Read the report, in this order:
+Keep every `Spec change:` line for the report in step 4: a run that ends clean still owes the user that change. Then read the report, in this order:
 
-1. **`Stop: seam to agree`** with a `Question:` line: this is the one question inside the loop. Ask the user the question. When they answer, start the fix run again in the same round with the answer in its arguments, and pass that answer to every later fix run of this call. When they decline, end the run with the reason.
+1. **`Stop: seam to agree`** with a `Question:` line: this is the one question inside a convergence run. Ask the user the question. When they answer, start the fix run again in the same round with the answer in its arguments, and pass that answer to every later fix run of this call. When they decline, end the run with the reason.
 2. **Any other `Stop:` line** ends the run with that reason, such as a spec change, a done-when criterion to correct, or a check that fails on code the fix did not touch.
 3. **`Commit: none`** ends the run: the round changed nothing, so another review would find the same.
 4. **`Commit: draft <path>`** ends the run: the fix did not land.
@@ -69,7 +69,7 @@ Read the report, in this order:
 
 Then follow its `Next:` line: `Next: /aw-verify` goes to **Verify**, and `Next: /aw-review` to **The review**. Output that is not recognised ends the run: a report with no `Commit:` or `Next:` line, a commit that is not `HEAD`, or any other `Next:`. Quote it in the report.
 
-Done when the fix is in a commit at `HEAD` and you know which step comes next, or the run has ended.
+Done when the fix is in a commit at `HEAD` and you know what comes next, or the run has ended.
 
 #### Verify
 
@@ -82,7 +82,7 @@ Read the report:
 
 Output that is not recognised ends the run, and the report quotes it.
 
-Done when the next step is the review, or the run has ended.
+Done when the review comes next, or the run has ended.
 
 #### The review
 
@@ -101,6 +101,7 @@ Done when the run has ended or the next round has started.
 Report in chat:
 
 - one line per round: its fix commit, its `/aw-verify` result or "not run", and its review report's path with its count of introduced defects;
+- every `Spec change:` line the fix runs reported, for the user to make with `/aw-spec` before shipping;
 - how the run ended, and which of these holds:
   - **Clean:** the latest review report holds no introduced defect. Name `/aw-ship`; introduced risks are for the user to accept or fix before shipping.
   - **Limit reached:** list the defects left, from the latest review report's `Defects introduced`, each with its file and line. Say that running `/aw-converge` again starts a new count, and that a call can raise the limit.

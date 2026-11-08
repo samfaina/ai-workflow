@@ -130,13 +130,13 @@ test('a fix on the fast route writes every Done when line into its commit', () =
 
 // A later review report must sort after the planted one, or the command would
 // keep reading the planted one as the latest.
-for (const [id, fixes] of [['aw-converge-clean', '^1$'], ['aw-converge-limit', '^3$']]) {
-  test(`${id} plants a report that a later review sorts after, and counts ${fixes.slice(1, -1)} fix commit(s)`, () => {
+for (const [id, fixCommits] of [['aw-converge-clean', 1], ['aw-converge-limit', 3]]) {
+  test(`${id} plants a report that a later review sorts after, and counts ${fixCommits} fix commit(s)`, () => {
     const converge = byId.get(id);
     const planted = converge.setup.findIndex((op) => op.commit);
     const reviewed = converge.setup.findIndex((op) => op.to === '.aw/reviews/20000101-000000-review.md');
     assert.ok(planted !== -1 && reviewed > planted, `${id}: the report must name the commit that plants the defect`);
-    assert.ok(converge.assertions.some((a) => a.run === 'git rev-list --count --grep=Fixes: HEAD' && a.stdout === fixes));
+    assert.ok(converge.assertions.some((a) => a.run === 'git rev-list --count --grep=Fixes: HEAD' && a.stdout === `^${fixCommits}$`));
   });
 }
 

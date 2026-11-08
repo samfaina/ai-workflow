@@ -175,7 +175,7 @@ A stage of the workflow, owned by exactly one kit skill and producing exactly on
 _Avoid_: step, stage
 
 **Phase procedure**:
-The steps of a phase, held in a skill the model can call so that a convergence run can run them. The phase keeps its one owner, the skill a person invokes, and only that skill and `aw-converge` may call its procedure.
+The steps of a phase, held in a skill the model can call so that a convergence run can run them. The phase keeps its one owner, the skill a person invokes, which is its door: a thin skill that hands the phase to its procedure. Only the door and `aw-converge` may call the procedure.
 _Avoid_: shared phase, internal skill
 
 **Phase-free skill**:

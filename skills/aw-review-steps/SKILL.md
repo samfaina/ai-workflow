@@ -10,6 +10,8 @@ user-invocable: false
 
 This is the phase procedure of `/aw-review` (ADR 0016). Read the arguments before anything else. Unless they name the caller, as `caller: aw-review` or `caller: aw-converge`, stop, change nothing and say that a person starts this phase with `/aw-review`.
 
+With `caller: aw-converge` you run in the main session of a convergence run. The arguments name the spec, or say the task is on the fast route.
+
 Review the change on the work branch, the diff from the VCS adapter's `diff-base`, on three axes:
 
 - **Spec**: does the change do what its spec asks, every `AC-n` and nothing outside its scope? On the fast route there is no spec, and the axis judges against intake's "done when" criteria.
@@ -69,9 +71,9 @@ Done when you have the diff command, the commits, the branch and both hashes, an
 
 ### 2. Find what the Spec axis judges against
 
-First find the route. It is the fast route when `/aw-intake` reported `Route: fast` for the task in this conversation, or when the commits since the base carry the `Done when:` lines `/aw-build` writes and the diff touches no spec under `docs/specs/`; otherwise it is the standard or epic route.
+First find the route. It is the fast route when the arguments say so, or when `/aw-intake` reported `Route: fast` for the task in this conversation, or when the commits since the base carry the `Done when:` lines `/aw-build` writes and the diff touches no spec under `docs/specs/`; otherwise it is the standard or epic route.
 
-**Standard or epic route: the spec.** Take the spec the user names, or else the one the diff touches under `docs/specs/<slug>/spec.md` (`/aw-build` commits its spec edits with each slice), or else the one whose slug the branch name holds. When more than one fits, or none does, list the specs under `docs/specs/` with their `status` and ask which one. Read its frontmatter:
+**Standard or epic route: the spec.** Take the spec the user names or the arguments name, or else the one the diff touches under `docs/specs/<slug>/spec.md` (`/aw-build` commits its spec edits with each slice), or else the one whose slug the branch name holds. When more than one fits, or none does, list the specs under `docs/specs/` with their `status` and ask which one. Read its frontmatter:
 
 - `draft`: stop. The spec has not passed spec approval; tell the user to finish it with `/aw-spec`.
 - `superseded`: stop, and name the spec its `superseded-by` points to.
@@ -127,7 +129,7 @@ Every brief holds:
 - the **Findings** section above, pasted in full, with **Where runs happen**;
 - the check commands from the checks adapter, or the ones the project's manifest suggests, for its runs;
 - the instruction to change nothing in the user's working tree, commit nothing, push nothing and post nothing;
-- the instruction not to read `.aw/reviews/`: the review starts from the diff, not from an earlier report;
+- with `caller: aw-converge`, the instruction not to read `.aw/reviews/`: the review starts from the diff, not from an earlier report;
 - the output shape: three headings, `Defects introduced`, `Risks introduced` and `Pre-existing`, each holding its findings or "None."; or "No findings." alone when all three are empty. Each defect gives the file and line, what is wrong, the run, and its quoted output; each risk gives the file and line, what may go wrong, its likelihood and its cost. Under 400 words, runs' output excepted.
 
 Then, per axis:
@@ -191,5 +193,5 @@ When the caller is `aw-converge`, give the report's path and end here: the comma
 Otherwise give the report in chat, with its path. Then name what comes next, and tell the user to run it; this skill never runs it:
 
 - **No proven defect:** `/aw-ship`. Introduced risks are for the user to accept or fix before shipping.
-- **An introduced defect:** fix it on the work branch before shipping. Run `/aw-converge`, which repeats the fix, `/aw-verify` when the fix calls for it and this review until no introduced defect is left or it stops with its reason. Or take the steps by hand: the fix run of `/aw-build`, which takes every defect under `Defects introduced`, from any axis. It starts by itself once every slice is done; while a slice is still to build, ask `/aw-build` for it. When a criterion itself is wrong, the fix goes to `/aw-spec` instead; on the fast route, to a corrected done-when criterion the user agrees. Then run `/aw-verify` when the fix touches a criterion with `verify:` evidence, or on the fast route when the repo has a verify skill, and `/aw-review` again.
+- **An introduced defect:** fix it on the work branch before shipping. Run `/aw-converge`, which repeats the fix, `/aw-verify` when the fix calls for it and this review until no introduced defect is left or it stops with its reason. Or run the phases by hand: the fix run of `/aw-build`, which takes every defect under `Defects introduced`, from any axis. It starts by itself once every slice is done; while a slice is still to build, ask `/aw-build` for it. When a criterion itself is wrong, the fix goes to `/aw-spec` instead; on the fast route, to a corrected done-when criterion the user agrees. Then run `/aw-verify` when the fix touches a criterion with `verify:` evidence, or on the fast route when the repo has a verify skill, and `/aw-review` again.
 - **Pre-existing defects only:** this change is not responsible for them, and the user may fix them first or ship. Offer to start each as a task of its own with `/aw-intake`. When they ship, `/aw-ship` still sees a proven defect in the report, so with `merge` at `write` it does not merge by itself (ADR 0013): a person merges.
