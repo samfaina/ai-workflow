@@ -43,6 +43,11 @@
       "stdout": "^[^\\n]+\\nAdd member id masking$"
     },
     {
+      "name": "the defect is gone",
+      "run": "node -e \"import('./src/mask-member-id.mjs').then((m) => console.log(m.maskMemberId('M-123456')))\"",
+      "stdout": "^\\*{4}3456$"
+    },
+    {
       "name": "the commit names the defect",
       "run": "git log -1 --format=%B",
       "stdout": "^Fixes: src/mask-member-id\\.mjs"

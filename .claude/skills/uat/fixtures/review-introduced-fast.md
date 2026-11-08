@@ -8,10 +8,10 @@
 
 ### Defects introduced
 
-**src/mask-member-id.mjs:3: the done-when criterion does not hold: a member id reaches the log unmasked.**
+**src/loan-count-label.mjs:3: the done-when criterion does not hold: a count of one reads "1 loans".**
 
-- Run: `node -e "import('./src/mask-member-id.mjs').then((m) => console.log(m.maskMemberId('M-123456')))"` at {{SHORT}}.
-- Output: `M-123456`. Only the last four characters should show: `****3456`.
+- Run: `node -e "import('./src/loan-count-label.mjs').then((m) => console.log(m.loanCountLabel(1)))"` at {{SHORT}}.
+- Output: `1 loans`. It should read `1 loan`.
 
 ## Standards
 

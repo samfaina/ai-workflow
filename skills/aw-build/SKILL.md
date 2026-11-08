@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 Build **one slice** of an approved spec per call, on a work branch: test-first at the seams the spec's Test strategy agrees, then run the `task` check level, tick the slice, update Traceability and make one local commit. The commits and the spec's Traceability are this phase's artifact. Building never starts a review: review is a phase of its own. On the fast route there is no spec, and one call builds the whole task from intake's done-when criteria, as **The fast route** says.
 
-This skill edits only three things in the spec: done markers (the slice's own, and the unset markers a plan without any needs, as **The done marker** says), a **test exception** in the slice it builds, and the Traceability rows of the criteria that slice covers. Anything else the spec needs is a **spec change**: stop, as **When the spec is wrong** says. A fix run edits less, as **The fix run** says.
+This skill edits only three things in the spec: done markers (the slice's own, and the unset markers a plan without any needs, as **The done marker** says), a **test exception** in the slice it builds, and the Traceability rows of the criteria that slice covers. Anything else the spec needs is a **spec change**: stop, as **When the spec is wrong** says. A fix run edits the spec only as **The fix run** says.
 
 ## Configuration
 
@@ -213,7 +213,7 @@ A **fix run** fixes the introduced defects of the latest review report and build
 
 - **No report:** stop, and name `/aw-review`.
 - **Another commit:** when the hash does not resolve, or resolves to anything but `HEAD`, the report is out of date. Stop, change nothing, and name `/aw-review`. `/aw-ship`'s exemption for adapters does not apply: a fix starts from the code the report ran on.
-- **No introduced defect:** when the report's `Proven defects:` line counts 0 introduced, say there is nothing to fix, and name `/aw-ship`.
+- **No introduced defect:** when the report's `Proven defects:` line counts 0 introduced, say there is nothing to fix, and stop.
 
 **Take the defects.** The input is every defect under a `Defects introduced` heading, in every axis of the report, each with its file and line, what is wrong, its run and its quoted output. A defect from the Standards or Security axis, which no slice covers, is fixed like any other. Leave `Risks introduced` and `Pre-existing` as they are: they are not this run's.
 
@@ -231,13 +231,17 @@ Done when you know, for each defect, the code it changes and that no criterion s
 
 **Fix test-first.** Call the Skill tool with "aw-tdd" and take one defect at a time: its run becomes a failing test at an agreed seam, one that fails before the fix with the wrong behaviour the review quoted, and passes after it. Fix what the defect needs and no more. A test for a defect against a criterion names it as step 4 says, or on the fast route quotes it; any other test names the defect. Run `run-check fast` as you go. When neither a failing test nor the review's run shows the defect at `HEAD`, report it as not fixed, with the output.
 
-**Test exception.** When step 4's rule applies, record a test exception instead of the test. A defect against a criterion a slice covers: in that slice, as step 4 says, and in its Traceability row, as step 6 says. A defect no slice covers, and any defect on the fast route: a line of the commit message, ``Test exception: <file:line>. <why a test at the agreed seam would cost too much>; proven by rerunning the review's run, `<command>` ``, and rerun it to show the defect gone.
+**Test exception.** When step 4's rule applies, record a test exception instead of the test. A defect against a criterion: in the slice that covers it, as step 4 says, or on the fast route as a line of the commit message, as **Step 4** of **The fast route** says. A defect no criterion covers, on either route: a line of the commit message, ``Test exception: <file:line>. <why a test at the agreed seam would cost too much>; proven by `manual:` evidence instead: <the review's run, and what it must now show>``; make that run and put its output in the report. Leave Traceability as it is: only a new test adds to it.
 
 Done when every defect has a test that failed before its fix and passes now, a test exception, or a reason it is not fixed.
 
 **Run the `task` checks.** Run `run-check task` as step 5 says, on the test files this run added or changed. Step 5's rules on a failure hold.
 
-**Record in the spec.** Tick and untick no done marker, and leave the spec as it is but for two edits: the test exceptions above, and in Traceability a `test:` entry beside the row's others, only when a new test proves a criterion. Run `aw-check-spec` again when you edited the spec, as step 6 says. On the fast route there is no spec: skip this.
+Done when `run-check task` passed in this session.
+
+**Record in the spec.** Tick and untick no done marker, and leave the spec as it is but for two edits: a test exception in the slice that covers its criterion, and in Traceability a `test:` entry beside the row's others, only when a new test proves a criterion. Run `aw-check-spec` again when you edited the spec, as step 6 says. On the fast route there is no spec: skip this.
+
+Done when the spec holds only those edits and the check reports no finding on it, or ran by reading only and you said so.
 
 **Commit.** Use `commit` for one local commit with the fix, its tests and any spec edit, staging only the paths this run changed, as step 7 says. The message names the fix, such as `fix: <what the defects had in common>`, and its body holds one `Fixes: <file:line>: <what was wrong> (<axis>)` line per defect fixed, then any `Test exception:` lines. On the fast route the body also writes the whole current set of `Done when:` lines, in intake's words, as **Step 7** of **The fast route** says, ahead of the `Fixes:` lines. With no defect fixed, commit nothing.
 
@@ -247,7 +251,7 @@ Done when the fixes are in one local commit on the work branch, or in a draft wh
 
 - `Fix run: <the spec's path, or on the fast route the task>`
 - `Review report: <its path>`
-- `Fixed: <file:line>: <what was wrong> (<axis>). Proof: <the test that failed before the fix, or its test exception>`
+- `Fixed: <file:line>: <what was wrong> (<axis>). Evidence: <the test that failed before the fix, or its test exception>`
 - `Not fixed: <file:line>: <what was wrong> (<axis>). Reason: <why>`
 - `Commit: <hash> <subject>`, `Commit: draft <path>` or `Commit: none`
 - `Task checks: <result>`, and `Spec check: <result>` when it ran

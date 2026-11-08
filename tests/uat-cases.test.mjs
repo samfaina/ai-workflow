@@ -92,7 +92,7 @@ test('a later commit to the checks adapter keeps the stop', () => {
 
 // A fix-run case plants its defect in a commit and then writes a report, so that
 // the report names HEAD and the defect is real at it.
-function assertReportNamesThePlantedCommit(fix) {
+function assertReportCopiedAfterCommit(fix) {
   const planted = fix.setup.findIndex((op) => op.commit);
   const reviewed = fix.setup.findIndex((op) => op.to === '.aw/reviews/29991231-235959-review.md');
   assert.ok(planted !== -1 && reviewed > planted, `${fix.id}: the report must name the commit that plants the defect`);
@@ -100,11 +100,16 @@ function assertReportNamesThePlantedCommit(fix) {
 
 const oneCommitOnTop = (fix) => fix.assertions.some((a) => a.run === 'git log --format=%s -2' && a.stdout);
 
+// The defect's own run, made again after the fix: a commit that only says it
+// fixed the defect does not pass.
+const defectIsGone = (fix) => fix.assertions.some((a) => a.run?.startsWith('node -e') && a.stdout);
+
 test('a fix on the standard route fixes a defect no slice covers, and changes no marker', () => {
   const fix = byId.get('aw-build-fix-standard');
   assert.equal(fix.from.case, 'aw-review-route', 'every slice is done there');
-  assertReportNamesThePlantedCommit(fix);
+  assertReportCopiedAfterCommit(fix);
   assert.ok(oneCommitOnTop(fix));
+  assert.ok(defectIsGone(fix));
   assert.ok(fix.assertions.some((a) => a.run === 'git log -1 --format=%B' && /Fixes:/.test(a.stdout)));
   assert.ok(fix.assertions.some((a) => a.file === 'docs/specs/renew-loan/spec.md' && a.count === 0), 'every marker stays ticked');
   assert.ok(fix.assertions.some((a) => /--exit-code/.test(a.run ?? '') && /retry-delay/.test(a.run)), 'the risk is left alone');
@@ -113,9 +118,12 @@ test('a fix on the standard route fixes a defect no slice covers, and changes no
 
 test('a fix on the fast route writes every Done when line into its commit', () => {
   const fix = byId.get('aw-build-fix-fast');
-  assertReportNamesThePlantedCommit(fix);
+  assertReportCopiedAfterCommit(fix);
   assert.ok(oneCommitOnTop(fix));
-  assert.match(fix.setup.find((op) => op.commit).commit, /\n\nDone when: /);
+  assert.ok(defectIsGone(fix));
+  const message = fix.setup.find((op) => op.commit).commit;
+  assert.match(message, /\n\nDone when: /);
+  assert.doesNotMatch(message, /member|personal/i, 'a criterion on personal data is refused off the fast route');
   assert.ok(fix.assertions.some((a) => a.run === 'git log -1 --format=%B' && /Done when:/.test(a.stdout)));
 });
 

@@ -131,7 +131,7 @@ The checkbox that opens each slice in the slice plan: `[ ]` until `aw-build` bui
 _Avoid_: status line, done flag
 
 **Test exception**:
-The record, in a slice, that `aw-build` proves one of its criteria by verify or manual evidence instead of a test, because a test at the agreed seam would cost far more than it is worth. It carries its reason. On the fast route, which has no slices, it is a line of the commit message.
+The record, in a slice, that `aw-build` proves one of its criteria by verify or manual evidence instead of a test, because a test at the agreed seam would cost far more than it is worth. It carries its reason. On the fast route, which has no slices, it is a line of the commit message. In a fix run, a defect no criterion covers gets one as a line of the commit message too, proven by `manual:` evidence.
 _Avoid_: skipped test, test waiver
 
 **Mirror ticket**:

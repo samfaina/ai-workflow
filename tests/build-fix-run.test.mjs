@@ -4,13 +4,12 @@
 // command it names on a real repo. Ticket #94.
 
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 
 import { repoRoot, writeFiles } from './fixtures.mjs';
-import { tempDir } from './uat-fixtures.mjs';
+import { git, tempDir } from './uat-fixtures.mjs';
 
 const read = (path) => readFileSync(join(repoRoot, path), 'utf8').replaceAll('\r\n', '\n');
 const skill = read('skills/aw-build/SKILL.md');
@@ -57,14 +56,6 @@ test('on the fast route, with no slices to wait for, the report alone starts a f
   assert.match(start, /go to \*\*The fix run\*\*/);
 });
 
-const IDENTITY = { GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@local', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@local' };
-
-function git(dir, ...args) {
-  const result = spawnSync('git', ['-C', dir, ...args], { encoding: 'utf8', env: { ...process.env, ...IDENTITY } });
-  assert.equal(result.status, 0, `git ${args.join(' ')}: ${result.stderr}`);
-  return result.stdout.trim();
-}
-
 function commit(dir, name) {
   writeFiles(dir, { [name]: name });
   git(dir, 'add', '-A');
@@ -108,7 +99,7 @@ test('a report headed with HEAD covers HEAD, and one headed with an older commit
 
 test('with no report, or none with an introduced defect, there is nothing to fix and the run says what comes next', () => {
   assert.match(item('No report'), /`\/aw-review`/);
-  assert.match(item('No introduced defect'), /`\/aw-ship`/);
+  assert.match(item('No introduced defect'), /nothing to fix/);
 });
 
 test('the input is every defect under Defects introduced, from any axis, also those no slice covers', () => {
@@ -137,12 +128,26 @@ test('a seam nothing agreed yet needs the user, and changes no spec here', () =>
   assert.match(seams, /spec change to report/);
 });
 
-test('a defect no test can afford gets a test exception, in its slice or else in the commit', () => {
+test('a defect against a criterion gets its test exception under the rules aw-build already has', () => {
   const exception = step('Test exception');
   assert.match(exception, /step 4's rule/);
-  assert.match(exception, /in that slice/);
-  assert.match(exception, /no slice covers/);
+  assert.match(exception, /in the slice that covers it/);
+  assert.match(exception, /\*\*Step 4\*\* of \*\*The fast route\*\*/);
+});
+
+test('a defect no criterion covers gets a test exception in the commit, with manual: evidence, and the glossary says so', () => {
+  const exception = step('Test exception');
+  assert.match(exception, /no criterion covers/);
   assert.match(exception, /line of the commit message/);
+  assert.match(exception, /proven by `manual:` evidence instead/);
+  const glossary = read('GLOSSARY.md').split('\n');
+  const definition = glossary[glossary.indexOf('**Test exception**:') + 1];
+  assert.match(definition, /fix run/);
+  assert.match(definition, /no criterion covers/);
+});
+
+test('a test exception leaves Traceability alone: only a new test adds to it', () => {
+  assert.match(step('Test exception'), /Leave Traceability as it is/);
 });
 
 test('the fix run runs the task check level', () => {
@@ -163,7 +168,7 @@ test('no done marker changes, and Traceability grows only when a new test proves
 
 test('the fix run edits the spec no further than the skill says it may', () => {
   const rule = paragraph(skill, 'This skill edits only three things in the spec');
-  assert.match(rule, /A fix run edits less, as \*\*The fix run\*\* says/);
+  assert.match(rule, /A fix run edits the spec only as \*\*The fix run\*\* says/);
 });
 
 test('on the fast route the commit writes the whole current set of Done when lines', () => {
@@ -194,7 +199,7 @@ test('a spec at any status but approved is refused, and every refusal names /aw-
 
 test('the report gives each defect one regular line, fixed or not fixed, and the commit', () => {
   const report = fixRun.slice(fixRun.indexOf('**Report.**'));
-  assert.match(report, /^- `Fixed: <file:line>: <what was wrong> \(<axis>\)\. Proof: /m);
+  assert.match(report, /^- `Fixed: <file:line>: <what was wrong> \(<axis>\)\. Evidence: /m);
   assert.match(report, /^- `Not fixed: <file:line>: <what was wrong> \(<axis>\)\. Reason: /m);
   assert.match(report, /^- `Commit: /m);
   assert.match(report, /one line per defect/);
