@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // Keeps the state of a UAT run: restores each UAT case's restore point into a
 // working copy, grades what can be graded by a script, saves the results and
 // writes the summary. The conductor (SKILL.md) does the rest.
@@ -129,12 +128,19 @@ function restore(store, point, stepDir, awCopy) {
     git(store, ['push', '-q', workdir, `${point.commit}:refs/heads/${point.branch}`]);
     git(workdir, ['switch', '-q', point.branch]);
   }
+  if (point.snapshot && point.snapshot !== point.commit) {
+    git(store, ['push', '-q', workdir, `${point.snapshot}:refs/uat/snapshot`]);
+    git(workdir, ['restore', '--source=refs/uat/snapshot', '--worktree', '--', ':/']);
+    git(workdir, ['update-ref', '-d', 'refs/uat/snapshot']);
+  }
   if (awCopy && existsSync(awCopy)) cpSync(awCopy, join(workdir, '.aw'), { recursive: true });
   return workdir;
 }
 
 // Saves the working copy as a restore point without touching it: a continued
-// session must find its HEAD, index and uncommitted files as it left them.
+// session must find its HEAD, index and uncommitted files as it left them. The
+// uncommitted files go in a snapshot commit that no branch points to, and come
+// back uncommitted, since whether a skill committed its work is part of a case.
 function savePoint(runDir, state, id, workdir) {
   const { store, step, aw } = paths(runDir);
   const index = join(step(id), 'point.index');
@@ -145,20 +151,19 @@ function savePoint(runDir, state, id, workdir) {
   rmSync(index, { force: true });
   const head = git(workdir, ['rev-parse', 'HEAD']);
   const unchanged = tree === git(workdir, ['rev-parse', 'HEAD^{tree}']);
-  const commit = unchanged ? head : git(workdir, ['commit-tree', tree, '-p', head, '-m', `uat: ${id}`], IDENTITY);
+  const snapshot = unchanged ? head : git(workdir, ['commit-tree', tree, '-p', head, '-m', `uat: ${id}`], IDENTITY);
   const branch = tryGit(workdir, ['symbolic-ref', '--short', '-q', 'HEAD']) ?? 'main';
-  const main = branch === 'main' ? commit : (tryGit(workdir, ['rev-parse', '--verify', '-q', 'refs/heads/main']) ?? head);
-  git(workdir, ['push', '-q', store, `${commit}:refs/tags/point/${id}`]);
-  if (main !== commit) git(workdir, ['push', '-q', store, `${main}:refs/tags/point-base/${id}`]);
+  const main = branch === 'main' ? head : (tryGit(workdir, ['rev-parse', '--verify', '-q', 'refs/heads/main']) ?? head);
+  git(workdir, ['push', '-q', store, `${snapshot}:refs/tags/point/${id}`]);
+  if (main !== snapshot) git(workdir, ['push', '-q', store, `${main}:refs/tags/point-base/${id}`]);
   const awDir = join(workdir, '.aw');
   if (existsSync(awDir)) cpSync(awDir, aw(id), { recursive: true });
-  state.points[id] = { commit, branch, main };
+  state.points[id] = { commit: head, snapshot, branch, main };
 }
 
 function expand(text, workdir) {
   return text
     .replaceAll('{{SHORT}}', git(workdir, ['rev-parse', '--short', 'HEAD']))
-    .replaceAll('{{HEAD}}', git(workdir, ['rev-parse', 'HEAD']))
     .replaceAll('{{BRANCH}}', git(workdir, ['branch', '--show-current']));
 }
 
@@ -224,9 +229,14 @@ function startWorkdir(runDir, state, uatCase, stepDir) {
   if (from.case && !state.points[from.case]) return { blocked: from.case };
   const point = from.case ? state.points[from.case] : pointFromRef(store, from);
   mkdirSync(stepDir, { recursive: true });
-  const workdir = realpathSync(restore(store, point, stepDir, from.case ? aw(from.case) : null));
-  applySetup(workdir, uatCase.setup);
-  return { workdir, continues: false };
+  try {
+    const workdir = realpathSync(restore(store, point, stepDir, from.case ? aw(from.case) : null));
+    applySetup(workdir, uatCase.setup);
+    return { workdir, continues: false };
+  } catch (error) {
+    rmSync(stepDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }); // so next can retry
+    throw error;
+  }
 }
 
 function next(options) {
@@ -248,7 +258,7 @@ function next(options) {
 }
 
 function frontmatterOf(text) {
-  const block = text.replace(/\r\n/g, '\n').match(/^---\n([\s\S]*?)\n---/)?.[1] ?? '';
+  const block = text.match(/^---\n([\s\S]*?)\n---/)?.[1] ?? '';
   return Object.fromEntries(block.split('\n').map((line) => line.split(/:\s*/, 2)).filter(([, value]) => value !== undefined));
 }
 
@@ -268,8 +278,13 @@ function checkFile(workdir, assertion) {
   const file = locate(workdir, assertion.file);
   if (assertion.exists === false) return existsSync(file) ? 'the file exists' : null;
   if (!existsSync(file)) return 'the file does not exist';
-  const text = readFileSync(file, 'utf8');
-  if (assertion.matches && !new RegExp(assertion.matches, 'm').test(text)) return `no match for /${assertion.matches}/`;
+  const text = readFileSync(file, 'utf8').replace(/\r\n/g, '\n');
+  if (assertion.matches) {
+    const found = text.match(new RegExp(assertion.matches, 'gm'))?.length ?? 0;
+    if (assertion.count === undefined ? found === 0 : found !== assertion.count) {
+      return `found ${found} matches of /${assertion.matches}/${assertion.count === undefined ? '' : `, expected ${assertion.count}`}`;
+    }
+  }
   for (const [key, expected] of Object.entries(assertion.frontmatter ?? {})) {
     const actual = frontmatterOf(text)[key];
     if (actual !== expected) return `${key} is ${actual}, expected ${expected}`;
@@ -327,7 +342,7 @@ function check(options) {
 
 const VERDICTS = ['Pass', 'Fail', 'Not proven'];
 
-function validateGrades(grades, uatCase, assertionResults) {
+function validateGrades(grades, uatCase, assertionResults, checks) {
   if (!VERDICTS.includes(grades.verdict)) throw new Refused(`verdict must be one of ${VERDICTS.join(', ')}`);
   if (!grades.line) throw new Refused('grades need a line: what was checked, in one sentence');
   const judged = new Map((grades.judge ?? []).map((g) => [g.criterion, g]));
@@ -337,6 +352,9 @@ function validateGrades(grades, uatCase, assertionResults) {
     if (!grade.evidence) throw new Refused(`no evidence for criterion: ${judge}`);
   }
   if (grades.verdict !== 'Pass') return;
+  (uatCase.turns ?? []).forEach((turn, index) => {
+    if (turn.assertions && !checks.turns[index + 1]) throw new Refused(`cannot be Pass: turn ${index + 1} was never checked`);
+  });
   const failed = assertionResults.filter((r) => !r.ok).map((r) => r.name);
   if (failed.length > 0) throw new Refused(`cannot be Pass: failed assertions: ${failed.join(', ')}`);
   const unproven = (grades.judge ?? []).filter((g) => g.result !== 'pass').map((g) => g.criterion);
@@ -351,7 +369,7 @@ function record(options) {
   const checks = loadChecks(stepDir);
   if (!checks.final) throw new Refused('run check before record');
   const assertionResults = [...Object.values(checks.turns).flat(), ...checks.final];
-  validateGrades(grades, uatCase, assertionResults);
+  validateGrades(grades, uatCase, assertionResults, checks);
 
   const keepsPoint = grades.verdict === 'Pass' || options['keep-point'] === 'yes';
   if (keepsPoint) savePoint(runDir, state, id, step.workdir);

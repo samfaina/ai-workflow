@@ -26,7 +26,7 @@ Done when `next` can run against a run folder.
 
 Run `next`.
 
-- `ready`: give the person `paste.shell` to run outside the agent, then `paste.command` to type inside it, and list `answers` and `turns` so they know what is coming. Tell them to type `hecho` here when the step is over.
+- `ready`: give the person `paste.shell` to run in a terminal, then `paste.command` to type in Claude Code, and list `answers` and `turns` so they know what is coming. Tell them to type `hecho` here when the step is over.
 - `blocked`: the case needs the restore point of `needs`, which did not pass. Ask whether to `skip --reason <text>` it, then run `next` again.
 - `done`: go to **Finish**.
 
@@ -69,7 +69,7 @@ Sort every problem into a **skill defect** or an **environment problem** (a miss
 
 | Verdict | When |
 | --- | --- |
-| Pass | Every assertion and criterion passed. |
+| Pass | Every assertion and criterion passed, every turn with assertions included. |
 | Fail | The skill did the wrong thing. |
 | Not proven | The path under test never ran, or the environment got in the way. |
 

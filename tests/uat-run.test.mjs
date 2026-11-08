@@ -186,7 +186,9 @@ test('a passed step leaves a restore point and its .aw copy, which the next case
   assert.notEqual(second.workdir, first.workdir);
   assert.match(readFileSync(join(second.workdir, 'written-by-skill.md'), 'utf8'), /^left uncommitted\r?\n$/); // git may convert line endings
   assert.equal(readFileSync(join(second.workdir, '.aw', 'reviews', 'r.md'), 'utf8'), 'report\n');
-  assert.equal(git(second.workdir, 'status', '--porcelain'), '');
+  assert.match(git(second.workdir, 'status', '--porcelain'), /\?\? written-by-skill\.md/, 'uncommitted work stays uncommitted');
+  assert.equal(git(second.workdir, 'rev-parse', 'HEAD'), run.startCommit);
+  assert.equal(git(second.workdir, 'rev-parse', 'origin/main'), run.startCommit);
   assert.equal(git(second.workdir, 'rev-list', '--count', 'main..origin/main'), '0');
 });
 
@@ -439,4 +441,50 @@ test('commands can reach the kit, and the slash command can name the run folder'
 
   const checked = run.cli('check').output;
   assert.deepEqual(checked.results.map((r) => [r.name, r.ok]), [['kit script', true]], JSON.stringify(checked.results));
+});
+
+test('record refuses a Pass when a turn with assertions was never checked', (t) => {
+  const run = makeRun(t, [caseFile('c1', { turns: [{ intent: 'x', reason: 'y', assertions: [{ name: 'still draft', file: 'README.md' }] }] })]);
+  run.cli('next');
+  run.cli('check');
+
+  const refused = record(run, pass());
+  assert.equal(refused.status, 1);
+  assert.match(refused.output.message, /turn 1/);
+
+  run.cli('check', '--turn', '1');
+  assert.equal(record(run, pass()).status, 0);
+});
+
+test('a setup that failed can be retried once the case is fixed', (t) => {
+  const broken = { setup: [{ replace: 'README.md', pattern: 'not there', with: 'x' }] };
+  const run = makeRun(t, [caseFile('c1', broken)]);
+  run.cli('next');
+
+  const again = run.cli('next');
+  assert.equal(again.status, 1);
+  assert.match(again.output.message, /not there/, 'the original reason, not a clone error');
+
+  run.writeCase(caseFile('c1', { setup: [{ replace: 'README.md', pattern: 'hello', with: 'bye' }] }));
+  const fixed = run.cli('next');
+  assert.equal(fixed.status, 0, fixed.stdout);
+  assert.match(readFileSync(join(fixed.output.workdir, 'README.md'), 'utf8'), /^bye/);
+});
+
+test('a file assertion can require an exact number of matches, on files with either line ending', (t) => {
+  const run = makeRun(t, [
+    caseFile('c1', {
+      setup: [{ write: 'ignore.txt', text: '.aw/\r\nnode_modules/\r\n.aw/\r\n' }],
+      assertions: [
+        { name: 'twice', file: 'ignore.txt', matches: '^\\.aw/$', count: 2 },
+        { name: 'not once', file: 'ignore.txt', matches: '^\\.aw/$', count: 1 },
+      ],
+    }),
+  ]);
+  run.cli('next');
+
+  const { output } = run.cli('check');
+
+  assert.deepEqual(output.results.map((r) => r.ok), [true, false]);
+  assert.match(output.results[1].detail, /2/);
 });

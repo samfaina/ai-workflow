@@ -67,14 +67,16 @@
       "exit": 1
     },
     {
-      "name": ".aw ignored",
+      "name": ".aw ignored once",
       "file": ".gitignore",
-      "matches": "^\\.aw/?$"
+      "matches": "^\\.aw/?$",
+      "count": 1
     },
     {
-      "name": "deny entries",
+      "name": "16 deny entries, Bash and PowerShell",
       "file": ".claude/settings.json",
-      "matches": "git push --force"
+      "matches": "\"(Bash|PowerShell)\\(git ",
+      "count": 16
     },
     {
       "judge": "Took the check commands from package.json and CI and asked only what the repo could not answer"

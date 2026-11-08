@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // Reads the Claude Code session of one UAT step from its log, so the conductor
 // never has to load the log itself. A step folder holds step.json, written by
 // run.mjs, and watch.json, the reader's memory of what it already reported.
@@ -29,7 +28,7 @@ const writeJson = (file, value) => writeFileSync(file, `${JSON.stringify(value, 
 
 class UnrecognizedLog extends Error {}
 
-function fail(message) {
+function usage(message) {
   process.stderr.write(`${message}\n`);
   process.exit(EXIT_USAGE);
 }
@@ -37,7 +36,7 @@ function fail(message) {
 function parseArgs(args) {
   const options = {};
   for (let i = 0; i < args.length; i += 2) {
-    if (!args[i].startsWith('--') || args[i + 1] === undefined) fail(`bad argument: ${args[i]}`);
+    if (!args[i].startsWith('--') || args[i + 1] === undefined) usage(`bad argument: ${args[i]}`);
     options[args[i].slice(2)] = args[i + 1];
   }
   return options;
@@ -45,7 +44,7 @@ function parseArgs(args) {
 
 function loadStep(stepDir) {
   const file = join(stepDir ?? '', 'step.json');
-  if (!stepDir || !existsSync(file)) fail(`no step.json in ${stepDir}`);
+  if (!stepDir || !existsSync(file)) usage(`no step.json in ${stepDir}`);
   return JSON.parse(readFileSync(file, 'utf8'));
 }
 
@@ -306,16 +305,16 @@ function summary(options) {
 }
 
 function pick(options) {
-  if (!options.session) fail('pick needs --session <id>');
+  if (!options.session) usage('pick needs --session <id>');
   writeJson(join(options.step, 'step.json'), { ...loadStep(options.step), session: options.session });
   print({ status: 'picked', session: options.session });
 }
 
-const MODES = { watch, peek, summary, pick };
+const COMMANDS = { watch, peek, summary, pick };
 const [mode, ...rest] = process.argv.slice(2);
-if (!Object.hasOwn(MODES, mode ?? '')) fail('usage: reader.mjs watch|peek|summary|pick --step <dir> [options]');
+if (!Object.hasOwn(COMMANDS, mode ?? '')) usage('usage: reader.mjs watch|peek|summary|pick --step <dir> [options]');
 try {
-  await MODES[mode](parseArgs(rest));
+  await COMMANDS[mode](parseArgs(rest));
 } catch (error) {
   if (!(error instanceof UnrecognizedLog)) throw error;
   process.stderr.write(`unrecognized session log: ${error.message}\n`);

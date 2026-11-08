@@ -27,7 +27,7 @@
       "judge": "Filled in the slice plan and Test strategy and reported coverage gaps, or none"
     },
     {
-      "judge": "Published the mirror tickets at the tracker access level, with their dependencies"
+      "judge": "Published exactly one mirror ticket per slice at the tracker access level, with their dependencies"
     }
   ]
 }

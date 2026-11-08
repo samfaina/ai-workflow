@@ -11,7 +11,7 @@ import { json, repoRoot } from './fixtures.mjs';
 
 export const skillDir = join(repoRoot, '.claude', 'skills', 'uat');
 export const readerCli = join(skillDir, 'scripts', 'reader.mjs');
-export const runCli = join(skillDir, 'scripts', 'run.mjs');
+export const runScript = join(skillDir, 'scripts', 'run.mjs');
 
 export const EXIT_UNRECOGNIZED = 3;
 
@@ -143,7 +143,7 @@ export function makeRun(t, cases, { allCases = false } = {}) {
   const runDir = join(root, 'run');
   const env = { ...process.env, CLAUDE_CONFIG_DIR: join(root, 'config') };
   const cli = (command, ...args) => {
-    const result = spawnSync(process.execPath, [runCli, command, '--run', runDir, ...args], { encoding: 'utf8', env });
+    const result = spawnSync(process.execPath, [runScript, command, '--run', runDir, ...args], { encoding: 'utf8', env });
     let output = null;
     try {
       output = JSON.parse(result.stdout);
@@ -164,6 +164,7 @@ export function makeRun(t, cases, { allCases = false } = {}) {
     branchCommit,
     cli,
     readCase: (id) => JSON.parse(readFileSync(join(casesDir, `${id}.json`), 'utf8')),
+    writeCase: (c) => writeFileSync(join(casesDir, `${c.id}.json`), json(c)),
     sourceState: () => ({
       status: git(source, 'status', '--porcelain'),
       head: git(source, 'rev-parse', 'HEAD'),

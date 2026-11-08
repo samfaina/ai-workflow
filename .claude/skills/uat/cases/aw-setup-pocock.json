@@ -50,6 +50,12 @@
       "matches": "\"mattpocock-skills@claude-plugins-official\": false"
     },
     {
+      "name": "no second key added",
+      "file": ".claude/settings.local.json",
+      "matches": "mattpocock-skills@claude-plugins-official",
+      "count": 1
+    },
+    {
       "name": "tracked files unchanged",
       "run": "git diff --stat",
       "stdout": "^$"
