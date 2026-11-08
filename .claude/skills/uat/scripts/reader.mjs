@@ -14,8 +14,9 @@
 // Exit codes: 0 reported, 2 usage or missing step, 3 unrecognized log format.
 
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { homedir } from 'node:os';
 import { basename, join } from 'node:path';
+
+import { logFolder } from './log-folder.mjs';
 
 const EXIT_USAGE = 2;
 const EXIT_UNRECOGNIZED = 3;
@@ -46,11 +47,6 @@ function loadStep(stepDir) {
   const file = join(stepDir ?? '', 'step.json');
   if (!stepDir || !existsSync(file)) usage(`no step.json in ${stepDir}`);
   return JSON.parse(readFileSync(file, 'utf8'));
-}
-
-function logFolder(workdir) {
-  const config = process.env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude');
-  return join(config, 'projects', workdir.replace(/[^A-Za-z0-9]/g, '-'));
 }
 
 function checkEntry(entry, file) {

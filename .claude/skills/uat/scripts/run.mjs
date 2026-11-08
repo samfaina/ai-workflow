@@ -9,6 +9,7 @@
 //   node run.mjs skip   --run <dir> --reason <text>
 //   node run.mjs drift  --run <dir> --when <question> --intent <answer> --reason <why>
 //   node run.mjs report --run <dir>
+//   node run.mjs clean  --run <dir>
 //
 // Everything lives in the run folder, outside this repo. The source repo is
 // only ever read: its commits are fetched once, into the run's own store.
@@ -19,6 +20,8 @@ import { spawnSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { logFolder } from './log-folder.mjs';
 
 const skillDir = join(dirname(fileURLToPath(import.meta.url)), '..');
 const kitRoot = join(skillDir, '..', '..', '..').replaceAll('\\', '/');
@@ -61,7 +64,9 @@ function tryGit(dir, args) {
 const paths = (runDir) => ({
   state: join(runDir, 'state.json'),
   store: join(runDir, 'points.git'),
+  steps: join(runDir, 'steps'),
   step: (id) => join(runDir, 'steps', id),
+  points: join(runDir, 'points'),
   aw: (id) => join(runDir, 'points', id, 'aw'),
   result: (id) => join(runDir, 'results', `${id}.json`),
   summary: join(runDir, 'summary.md'),
@@ -433,7 +438,29 @@ function report(options) {
   process.stdout.write(text);
 }
 
-const COMMANDS = { init, next, check, record, skip, drift, report };
+// Deletes what a finished run no longer needs and keeps its record. Each log
+// folder's name is built from a working copy under this run folder, so no other
+// project's logs can match. It can run again after a failure.
+function clean(options) {
+  const runDir = resolve(options.run);
+  const state = loadState(runDir);
+  const pending = state.cases.filter((id) => !state.results[id]);
+  if (pending.length > 0) throw new Refused(`cases without a result: ${pending.join(', ')}`);
+  const { steps, store, points } = paths(runDir);
+  const logs = state.cases.map((id) => logFolder(join(realpathSync(runDir), 'steps', id, 'repo')));
+  const failed = [];
+  for (const target of [...logs, steps, store, points]) {
+    try {
+      rmSync(target, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    } catch (error) {
+      failed.push(`${target} (${error.code})`);
+    }
+  }
+  if (failed.length > 0) throw new Refused(`could not delete: ${failed.join(', ')}`);
+  print({ status: 'cleaned', run: runDir });
+}
+
+const COMMANDS = { init, next, check, record, skip, drift, report, clean };
 const [command, ...rest] = process.argv.slice(2);
 if (!Object.hasOwn(COMMANDS, command ?? '')) usage(`usage: run.mjs ${Object.keys(COMMANDS).join('|')} --run <dir> [options]`);
 try {

@@ -96,4 +96,6 @@ Show the verdict with its evidence per criterion, then go back to step 1.
 
 Run `report`. It writes `summary.md` in the run folder, one line per case. Show it to the person. Case files changed by drift are the only changes to this repo: tell them to review and commit those.
 
+Then offer to clean up, and run `clean` only if the person says yes. It deletes the working copies, the restore points and the case sessions' logs in `~/.claude/projects`, and keeps `summary.md`, `results/` and `state.json`. Name any case that did not pass first, since whoever investigates it will lose its working copy and log. If it reports a folder it could not delete, ask them to close the case sessions still open and run it again.
+
 To change or add a case, read [CASE-FORMAT.md](CASE-FORMAT.md).
