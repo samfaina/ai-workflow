@@ -34,7 +34,7 @@
       "judge": "Start and stop touch only the process the skill started"
     },
     {
-      "judge": "Every file:line citation in the skill carries the quoted text of the line it cites"
+      "judge": "Every file:line citation in the skill carries the quoted text of the line it cites, with any secret's value left out"
     },
     {
       "judge": "No instruction in the skill kills a process found by its port, and its fix for a port in use leaves the process holding the port alone"

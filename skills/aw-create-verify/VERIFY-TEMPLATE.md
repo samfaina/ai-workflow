@@ -9,7 +9,7 @@ Start <app>, drive it the way a user does, observe what it does, and clean up. W
 
 ## Start
 
-<The command that runs the app, from the repo root, and where it comes from (file and line). The environment it needs: each variable, with where the user keeps its value, never the value of a secret. The services it depends on and how to start them. Check the port first and, when it is held, apply Diagnose's fix for a port in use. Whether it runs in the background, and how to keep its output. How it records the process identity of each process it starts, the process id with its command line or start time, read from the live process, and the ports this run took.>
+<The command that runs the app, from the repo root, and where it comes from (file and line). The environment it needs: each variable, with where the user keeps its value, never the value of a secret. The services it depends on and how to start them. Check the port first, where the app has one, and, when it is held, apply Diagnose's fix for a port in use. Whether it runs in the background, and how to keep its output. How it records the process identity of each process it starts, the process id with its command line or start time, read from the live process, and the ports this run took. Diagnose and Drive use those ports.>
 
 ## Diagnose
 

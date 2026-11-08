@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { repoRoot } from './fixtures.mjs';
+import { skillDir as uatSkillDir } from './uat-fixtures.mjs';
 
 const skillDir = join(repoRoot, 'skills/aw-create-verify');
 const skill = readFileSync(join(skillDir, 'SKILL.md'), 'utf8');
@@ -24,12 +25,17 @@ function section(text, heading) {
 }
 
 const introduction = skill.slice(skill.indexOf('# Create verify'), skill.indexOf('## Configuration'));
-const step1 = section(skill, '### 1. Find the app');
-const step3 = section(skill, '### 3. Write the verify skill');
-const step4 = section(skill, '### 4. Run it once end to end');
+const findTheApp = section(skill, '### 1. Find the app');
+const writeTheSkill = section(skill, '### 3. Write the verify skill');
+const runItOnce = section(skill, '### 4. Run it once end to end');
 const templateIntro = template.slice(template.indexOf('# Verify <app>'), template.indexOf('## Start'));
 const templateStart = section(template, '## Start');
 const templateCleanUp = section(template, '## Clean up');
+
+// A step's "Done when" line.
+function doneWhen(step) {
+  return step.split('\n').find((line) => line.startsWith('Done when')) ?? '';
+}
 
 // The bullet of step 2 that describes this operation.
 function operation(name) {
@@ -41,17 +47,17 @@ function operation(name) {
 test('a citation is opened and confirmed before it is written, and carries the text it cites', () => {
   assert.match(introduction, /open the file and confirm the line holds what you cite/i);
   assert.match(introduction, /quoted/i);
-  assert.match(step3, /each citation quotes its text/i);
+  assert.match(writeTheSkill, /each citation quotes its text/i);
   assert.match(templateIntro, /every `file:line` citation quotes the text it cites/i);
 });
 
 test('updating a verify skill re-checks the citations it keeps', () => {
-  assert.match(step1, /re-check every citation it keeps against its file/i);
+  assert.match(findTheApp, /re-check every citation it keeps against its file/i);
 });
 
 test('step 4 re-reads every citation against its file before the commit', () => {
-  assert.match(step4, /re-read every citation in the skill against its file/i);
-  assert.match(step4.split('\n').filter((line) => line.startsWith('Done when')).join(''), /every citation matched its file/i);
+  assert.match(runItOnce, /re-read every citation in the skill against its file/i);
+  assert.match(doneWhen(runItOnce), /every citation matched its file/i);
 });
 
 test('Start records a process identity: the process id with its command line or start time', () => {
@@ -97,28 +103,46 @@ test('Start checks the port first and records the ports this run took', () => {
 });
 
 test('the end-of-run port check covers only the ports this run took', () => {
-  assert.match(step4, /no port this run took is still held/i);
-  assert.match(step4, /a dev server the user already had running does not fail the check/i);
+  assert.match(runItOnce, /no port this run took is still held/i);
+  assert.match(runItOnce, /a dev server the user already had running does not fail the check/i);
   assert.match(templateCleanUp, /no port this run took is still held/i);
-  assert.doesNotMatch(step4, /no port it used/i);
+  assert.doesNotMatch(runItOnce, /no port it used/i);
   assert.doesNotMatch(templateCleanUp, /no port is still held/i);
 });
 
 test('a port held by something else, with no other port to use, stops the run', () => {
-  assert.match(step4, /when the port Start needs is held by something this run did not start and the app allows no other/i);
+  assert.match(runItOnce, /when the port Start needs is held by something this run did not start and the app allows no other/i);
 });
 
 test('a skill that writes shell scripts gets a .gitattributes in its own folder that keeps them LF', () => {
-  assert.match(step3, /`\.claude\/skills\/verify-<app>\/\.gitattributes`/);
-  assert.match(step3, /`\*\.sh text eol=lf`/);
-  assert.match(step3, /leave its root `\.gitattributes` alone/i);
-  assert.match(step3.split('\n').filter((line) => line.startsWith('Done when')).join(''), /\.gitattributes/);
+  assert.match(writeTheSkill, /`\.claude\/skills\/verify-<app>\/\.gitattributes`/);
+  assert.match(writeTheSkill, /`\*\.sh text eol=lf`/);
+  assert.match(writeTheSkill, /leave its root `\.gitattributes` alone/i);
+  assert.match(doneWhen(writeTheSkill), /\.gitattributes/);
 });
 
 test('the UAT case judges quoted citations, port handling and LF scripts on a real run', () => {
-  const uatCase = JSON.parse(readFileSync(join(repoRoot, '.claude/skills/uat/cases/aw-create-verify.json'), 'utf8'));
+  const uatCase = JSON.parse(readFileSync(join(uatSkillDir, 'cases/aw-create-verify.json'), 'utf8'));
   const judges = uatCase.assertions.filter((a) => a.judge).map((a) => a.judge);
   assert.ok(judges.some((j) => /citation/i.test(j) && /quot/i.test(j)), 'no judge for quoted citations');
   assert.ok(judges.some((j) => /by (its )?port/i.test(j)), 'no judge for killing by port');
   assert.ok(judges.some((j) => /shell script/i.test(j) && /eol: lf/.test(j)), 'no judge for LF shell scripts');
+});
+
+test('Diagnose and Drive use the ports Start took, so a moved app is not confused with what holds its port', () => {
+  for (const text of [operation('Start'), templateStart]) assert.match(text, /Diagnose and Drive use those ports/i);
+});
+
+test('a retry stops what the failed attempt left, so a leak cannot pass as someone else\'s process', () => {
+  assert.match(runItOnce, /first stop, through its process identities, anything the failed attempt left running/i);
+  assert.match(runItOnce, /A port held before the first attempt's Start is not this run's/i);
+});
+
+test('the port check at Start applies only to an app that has a port', () => {
+  for (const text of [operation('Start'), templateStart]) assert.match(text, /port first, where the app has one/i);
+});
+
+test('the glossary defines the terms the skill relies on', () => {
+  const glossary = readFileSync(join(repoRoot, 'GLOSSARY.md'), 'utf8');
+  for (const term of ['Citation', 'Process identity']) assert.match(glossary, new RegExp(`^\\*\\*${term}\\*\\*:`, 'm'), term);
 });

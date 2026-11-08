@@ -47,7 +47,7 @@ Done when you can name the app, its kind and its `<app>` slug, or have said why 
 
 Find in the repo how to do each of these, and where it says so:
 
-- **Start:** the command that runs the app locally, the environment it needs (`.env.example`, config files, a database or another service it depends on, seed data) and how long it takes to be up. Prefer the command the README or CI uses over one you assemble. Start checks the port first and, when it is held, applies Diagnose's fix for a port in use. It records a **process identity** for each process it starts, the process id with the process's command line or start time, read from the live process, and it records the ports this run took.
+- **Start:** the command that runs the app locally, the environment it needs (`.env.example`, config files, a database or another service it depends on, seed data) and how long it takes to be up. Prefer the command the README or CI uses over one you assemble. Start checks the port first, where the app has one, and, when it is held, applies Diagnose's fix for a port in use. It records a **process identity** for each process it starts, the process id with the process's command line or start time, read from the live process, and it records the ports this run took. Diagnose and Drive use those ports.
 - **Diagnose:** how to tell the app is up and healthy (a health URL, a log line, a process that stays alive, a `--version` that answers), where its logs go, and the usual failures, such as a port in use or a missing variable. The fix for a port in use leaves the process holding it alone: report what holds it and stop, or use another port where the app allows one.
 - **Drive:** how to act on it the way a user does: HTTP requests for an API, the binary and its arguments for a CLI, a browser for a web UI. Use the drivers the repo already has, such as a Playwright or Cypress setup, before anything else. For a UI the repo has no driver for, use the harness's own browser tool when it has one, and say so in the skill.
 - **Observe:** what counts as evidence for each kind of behaviour: a response's status and body, a command's output and exit code, a screenshot, a log line, a row read through the app's own interface.
@@ -73,9 +73,9 @@ Follow the skill you wrote, as `/aw-verify` will, with nothing from your own exp
 
 1. **Start** the app and **Diagnose** it until it reports healthy.
 2. Run the skill's **smoke journey**, the shortest run that proves the skill works: drive at least one feature from the feature map and **Observe** the result the map says to expect.
-3. **Clean up**, then check that nothing it started is still running and no port this run took is still held. A port held before Start is not this run's: a dev server the user already had running does not fail the check.
+3. **Clean up**, then check that nothing it started is still running and no port this run took is still held. A port held before the first attempt's Start is not this run's: a dev server the user already had running does not fail the check.
 
-When a step fails, fix the skill, not the app, and run all three again from the start. After three failed runs, when the fix needs a change to the app, or when the port Start needs is held by something this run did not start and the app allows no other, stop: report the failing step and its output, and leave the skill where it is for the user to decide.
+When a step fails, first stop, through its process identities, anything the failed attempt left running. Then fix the skill, not the app, and run all three again from the start. After three failed runs, when the fix needs a change to the app, or when the port Start needs is held by something this run did not start and the app allows no other, stop: report the failing step and its output, and leave the skill where it is for the user to decide.
 
 Before the commit, re-read every citation in the skill against its file: the line must hold the quoted text. Correct any that does not, and when a correction changes a command, run all three again.
 
