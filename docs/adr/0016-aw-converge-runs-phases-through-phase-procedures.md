@@ -21,3 +21,4 @@ The model could still load a phase procedure by its own choice, and nothing at r
 ## Consequences
 
 - The first slice must prove that a subagent can load a skill with `user-invocable: false`. The reference harness's documentation implies it without stating it. If it fails, where a round runs is open again, before any text moves.
+- ADR 0017 widens who may call a phase procedure, and moves the rounds of `aw-converge` to a convergence procedure.
