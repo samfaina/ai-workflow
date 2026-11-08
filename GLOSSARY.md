@@ -48,6 +48,10 @@ _Avoid_: derivative
 A per-repo file that translates canonical operations into one repo's actual tooling: `tracker.md`, `vcs.md` or `checks.md`.
 _Avoid_: config, driver, integration
 
+**Exempt adapter**:
+A file whose change after the review `aw-ship` accepts without a new one: the tracker adapter, the VCS adapter, or the domain doc, which counts as an adapter for this rule alone. The checks adapter is never one.
+_Avoid_: safe file, ignored adapter
+
 **Canonical operation**:
 One of the named, tool-independent actions a kit skill may request, such as `fetch-ticket`, `push` or `run-check`.
 _Avoid_: command, action, verb

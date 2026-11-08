@@ -73,7 +73,7 @@ test('a later commit that changes only the VCS adapter goes on, and takes the ac
   assert.ok(!uncovered.setup.some((op) => op.replace === 'AGENTS.md'), 'the commit must change the adapter alone');
   assert.ok(uncovered.assertions.some((a) => a.frontmatter?.status === 'implemented'));
   assert.ok(uncovered.assertions.some((a) => a.run === 'git ls-remote --heads origin' && a.stdout));
-  assert.ok(uncovered.assertions.some((a) => a.file?.includes('review-requests') && /only adapters/.test(a.matches)));
+  assert.ok(uncovered.assertions.some((a) => a.file?.includes('review-requests') && /only .*adapter/.test(a.matches)));
   assert.doesNotMatch(JSON.stringify(uncovered), /Stopped/);
 });
 

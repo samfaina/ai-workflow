@@ -4,12 +4,12 @@
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import test from 'node:test';
 
-import { repoRoot } from './fixtures.mjs';
+import { repoRoot, writeFiles } from './fixtures.mjs';
+import { tempDir } from './uat-fixtures.mjs';
 
 const skill = readFileSync(join(repoRoot, 'skills', 'aw-ship', 'SKILL.md'), 'utf8').replaceAll('\r\n', '\n');
 
@@ -19,30 +19,25 @@ function git(dir, ...args) {
   return spawnSync('git', ['-C', dir, ...args], { encoding: 'utf8', env: { ...process.env, ...IDENTITY } });
 }
 
-function ok(dir, ...args) {
+function gitOutput(dir, ...args) {
   const result = git(dir, ...args);
   assert.equal(result.status, 0, `git ${args.join(' ')}: ${result.stderr}`);
   return result.stdout.trim();
 }
 
-function write(dir, path, text) {
-  const full = join(dir, path);
-  mkdirSync(dirname(full), { recursive: true });
-  writeFileSync(full, text);
-}
+const write = (dir, path, text) => writeFiles(dir, { [path]: text });
 
 function commit(dir, message) {
-  ok(dir, 'add', '-A');
-  ok(dir, 'commit', '-q', '-m', message);
-  return ok(dir, 'rev-parse', 'HEAD');
+  gitOutput(dir, 'add', '-A');
+  gitOutput(dir, 'commit', '-q', '-m', message);
+  return gitOutput(dir, 'rev-parse', 'HEAD');
 }
 
 // A repo at its reviewed commit, which holds the VCS adapter and one code file.
 function reviewedRepo(t) {
-  const dir = realpathSync(mkdtempSync(join(tmpdir(), 'ship-')));
-  t.after(() => rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
-  ok(dir, 'init', '-q', '-b', 'main');
-  ok(dir, 'config', 'core.autocrlf', 'false');
+  const dir = tempDir(t);
+  gitOutput(dir, 'init', '-q', '-b', 'main');
+  gitOutput(dir, 'config', 'core.autocrlf', 'false');
   write(dir, 'docs/agents/vcs.md', 'vcs\n');
   write(dir, 'src/app.js', 'app\n');
   return { dir, reviewed: commit(dir, 'Reviewed') };
@@ -76,6 +71,12 @@ test('every file left in the set must be an exempt adapter, found through the bl
 test('an exempt adapter is an exact path, read at HEAD', () => {
   assert.match(item('Exempt adapters'), /at `HEAD`/);
   assert.match(item('Exempt adapters'), /exact paths/);
+});
+
+test('the domain doc counts as an adapter only for this rule, and the glossary says so', () => {
+  assert.match(item('Exempt adapters'), /the domain doc, which counts as one here/);
+  const glossary = readFileSync(join(repoRoot, 'GLOSSARY.md'), 'utf8');
+  assert.match(glossary, /^\*\*Exempt adapter\*\*:/m);
 });
 
 test('a repo with no block has no exempt adapters', () => {
@@ -128,12 +129,12 @@ test('the review request\'s Evidence names each commit the review did not cover'
   assert.match(evidence, /changed only the spec's status/);
 });
 
-const changedFiles = (dir, reviewed) => ok(dir, ...namedCommand(/`(git log [^`]*--name-only[^`]*)`/, reviewed)).split('\n');
+const changedFiles = (dir, reviewed) => gitOutput(dir, ...namedCommand(/`(git log [^`]*--name-only[^`]*)`/, reviewed)).split('\n');
 const isAncestor = (dir, reviewed) => git(dir, ...namedCommand(/`(git merge-base --is-ancestor [^`]*)`/, reviewed)).status === 0;
 
 test('a rename counts under both its old and its new path', (t) => {
   const { dir, reviewed } = reviewedRepo(t);
-  ok(dir, 'mv', 'docs/agents/vcs.md', 'docs/agents/vcs-renamed.md');
+  gitOutput(dir, 'mv', 'docs/agents/vcs.md', 'docs/agents/vcs-renamed.md');
   commit(dir, 'Rename the adapter');
   const files = changedFiles(dir, reviewed);
   assert.ok(files.includes('docs/agents/vcs.md'), files.join('|'));
@@ -151,13 +152,13 @@ test('a file changed and changed back is still in the set', (t) => {
 
 test('a change made inside a merge commit is in the set', (t) => {
   const { dir, reviewed } = reviewedRepo(t);
-  ok(dir, 'switch', '-q', '-c', 'side');
+  gitOutput(dir, 'switch', '-q', '-c', 'side');
   write(dir, 'docs/agents/vcs.md', 'side\n');
   commit(dir, 'Change the adapter on the side');
-  ok(dir, 'switch', '-q', 'main');
+  gitOutput(dir, 'switch', '-q', 'main');
   write(dir, 'docs/agents/tracker.md', 'tracker\n');
   commit(dir, 'Add the tracker adapter');
-  ok(dir, 'merge', '-q', '--no-commit', '--no-ff', 'side');
+  gitOutput(dir, 'merge', '-q', '--no-commit', '--no-ff', 'side');
   write(dir, 'src/hidden.js', 'hidden\n');
   commit(dir, 'Merge side');
   assert.ok(changedFiles(dir, reviewed).includes('src/hidden.js'));
@@ -178,7 +179,7 @@ test('the reviewed commit stops being an ancestor after an amend, and is one oth
   commit(dir, 'Set push to write');
   assert.equal(isAncestor(dir, reviewed), true);
 
-  ok(dir, 'reset', '-q', '--hard', reviewed);
-  ok(dir, 'commit', '-q', '--amend', '-m', 'Reviewed, amended');
+  gitOutput(dir, 'reset', '-q', '--hard', reviewed);
+  gitOutput(dir, 'commit', '-q', '--amend', '-m', 'Reviewed, amended');
   assert.equal(isAncestor(dir, reviewed), false);
 });

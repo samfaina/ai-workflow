@@ -42,7 +42,7 @@
     {
       "name": "Evidence names the adapter commit",
       "file": ".aw/review-requests/*-review-request.md",
-      "matches": "Set push and merge to write[^\\n]*only adapters"
+      "matches": "Set push and merge to write[^\\n]*only [^\\n]*adapter"
     },
     {
       "judge": "Went on past the later commit because it changed only the VCS adapter, ran the full level on HEAD, and took the access levels from the adapter's Operations table. The review report is a fixture, so this case tests the ship guard alone."

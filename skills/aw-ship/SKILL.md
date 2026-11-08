@@ -80,7 +80,7 @@ List `.aw/reviews/*-review.md` and take the latest: the file names start with `<
 3. **Set aside this skill's own spec commit,** when one is listed: its whole change, in `git show <hash>`, is step 4's edit of the spec's `status: approved` to `status: implemented`.
 4. **Every file left, taken as one set, is an exempt adapter.**
 
-**Exempt adapters** are the files the `## Agent skills` block, read at `HEAD`, points to as the tracker adapter, the VCS adapter and the domain doc, compared as exact paths from the repo root. With no block there are none, so any later commit but this skill's own spec commit stops the ship.
+**Exempt adapters** are the tracker adapter, the VCS adapter and the domain doc, which counts as one here: the files the `## Agent skills` block, read at `HEAD`, points to as those, compared as exact paths from the repo root. With no block there are none, so any later commit but this skill's own spec commit stops the ship.
 
 **Not exempt.** The exempt list stays closed at those three files, so that widening it is a decision and never a side effect of an edit:
 
