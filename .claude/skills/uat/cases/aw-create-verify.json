@@ -32,6 +32,15 @@
     },
     {
       "judge": "Start and stop touch only the process the skill started"
+    },
+    {
+      "judge": "Every file:line citation in the skill carries the quoted text of the line it cites"
+    },
+    {
+      "judge": "No instruction in the skill kills a process found by its port, and its fix for a port in use leaves the process holding the port alone"
+    },
+    {
+      "judge": "Every shell script the skill wrote reports eol: lf from git check-attr"
     }
   ]
 }
