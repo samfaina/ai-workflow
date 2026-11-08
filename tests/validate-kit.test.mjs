@@ -481,6 +481,63 @@ test('calling a model-invoked skill, or naming a user-invoked one as a slash com
   assertNoFindings(runOn(kit));
 });
 
+// A phase procedure holds the steps of one phase so that aw-converge can run
+// them, and its door stays the phase's one owner (ADR 0016).
+
+function kitWithProcedure() {
+  const kit = validKit();
+  kit['.claude-plugin/plugin.json'].skills.push('./skills/aw-build', './skills/aw-build-steps', './skills/aw-converge');
+  kit['skills/aw-build/SKILL.md'] =
+    '---\nname: aw-build\ndescription: Build.\ndisable-model-invocation: true\n---\n\n# Build\n\nCall the Skill tool with "aw-build-steps".\n';
+  kit['skills/aw-build/agents/openai.yaml'] = 'policy:\n  allow_implicit_invocation: false\n';
+  kit['skills/aw-build-steps/SKILL.md'] =
+    '---\nname: aw-build-steps\ndescription: The steps of the build phase.\nuser-invocable: false\n---\n\n# Build steps\n\n## Steps\n\nBody.\n';
+  kit['skills/aw-converge/SKILL.md'] =
+    '---\nname: aw-converge\ndescription: Repeat rounds.\ndisable-model-invocation: true\n---\n\nCall the Skill tool with "aw-build-steps".\n';
+  kit['skills/aw-converge/agents/openai.yaml'] = 'policy:\n  allow_implicit_invocation: false\n';
+  return kit;
+}
+
+test('a phase procedure called by its door and aw-converge passes', () => {
+  assertNoFindings(runOn(kitWithProcedure()));
+});
+
+test('any other skill that names a phase procedure is reported', () => {
+  const kit = kitWithProcedure();
+  kit['skills/aw-alpha/SKILL.md'] += '\nCall the Skill tool with "aw-build-steps".\n';
+
+  assertOneFinding(runOn(kit), /^skills\/aw-alpha\/SKILL\.md: names the phase procedure "aw-build-steps".*only aw-build and aw-converge.*ADR 0016/);
+});
+
+test('a phase procedure that the / menu would show is reported', () => {
+  const kit = kitWithProcedure();
+  kit['skills/aw-build-steps/SKILL.md'] = kit['skills/aw-build-steps/SKILL.md'].replace('user-invocable: false\n', '');
+
+  assertOneFinding(runOn(kit), /^skills\/aw-build-steps\/SKILL\.md: .*"user-invocable: false"/);
+});
+
+test('a door that does not call its phase procedure is reported', () => {
+  const kit = kitWithProcedure();
+  kit['skills/aw-build/SKILL.md'] = kit['skills/aw-build/SKILL.md'].replace('"aw-build-steps"', 'the steps');
+
+  assertOneFinding(runOn(kit), /^skills\/aw-build\/SKILL\.md: .*must call its phase procedure "aw-build-steps"/);
+});
+
+test('a door that keeps steps of its own is reported, since the phase would have them twice', () => {
+  const kit = kitWithProcedure();
+  kit['skills/aw-build/SKILL.md'] += '\n## Steps\n\nBuild it here.\n';
+
+  assertOneFinding(runOn(kit), /^skills\/aw-build\/SKILL\.md: .*a door holds no section/);
+});
+
+test('aw-converge declaring neither invocation flag is reported', () => {
+  const kit = kitWithProcedure();
+  kit['skills/aw-converge/SKILL.md'] = kit['skills/aw-converge/SKILL.md'].replace('disable-model-invocation: true\n', '');
+  delete kit['skills/aw-converge/agents/openai.yaml'];
+
+  assertOneFinding(runOn(kit), /^skills\/aw-converge\/SKILL\.md: .*user-invoked.*disable-model-invocation: true/);
+});
+
 test('a defaults restatement that matches the configuration page up to whitespace passes', () => {
   const kit = validKit();
   kit['docs/configuration.md'] = configurationPage();

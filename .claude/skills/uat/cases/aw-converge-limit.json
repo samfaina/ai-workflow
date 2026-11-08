@@ -1,0 +1,61 @@
+{
+  "id": "aw-converge-limit",
+  "title": "aw-converge, exhausts its rounds",
+  "group": "aw-converge",
+  "order": 38,
+  "source": "#95: four defects in a row, each hidden behind the throw of the one before, so that each round's review can prove only the next one",
+  "from": {
+    "ref": "review/clean"
+  },
+  "setup": [
+    {
+      "write": "src/loan-line.mjs",
+      "text": "// Words one loan for a status line: Dune, due 2030-01-15, 2 renewals left.\nconst titlePart = (loan) => loan.book.title;\nconst duePart = (loan) => loan.dueDate.slice(0, 10);\nconst leftPart = (loan) => loan.limits.renewals - loan.renewals;\nconst renewalsPart = (left) => `${left} renewal left`;\n\nexport function loanLine(loan) {\n  const title = titlePart(loan);\n  const due = duePart(loan);\n  const left = leftPart(loan);\n  return `${title}, due ${due}, ${renewalsPart(left)}`;\n}\n"
+    },
+    {
+      "commit": "feat: word one loan for the status line\n\nDone when: loanLine of title Dune, due 2030-01-15 and 1 renewal used, with 3 renewals allowed, reads Dune, due 2030-01-15, 2 renewals left"
+    },
+    {
+      "copy": "fixtures/review-converge-chain.md",
+      "to": ".aw/reviews/20000101-000000-review.md"
+    }
+  ],
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-converge",
+  "answers": [
+    {
+      "when": "Which seam to test the loan line at",
+      "intent": "A unit test of the exported loanLine function",
+      "reason": "the fix run in its subagent returns this question and the main session asks it"
+    }
+  ],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "the latest review still holds an introduced defect",
+      "file": ".aw/reviews/*-review.md",
+      "matches": "Proven defects: [1-9][0-9]* introduced"
+    },
+    {
+      "name": "one fix commit per round",
+      "run": "git rev-list --count --grep=Fixes: HEAD",
+      "stdout": "^3$"
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Ran three rounds and stopped at the limit, with no fourth fix run"
+    },
+    {
+      "judge": "Reported the defects left, each with its file and line, and said that running /aw-converge again starts a new count and that a call can raise the limit"
+    },
+    {
+      "judge": "Did not name /aw-ship as the next step, and neither pushed nor opened a review request"
+    }
+  ]
+}

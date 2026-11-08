@@ -44,9 +44,13 @@
     "./skills/aw-spec",
     "./skills/aw-slices",
     "./skills/aw-build",
+    "./skills/aw-build-steps",
     "./skills/aw-create-verify",
     "./skills/aw-verify",
+    "./skills/aw-verify-steps",
     "./skills/aw-review",
+    "./skills/aw-review-steps",
+    "./skills/aw-converge",
     "./skills/aw-ship",
     "./skills/aw-retro"
   ]

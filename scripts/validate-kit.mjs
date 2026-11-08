@@ -102,12 +102,13 @@ function disablesImplicitInvocation(yaml) {
   return false;
 }
 
-// Skills that are user-invoked whatever they declare: aw-setup and the phase
-// skills, which the user runs one after another (ADRs 0010 and 0013, and the
-// v1 spec's naming decisions). A user-invoked skill cannot be called by
-// another skill (ADR 0012).
+// Skills that are user-invoked whatever they declare: aw-setup, aw-converge
+// and the phase skills, which the user runs one after another (ADRs 0010,
+// 0013 and 0016, and the v1 spec's naming decisions). A user-invoked skill
+// cannot be called by another skill (ADR 0012).
 const USER_INVOKED_SKILLS = [
   'aw-setup',
+  'aw-converge',
   'aw-intake',
   'aw-wayfinder',
   'aw-spec',
@@ -149,7 +150,7 @@ function checkInvocation(dir, folder, fields) {
     return [`${at}/SKILL.md: openai.yaml disables implicit invocation, so the frontmatter must set "disable-model-invocation: true"`];
   }
   if (userInvoked && !claude) {
-    return [`${at}/SKILL.md: aw-setup and the phase skills are user-invoked, so the frontmatter must set "disable-model-invocation: true" and ${yamlPath} "policy: allow_implicit_invocation: false"`];
+    return [`${at}/SKILL.md: aw-setup, aw-converge and the phase skills are user-invoked, so the frontmatter must set "disable-model-invocation: true" and ${yamlPath} "policy: allow_implicit_invocation: false"`];
   }
   return [];
 }
@@ -189,6 +190,64 @@ function checkSkillToolCalls(dir) {
     }
   }
   return findings;
+}
+
+// Each phase procedure, with the phase whose steps it holds: its door, and the
+// one owner of the phase (ADR 0016). aw-converge is the only other caller.
+const PHASE_PROCEDURES = {
+  'aw-build-steps': 'aw-build',
+  'aw-verify-steps': 'aw-verify',
+  'aw-review-steps': 'aw-review',
+};
+const PROCEDURE_CALLER = 'aw-converge';
+
+// Nothing at runtime stops the model from loading a phase procedure, so no
+// skill but its door and aw-converge may name it.
+function checkProcedureCallers(dir, procedure, door) {
+  const allowed = [procedure, door, PROCEDURE_CALLER].map((folder) => `skills/${folder}/`);
+  return kitFiles(dir)
+    .filter((path) => path.startsWith('skills/') && !allowed.some((prefix) => path.startsWith(prefix)))
+    .sort()
+    .filter((path) => readFileSync(join(dir, path), 'utf8').includes(procedure))
+    .map((path) => `${path}: names the phase procedure "${procedure}", which only ${door} and ${PROCEDURE_CALLER} may call (ADR 0016)`);
+}
+
+// The `/` menu must not show a phase procedure: a person starts its door.
+function checkProcedureHidden(dir, procedure) {
+  const at = `skills/${procedure}/SKILL.md`;
+  const file = join(dir, at);
+  if (!existsSync(file)) return [];
+  const fields = frontmatter(readFileSync(file, 'utf8'));
+  return fields?.['user-invocable'] === 'false'
+    ? []
+    : [`${at}: a phase procedure must set "user-invocable: false" (ADR 0016)`];
+}
+
+// A door hands the whole phase to its procedure and keeps no steps of its
+// own, so that no procedure exists in two skills (ADR 0010).
+function checkDoor(dir, procedure, door) {
+  const at = `skills/${door}/SKILL.md`;
+  const file = join(dir, at);
+  const body = existsSync(file) ? withoutFrontmatter(readFileSync(file, 'utf8')) : '';
+  const findings = [];
+  if (!body.includes(`"${procedure}"`)) {
+    findings.push(`${at}: the door of a phase must call its phase procedure "${procedure}" through the Skill tool (ADR 0016)`);
+  }
+  if (/^##\s/m.test(body)) {
+    findings.push(`${at}: a door holds no section of its own; the phase's text belongs in "${procedure}" (ADR 0016)`);
+  }
+  return findings;
+}
+
+function checkPhaseProcedures(dir) {
+  const folders = skillFolders(dir);
+  return Object.entries(PHASE_PROCEDURES)
+    .filter(([procedure]) => folders.includes(procedure))
+    .flatMap(([procedure, door]) => [
+      ...checkProcedureCallers(dir, procedure, door),
+      ...checkProcedureHidden(dir, procedure),
+      ...checkDoor(dir, procedure, door),
+    ]);
 }
 
 const PLUGIN_MANIFEST = '.claude-plugin/plugin.json';
@@ -517,6 +576,7 @@ function checkRestatedSections(dir) {
 function validate(dir) {
   const findings = checkSkills(dir);
   findings.push(...checkSkillToolCalls(dir));
+  findings.push(...checkPhaseProcedures(dir));
   findings.push(...checkAdapterTemplates(dir));
   findings.push(...checkRestatedSections(dir));
   const plugin = readJson(dir, PLUGIN_MANIFEST);
