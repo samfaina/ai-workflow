@@ -13,7 +13,7 @@
       "text": "// Words a count of loans for a status line.\nexport function loanCountLabel(count) {\n  return `${count} loans`;\n}\n"
     },
     {
-      "commit": "feat: word the loan count for the status line\n\nDone when: a count of one reads 1 loan, and any other count reads the number and loans"
+      "commit": "Word the loan count for the status line\n\nDone when: a count of one reads 1 loan, and any other count reads the number and loans"
     },
     {
       "copy": "fixtures/review-introduced-fast.md",

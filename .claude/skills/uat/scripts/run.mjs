@@ -190,6 +190,10 @@ function applySetup(workdir, setup = []) {
       const pattern = new RegExp(op.pattern, 'gm');
       if (!pattern.test(before)) throw new Refused(`setup: "${op.pattern}" not found in ${op.replace}`);
       writeFileSync(file, before.replace(new RegExp(op.pattern, 'gm'), op.with));
+    } else if (op.delete !== undefined) {
+      const target = join(workdir, op.delete);
+      if (!existsSync(target)) throw new Refused(`setup: ${op.delete} not found`);
+      rmSync(target, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     } else if (op.commit !== undefined) {
       git(workdir, ['add', '-A']);
       git(workdir, ['commit', '-q', '-m', op.commit], IDENTITY);

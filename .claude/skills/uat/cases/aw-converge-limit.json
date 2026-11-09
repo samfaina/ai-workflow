@@ -3,17 +3,23 @@
   "title": "aw-converge, exhausts its rounds",
   "group": "aw-converge",
   "order": 38,
-  "source": "#95: four defects in a row, each hidden behind the throw of the one before, so that each round's review can prove only the next one",
+  "source": "#95: five independent defects, each under a criterion of its own, more than three rounds can fix when each fixes one; the verify skill is removed, because a criterion left without a test would stop round 1 at verify",
   "from": {
     "ref": "review/clean"
   },
   "setup": [
     {
-      "write": "src/loan-line.mjs",
-      "text": "// Words one loan for a status line: Dune, due 2030-01-15, 2 renewals left.\nconst titlePart = (loan) => loan.book.title;\nconst duePart = (loan) => loan.dueDate.slice(0, 10);\nconst leftPart = (loan) => loan.limits.renewals - loan.renewals;\nconst renewalsPart = (left) => `${left} renewal left`;\n\nexport function loanLine(loan) {\n  const title = titlePart(loan);\n  const due = duePart(loan);\n  const left = leftPart(loan);\n  return `${title}, due ${due}, ${renewalsPart(left)}`;\n}\n"
+      "delete": ".claude/skills/verify-api"
     },
     {
-      "commit": "feat: word one loan for the status line\n\nDone when: loanLine of title Dune, due 2030-01-15 and 1 renewal used, with 3 renewals allowed, reads Dune, due 2030-01-15, 2 renewals left"
+      "commit": "Remove the verify skill"
+    },
+    {
+      "write": "src/loan-labels.mjs",
+      "text": "// Words the parts of one loan for a status line.\nexport const titleLabel = (title) => title;\nexport const dueLabel = (date) => `due ${date.slice(0, 7)}`;\nexport const renewalsLabel = (left) => `${left} renewal left`;\nexport const feeLabel = (cents) => `$${(cents / 10).toFixed(2)}`;\nexport const overdueLabel = (days) => `${days} days late`;\n"
+    },
+    {
+      "commit": "Word the parts of a loan for the status line\n\nDone when: titleLabel of dune reads DUNE\nDone when: dueLabel of 2030-01-15 reads due 2030-01-15\nDone when: renewalsLabel of 2 reads 2 renewals left\nDone when: feeLabel of 150 reads $1.50\nDone when: overdueLabel of 0 reads on time"
     },
     {
       "copy": "fixtures/review-converge-chain.md",
@@ -26,9 +32,9 @@
   "command": "/ai-workflow:aw-converge",
   "answers": [
     {
-      "when": "Which seam to test the loan line at",
-      "intent": "A unit test of the exported loanLine function",
-      "reason": "the fix run in its subagent returns this question and the main session asks it"
+      "when": "Which seam to test the loan labels at",
+      "intent": "In every round, a direct unit test of the exported function of the first defect in the review report only, and every other defect stays Not fixed in that round",
+      "reason": "the fix run in its subagent returns this question and the main session asks it, and a later round may ask again; the case needs one defect fixed per round, so that defects are left at the limit"
     }
   ],
   "turns": [],
@@ -50,6 +56,9 @@
     },
     {
       "judge": "Ran three rounds and stopped at the limit, with no fourth fix run"
+    },
+    {
+      "judge": "The defects left at the limit are ones planted in src/loan-labels.mjs, not findings about the setup or the scratch app"
     },
     {
       "judge": "Reported the defects left, each with its file and line, and said that running /aw-converge again starts a new count and that a call can raise the limit"

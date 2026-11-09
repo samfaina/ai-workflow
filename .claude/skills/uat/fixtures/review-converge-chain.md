@@ -8,10 +8,10 @@
 
 ### Defects introduced
 
-**src/loan-line.mjs:2: the done-when criterion does not hold: `loanLine` throws on a loan that has a title.**
+**src/loan-labels.mjs:2: the done-when criterion does not hold: `titleLabel` does not put the title in capitals.**
 
-- Run: `node -e "import('./src/loan-line.mjs').then((m) => console.log(m.loanLine({ title: 'Dune', due: '2030-01-15', renewals: 1, limits: { renewals: 3 } })))"` at {{SHORT}}.
-- Output: `TypeError: Cannot read properties of undefined (reading 'title')`. It should read `Dune, due 2030-01-15, 2 renewals left`.
+- Run: `node -e "import('./src/loan-labels.mjs').then((m) => console.log(m.titleLabel('dune')))"` at {{SHORT}}.
+- Output: `dune`.
 
 ## Standards
 
