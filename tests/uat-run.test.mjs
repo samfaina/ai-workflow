@@ -94,6 +94,34 @@ test('a setup that cannot apply stops the run with its reason', (t) => {
   assert.match(output.message, /not there/);
 });
 
+test('a setup deletes a whole folder, and the deletion can be committed', (t) => {
+  const run = makeRun(t, [
+    caseFile('c1', {
+      setup: [
+        { write: 'tools/inner/a.md', text: 'a\n' },
+        { commit: 'add tools' },
+        { delete: 'tools' },
+        { commit: 'remove tools' },
+      ],
+    }),
+  ]);
+
+  const { workdir } = run.cli('next').output;
+
+  assert.equal(existsSync(join(workdir, 'tools')), false);
+  assert.equal(git(workdir, 'status', '--porcelain'), '');
+  assert.equal(git(workdir, 'log', '-1', '--format=%s'), 'remove tools');
+});
+
+test('a setup that deletes a path that is not there stops the run, so a renamed path does not go unnoticed', (t) => {
+  const run = makeRun(t, [caseFile('c1', { setup: [{ delete: 'no-such-folder' }] })]);
+
+  const { status, output } = run.cli('next');
+
+  assert.equal(status, 1);
+  assert.match(output.message, /no-such-folder/);
+});
+
 const CHECKS = [
   { name: 'clean tree', run: 'git status --porcelain', stdout: '^$' },
   { name: 'exit code', run: 'git rev-parse --verify no-such-ref', exit: 128 },

@@ -137,9 +137,26 @@ for (const [id, fixCommits] of [['aw-converge-clean', 1], ['aw-converge-limit', 
     const planted = converge.setup.findIndex((op) => op.commit);
     const reviewed = converge.setup.findIndex((op) => op.to === '.aw/reviews/20000101-000000-review.md');
     assert.ok(planted !== -1 && reviewed > planted, `${id}: the report must name the commit that plants the defect`);
+    assert.doesNotMatch(converge.setup[planted].commit, /^[a-z]+(\([^)]*\))?: /, `${id}: the scratch app's commit convention forbids a type prefix, and a review would prove it`);
     assert.ok(converge.assertions.some((a) => a.run === 'git rev-list --count --grep=Fixes: HEAD' && a.stdout === `^${fixCommits}$`));
   });
 }
+
+test('aw-converge-limit has no verify skill, or a test that does not prove the criterion would stop round 1 at verify', () => {
+  const limit = byId.get('aw-converge-limit');
+  const removed = limit.setup.findIndex((op) => op.delete === '.claude/skills/verify-api');
+  const reviewed = limit.setup.findIndex((op) => op.to === '.aw/reviews/20000101-000000-review.md');
+  assert.ok(removed !== -1, 'the verify skill must be removed');
+  assert.ok(limit.setup.slice(removed, reviewed).some((op) => op.commit), 'the run refuses uncommitted changes, so the removal must be committed before the report');
+});
+
+test('aw-converge-limit plants more independent defects than it has rounds, and its answer fixes one per round', () => {
+  const limit = byId.get('aw-converge-limit');
+  const message = limit.setup.find((op) => op.commit?.includes('Done when:')).commit;
+  assert.ok(message.match(/^Done when: /gm).length > 3, 'with a criterion each, a review cannot group the defects, and a round cannot clear them');
+  assert.match(limit.answers[0].intent, /first defect/);
+  assert.ok(limit.assertions.some((a) => a.judge && /planted/.test(a.judge)), 'a limit reached on findings about the setup proves nothing');
+});
 
 test('aw-implement-clean ends with every slice ticked and no introduced defect', () => {
   const clean = byId.get('aw-implement-clean');
