@@ -22,6 +22,17 @@ const intakeDefinition = skillLine('aw-intake', '- **fast**:');
 const buildRefusal = skillLine('aw-build-steps', 'Refuse to go on, and tell the user to run `/aw-intake` again');
 const buildMidBuildStop = skillLine('aw-build-steps', 'When building shows that a done-when criterion is wrong');
 
+test('the Standards axis does not prove as a breach the criterion a test name must quote', () => {
+  assert.match(skillLine('aw-build-steps', '- Name each test so that it quotes the criterion'), /quotes the criterion/);
+  assert.match(skillText('aw-review-steps'), /A test name that quotes a done-when criterion keeps the criterion's words/);
+});
+
+test('the Spec axis keeps scope creep a risk unless a run shows it breaks something', () => {
+  const review = skillText('aw-review-steps');
+  assert.match(review, /Scope creep is a risk, even when a run shows the change is in the diff/);
+  assert.match(review, /It is a defect only when a run shows it breaks a criterion or a check/);
+});
+
 // Each Ask First item of aw-security-and-hardening, and the wording that names
 // the work behind it.
 const askFirstWording = [

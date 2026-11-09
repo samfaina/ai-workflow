@@ -313,6 +313,7 @@ test('the report names /aw-ship only for a clean run, and lists the defects left
   assert.match(line(report, '  - **Clean:**'), /`\/aw-ship`/);
   assert.match(line(report, '  - **Limit reached:**'), /defects left/);
   assert.match(line(report, '  - **Stopped:**'), /its reason/);
+  assert.match(report, /Only \*\*Clean\*\* names `\/aw-ship`/);
 });
 
 test('the command never pushes, opens a review request or merges', () => {

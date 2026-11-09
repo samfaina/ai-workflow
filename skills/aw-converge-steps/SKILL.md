@@ -125,6 +125,6 @@ Report in chat:
   - **Limit reached:** list the defects left, from the latest review report's `Defects introduced`, each with its file and line. Say that running `/aw-converge` again starts a new count, and that a call can raise the limit.
   - **Stopped:** give its reason and the line that ended the run, quoted, with the defects left in the latest review report, and name the skill its `Next:` line names, if any.
 
-Tell the user to run what comes next; this skill never runs it.
+Only **Clean** names `/aw-ship`: while the latest report holds an introduced defect, do not offer it, not even as one option among others. Tell the user to run what comes next; this skill never runs it.
 
 Done when the user has how the run ended, what is left, and what comes next.
