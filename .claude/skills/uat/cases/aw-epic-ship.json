@@ -1,0 +1,47 @@
+{
+  "id": "aw-epic-ship",
+  "title": "aw-ship does not close the map",
+  "group": "Epic route, one deliverable",
+  "order": 65,
+  "source": "#55: shipping a deliverable's spec does not close the map",
+  "from": {
+    "case": "aw-epic-review"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-ship",
+  "answers": [],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "spec is implemented",
+      "file": "docs/specs/reserve-book/spec.md",
+      "frontmatter": {
+        "status": "implemented"
+      }
+    },
+    {
+      "name": "aw-check-spec passes",
+      "run": "node {{KIT}}/skills/aw-check-spec/scripts/check-spec.mjs"
+    },
+    {
+      "name": "the map stays open",
+      "file": "docs/tickets/01-member-reservations.md",
+      "matches": "^Status: open$"
+    },
+    {
+      "name": "the review request does not close the map",
+      "file": ".aw/review-requests/*-review-request.md",
+      "matches": "[Cc]loses\\s+(docs/tickets/)?0?1\\b",
+      "count": 0
+    },
+    {
+      "name": "merge drafted",
+      "file": ".aw/drafts/*-merge.md"
+    },
+    {
+      "judge": "Neither set the status of the map nor commented on it, and left the merge as a draft"
+    }
+  ]
+}

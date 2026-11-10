@@ -1,0 +1,53 @@
+{
+  "id": "aw-epic-spec",
+  "title": "aw-spec for one deliverable",
+  "group": "Epic route, one deliverable",
+  "order": 61,
+  "source": "#55: on a cleared map, aw-spec for one deliverable",
+  "from": {
+    "case": "aw-wayfinder-handoff"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-spec el entregable reserve-book del mapa 01; usa el slug reserve-book",
+  "answers": [
+    {
+      "when": "How a reservation is made and answered",
+      "intent": "POST /books/:id/reservations with a member: 201 and the queue position when the book is on loan, 409 when it is available",
+      "reason": "keeps the deliverable to one small slice"
+    }
+  ],
+  "turns": [
+    {
+      "intent": "Accept all the answers it proposes to its open questions",
+      "reason": "lets the draft reach a full version"
+    },
+    {
+      "intent": "Explicitly approve the current version of the spec",
+      "reason": "the slices need an approved spec"
+    }
+  ],
+  "assertions": [
+    {
+      "name": "spec is approved",
+      "file": "docs/specs/reserve-book/spec.md",
+      "frontmatter": {
+        "status": "approved"
+      }
+    },
+    {
+      "name": "the map is not its ticket",
+      "file": "docs/specs/reserve-book/spec.md",
+      "matches": "^ticket:",
+      "count": 0
+    },
+    {
+      "name": "aw-check-spec passes",
+      "run": "node {{KIT}}/skills/aw-check-spec/scripts/check-spec.mjs"
+    },
+    {
+      "judge": "The spec rests on the map's latest update and the decision tickets: it names them in Design, and its criteria hold the first-come order and the rule on who may reserve"
+    }
+  ]
+}

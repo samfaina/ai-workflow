@@ -1,0 +1,110 @@
+{
+  "id": "aw-wayfinder-none-accepted",
+  "title": "aw-wayfinder, no tracker, offer accepted",
+  "group": "Epic route",
+  "order": 59,
+  "source": "#55: with tracker none it works on the local-markdown tracker once accepted",
+  "from": {
+    "ref": "908296b"
+  },
+  "shell": [],
+  "command": "/ai-workflow:aw-wayfinder Informe de /aw-intake. Task: Queremos que los socios puedan reservar libros que están prestados, con lista de espera, y que se les avise cuando les toque. Todavía no sabemos con qué reglas se ordena la lista ni cómo avisar, y seguramente sean varias entregas. Type: feature, porque es comportamiento nuevo. Route: epic, porque son varias entregas y cada una merece su propia spec. Next: /aw-wayfinder.",
+  "answers": [
+    {
+      "when": "Whether to create a local-markdown tracker, and where",
+      "intent": "Yes, in docs/tickets/",
+      "reason": "the case tests the offer accepted"
+    },
+    {
+      "when": "Whether the adapter and the block change are right",
+      "intent": "Confirm them",
+      "reason": "the adapter is what the assertions check"
+    },
+    {
+      "when": "What the destination of the effort is",
+      "intent": "Two deliverables: members can reserve a book on loan and queue for it, and they are told when their turn comes",
+      "reason": "fixes the scope and leaves the rules open"
+    },
+    {
+      "when": "What the waitlist order is, or how members are told",
+      "intent": "Undecided: make each one a ticket to settle later, and do not settle it in this session",
+      "reason": "the map needs open decisions, and charting resolves none"
+    },
+    {
+      "when": "Which decision depends on which",
+      "intent": "How members are told depends on the waitlist order, so that ticket is blocked by the order ticket",
+      "reason": "the case checks a blocking edge, so there must be one"
+    },
+    {
+      "when": "Whether a third-party service or an outside fact is involved",
+      "intent": "No: keep to what the repo can do, with no third party",
+      "reason": "keeps research subagents out of a case about the tracker"
+    },
+    {
+      "when": "Whether the list of tickets is right",
+      "intent": "Accept it",
+      "reason": "the list itself is what the assertions check"
+    }
+  ],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "the adapter is local markdown",
+      "file": "docs/agents/tracker.md",
+      "matches": "^# Tracker: local markdown"
+    },
+    {
+      "name": "no unfilled placeholder",
+      "run": "git grep --untracked -n \"{{\" -- docs/agents",
+      "exit": 1
+    },
+    {
+      "name": "the block points to it",
+      "file": "AGENTS.md",
+      "matches": "^Local markdown: one file per ticket"
+    },
+    {
+      "name": "on a work branch",
+      "run": "git branch --show-current",
+      "stdout": "/"
+    },
+    {
+      "name": "the map is ticket 01",
+      "file": "docs/tickets/01-*.md",
+      "matches": "Type: wayfinder:map"
+    },
+    {
+      "name": "the map has its first update",
+      "file": "docs/tickets/01-*.md",
+      "matches": "\\*\\*Map update\\*\\*"
+    },
+    {
+      "name": "ticket 02 is part of the map",
+      "file": "docs/tickets/02-*.md",
+      "matches": "^Part of: 0?1$"
+    },
+    {
+      "name": "a blocking edge exists",
+      "run": "git grep -l \"^Blocked by: \" -- docs/tickets",
+      "stdout": "docs/tickets/"
+    },
+    {
+      "name": "no code or test changed",
+      "run": "git diff --exit-code origin/main HEAD -- src tests"
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Published the map first, then the decision tickets with each blocker before the tickets it blocks"
+    },
+    {
+      "judge": "Resolved no ticket and built nothing"
+    },
+    {
+      "judge": "Showed the adapter and the block change and wrote them only once confirmed, and told the person the map lives on the work branch until it is merged"
+    }
+  ]
+}

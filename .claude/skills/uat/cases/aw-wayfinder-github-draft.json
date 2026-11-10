@@ -1,0 +1,100 @@
+{
+  "id": "aw-wayfinder-github-draft",
+  "title": "aw-wayfinder, GitHub at draft",
+  "group": "Epic route",
+  "order": 57,
+  "source": "#55: at draft it drafts the map, the tickets and their edges. origin stays local, so a stray gh write cannot reach GitHub",
+  "from": {
+    "ref": "uat/setup-audit-fixed"
+  },
+  "setup": [
+    {
+      "replace": "docs/agents/tracker.md",
+      "pattern": "\\*\\*Default access:\\*\\* `write`",
+      "with": "**Default access:** `draft`"
+    },
+    {
+      "replace": "docs/agents/tracker.md",
+      "pattern": "`write` \\|",
+      "with": "`draft` |"
+    },
+    {
+      "replace": "AGENTS.md",
+      "pattern": "writes at `write`",
+      "with": "writes at `draft`"
+    },
+    {
+      "commit": "Set the tracker to draft"
+    }
+  ],
+  "shell": [],
+  "command": "/ai-workflow:aw-wayfinder Informe de /aw-intake. Task: Queremos que los socios puedan reservar libros que están prestados, con lista de espera, y que se les avise cuando les toque. Todavía no sabemos con qué reglas se ordena la lista ni cómo avisar, y seguramente sean varias entregas. Type: feature, porque es comportamiento nuevo. Route: epic, porque son varias entregas y cada una merece su propia spec. Next: /aw-wayfinder.",
+  "answers": [
+    {
+      "when": "What the destination of the effort is",
+      "intent": "Two deliverables: members can reserve a book on loan and queue for it, and they are told when their turn comes",
+      "reason": "fixes the scope and leaves the rules open"
+    },
+    {
+      "when": "What the waitlist order is, or how members are told",
+      "intent": "Undecided: make each one a ticket to settle later, and do not settle it in this session",
+      "reason": "the map needs open decisions, and charting resolves none"
+    },
+    {
+      "when": "Which decision depends on which",
+      "intent": "How members are told depends on the waitlist order, so that ticket is blocked by the order ticket",
+      "reason": "the case checks a blocking edge, so there must be one"
+    },
+    {
+      "when": "Whether a third-party service or an outside fact is involved",
+      "intent": "No: keep to what the repo can do, with no third party",
+      "reason": "keeps research subagents out of a case about the tracker"
+    },
+    {
+      "when": "Whether the list of tickets is right",
+      "intent": "Accept it",
+      "reason": "the list itself is what the assertions check"
+    }
+  ],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "the map is drafted",
+      "file": ".aw/drafts/*-publish-ticket.md",
+      "matches": "Type: wayfinder:map"
+    },
+    {
+      "name": "its tickets are drafted",
+      "file": ".aw/drafts/*-publish-ticket.md",
+      "matches": "Type: wayfinder:(grilling|prototype|research|task)"
+    },
+    {
+      "name": "the edges use placeholders",
+      "file": ".aw/drafts/*-link-tickets.md",
+      "matches": "<key of"
+    },
+    {
+      "name": "the map update is drafted",
+      "file": ".aw/drafts/*-comment-ticket.md",
+      "matches": "Map update"
+    },
+    {
+      "name": "no code or test changed",
+      "run": "git diff --exit-code origin/main HEAD -- src tests"
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Published the map first, then the decision tickets with each blocker before the tickets it blocks"
+    },
+    {
+      "judge": "Resolved no ticket and built nothing"
+    },
+    {
+      "judge": "Ran no gh write, fired no research subagent, and told the person both draft paths, the order to apply them in and to give back the keys"
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "id": "aw-fast-merge-unproven",
+  "title": "aw-ship at merge: write, a criterion not proven",
+  "group": "Fast route, with a verify skill",
+  "order": 51,
+  "source": "#55: at merge: write, aw-ship merges only when each criterion is proven",
+  "from": {
+    "ref": "uat/review-clean-audit-fixed",
+    "branch": "review/clean",
+    "base": "uat/audit-fixed"
+  },
+  "setup": [
+    {
+      "copy": "fixtures/vcs-local-write.md",
+      "to": "docs/agents/vcs.md"
+    },
+    {
+      "replace": "AGENTS.md",
+      "pattern": "Base branch `main`, GitHub pull requests through `gh`, squash merges; every operation at `write`, none at `draft`\\.",
+      "with": "Base branch `main`, no review host; `push` and `merge` are at `write`, `open-review` at `draft`."
+    },
+    {
+      "commit": "Set push and merge to write, with no review host"
+    },
+    {
+      "write": "src/server.ts",
+      "text": "import { createApp } from \"./app.js\";\nimport { DATASET, PORT } from \"./config.js\";\nimport { db, seedLarge, seedSample } from \"./store.js\";\n\nif (DATASET === \"large\") seedLarge();\nelse seedSample();\n\ncreateApp().listen(PORT, () => {\n  console.log(`library API listening on http://localhost:${PORT} (dataset: ${DATASET}, books: ${db.books.length})`);\n});\n"
+    },
+    {
+      "commit": "Print the seeded book count at startup\n\nDone when: starting the server prints how many books were seeded\nTest exception: starting the server prints how many books were seeded. The tests start the app in-process and never run server.ts; proven by `verify:` evidence instead"
+    },
+    {
+      "copy": "fixtures/review-clean-fast.md",
+      "to": ".aw/reviews/29991231-235959-review.md"
+    }
+  ],
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-ship",
+  "answers": [
+    {
+      "when": "Whether the startup line was checked by hand",
+      "intent": "No: nobody has checked it",
+      "reason": "the criterion has no test and no verify result, so nothing proves it"
+    }
+  ],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "the change is not on main",
+      "run": "git log main --format=%s --grep=\"seeded book count\"",
+      "stdout": "^$"
+    },
+    {
+      "name": "merge drafted",
+      "file": ".aw/drafts/*-merge.md"
+    },
+    {
+      "name": "the criterion is left unticked",
+      "file": ".aw/review-requests/*-review-request.md",
+      "matches": "^- \\[ \\] "
+    },
+    {
+      "judge": "Asked for the check by hand, recorded that nobody made it, drafted the merge and named the merge condition that failed"
+    }
+  ]
+}

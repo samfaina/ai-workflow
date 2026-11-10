@@ -1,0 +1,45 @@
+{
+  "id": "aw-wayfinder-none-declined",
+  "title": "aw-wayfinder, no tracker, offer declined",
+  "group": "Epic route",
+  "order": 58,
+  "source": "#55: with tracker none it offers a local-markdown tracker and stops if declined",
+  "from": {
+    "ref": "908296b"
+  },
+  "shell": [],
+  "command": "/ai-workflow:aw-wayfinder Informe de /aw-intake. Task: Queremos que los socios puedan reservar libros que están prestados, con lista de espera, y que se les avise cuando les toque. Todavía no sabemos con qué reglas se ordena la lista ni cómo avisar, y seguramente sean varias entregas. Type: feature, porque es comportamiento nuevo. Route: epic, porque son varias entregas y cada una merece su propia spec. Next: /aw-wayfinder.",
+  "answers": [
+    {
+      "when": "Whether to create a local-markdown tracker",
+      "intent": "No",
+      "reason": "the case tests the stop"
+    }
+  ],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "no tickets folder",
+      "file": "docs/tickets",
+      "exists": false
+    },
+    {
+      "name": "the tracker is still none",
+      "file": "docs/agents/tracker.md",
+      "matches": "^# Tracker: none"
+    },
+    {
+      "name": "nothing drafted",
+      "file": ".aw/drafts/*-publish-ticket.md",
+      "exists": false
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Offered the local-markdown tracker before anything else, named docs/tickets/ and that it is committed with the repo, then stopped when declined, named /aw-setup and charted nothing"
+    }
+  ]
+}

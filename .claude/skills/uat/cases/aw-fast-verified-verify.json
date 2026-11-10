@@ -1,0 +1,39 @@
+{
+  "id": "aw-fast-verified-verify",
+  "title": "aw-verify on the real app",
+  "group": "Fast route, with a verify skill",
+  "order": 48,
+  "source": "#55: aw-verify keeps its results under .aw/verify/",
+  "from": {
+    "case": "aw-fast-verified-build"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-verify",
+  "answers": [],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "the first criterion passed",
+      "run": "node -e \"const fs=require('fs');const d='.aw/verify/'+fs.readdirSync('.aw/verify').sort().at(-1);console.log(fs.readFileSync(d+'/done-when-1.md','utf8'))\"",
+      "stdout": "^# Done when 1: passed"
+    },
+    {
+      "name": "the results are not committed",
+      "run": "git log --all --format=%H -- .aw/verify",
+      "stdout": "^$"
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "In a fresh session it read the criteria back from the commit's Done when lines"
+    },
+    {
+      "judge": "Proved every criterion on the running app through verify-api, with a passed result observed in this run, and left nothing running"
+    }
+  ]
+}
