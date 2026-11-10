@@ -5,7 +5,7 @@
   "order": 60,
   "source": "#55: it never builds, and ends by naming /aw-spec for each deliverable. The map is a fixture with one open ticket",
   "from": {
-    "ref": "b0c28c8"
+    "ref": "uat/setup-local-audit-fixed"
   },
   "setup": [
     {

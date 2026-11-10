@@ -5,7 +5,7 @@
   "order": 56,
   "source": "#55: with a GitHub tracker it creates the map and decision tickets with their blocking edges. It creates real issues in the scratch repo",
   "from": {
-    "ref": "ef0ddf0"
+    "ref": "uat/setup-audit-fixed"
   },
   "setup": [
     {

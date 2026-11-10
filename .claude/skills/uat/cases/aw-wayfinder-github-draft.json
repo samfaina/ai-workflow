@@ -5,7 +5,7 @@
   "order": 57,
   "source": "#55: at draft it drafts the map, the tickets and their edges. origin stays local, so a stray gh write cannot reach GitHub",
   "from": {
-    "ref": "ef0ddf0"
+    "ref": "uat/setup-audit-fixed"
   },
   "setup": [
     {

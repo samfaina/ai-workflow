@@ -205,8 +205,13 @@ test('the draft case leaves no tracker operation at write', () => {
   assert.ok(draft.setup.at(-1).commit, 'the run must start from a clean tree');
 });
 
-test('the fast merge runs on the real review, from a point where npm audit is clean: a pre-existing defect alone refuses it', () => {
-  assert.equal(byId.get('aw-fast-verified-build').from.ref, 'uat/audit-fixed');
+test('every #55 case that installs dependencies from a ref starts where npm audit is clean', () => {
+  const installs = cases.filter((c) => c.source.startsWith('#55') && c.from?.ref && c.shell.includes('npm ci'));
+  assert.ok(installs.length > 0);
+  for (const c of installs) assert.match(c.from.ref, /audit-fixed$/, c.id);
+});
+
+test('the fast merge runs on the real review: a pre-existing defect alone refuses it', () => {
   assert.equal(byId.get('aw-fast-merge-write').setup, undefined);
   assert.ok(byId.get('aw-fast-verified-review').assertions.some((a) => a.matches === 'Proven defects: 0 introduced, 0 pre-existing'));
 });

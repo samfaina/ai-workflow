@@ -5,7 +5,9 @@
   "order": 51,
   "source": "#55: at merge: write, aw-ship merges only when each criterion is proven",
   "from": {
-    "ref": "review/clean"
+    "ref": "uat/review-clean-audit-fixed",
+    "branch": "review/clean",
+    "base": "uat/audit-fixed"
   },
   "setup": [
     {

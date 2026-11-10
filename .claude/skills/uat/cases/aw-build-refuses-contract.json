@@ -5,7 +5,7 @@
   "order": 55,
   "source": "#55: aw-build refuses a criterion that needs a change kept off the fast route",
   "from": {
-    "ref": "ef0ddf0"
+    "ref": "uat/setup-audit-fixed"
   },
   "shell": [
     "npm ci"

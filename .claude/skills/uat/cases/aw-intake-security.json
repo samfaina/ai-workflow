@@ -5,7 +5,7 @@
   "order": 54,
   "source": "#55: a task that changes security is not classified as fast",
   "from": {
-    "ref": "ef0ddf0"
+    "ref": "uat/setup-audit-fixed"
   },
   "shell": [
     "npm ci"
