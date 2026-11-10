@@ -1,0 +1,36 @@
+{
+  "id": "aw-build-refuses-contract",
+  "title": "aw-build refuses a criterion that changes a contract",
+  "group": "Kept off the fast route",
+  "order": 55,
+  "source": "#55: aw-build refuses a criterion that needs a change kept off the fast route",
+  "from": {
+    "ref": "ef0ddf0"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-build Informe de /aw-intake. Task: ajustar las respuestas de /loans. Type: feature. Route: fast. Pre-step: none. Done when: GET /loans devuelve `fee_cents` en lugar de `feeCents`. Next: /aw-build.",
+  "answers": [],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "still on main",
+      "run": "git branch --show-current",
+      "stdout": "^main$"
+    },
+    {
+      "name": "no commit made",
+      "run": "git rev-list --count origin/main..HEAD",
+      "stdout": "^0$"
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Refused because the criterion changes a public API, wrote no code and told the person to run /aw-intake again"
+    }
+  ]
+}

@@ -1,4 +1,5 @@
-// The committed UAT case files: complete, and covering the #49 results.
+// The committed UAT case files: complete, and covering the #49 results and the
+// routes #55 runs.
 
 import assert from 'node:assert/strict';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
@@ -15,7 +16,8 @@ const cases = readdirSync(casesDir)
   .sort((a, b) => a.order - b.order);
 const byId = new Map(cases.map((c) => [c.id, c]));
 
-// One entry per result line of the #49 comment, plus what it left unproven.
+// One entry per result line of the #49 comment, plus what it left unproven, then
+// the fast and epic routes of #55.
 const EXPECTED = [
   'aw-setup-none', 'aw-setup-local', 'aw-setup-gitlab', 'aw-setup-other', 'aw-setup-github', 'aw-setup-node-warning', 'aw-setup-pocock',
   'aw-intake-bug', 'aw-intake-performance', 'aw-intake-refactor', 'aw-intake-investigation', 'aw-intake-feature',
@@ -27,6 +29,11 @@ const EXPECTED = [
   'aw-build-fix-standard', 'aw-build-fix-fast',
   'aw-converge-clean', 'aw-converge-limit',
   'aw-implement-clean', 'aw-implement-hitl', 'aw-implement-stop', 'aw-implement-relaunch',
+  'aw-fast-build', 'aw-fast-verify-skipped', 'aw-fast-review', 'aw-fast-ship',
+  'aw-fast-verified-build', 'aw-fast-verified-verify', 'aw-fast-verified-review', 'aw-fast-merge-write', 'aw-fast-merge-unproven',
+  'aw-intake-contract', 'aw-intake-stored-data', 'aw-intake-security', 'aw-build-refuses-contract',
+  'aw-wayfinder-github-write', 'aw-wayfinder-github-draft', 'aw-wayfinder-none-declined', 'aw-wayfinder-none-accepted',
+  'aw-wayfinder-handoff', 'aw-epic-spec', 'aw-epic-slices', 'aw-epic-build', 'aw-epic-review', 'aw-epic-ship',
 ];
 
 test('there is a case file for every result of #49 and for what it left unproven', () => {
@@ -182,6 +189,45 @@ test('a stop and its relaunch: the same session goes on under a new journal head
   assert.ok(stop.assertions.some((a) => a.exists === false), 'the stopped build changes nothing');
   assert.ok(relaunch.assertions.some((a) => a.count === 2 && /##/.test(a.matches)), 'one heading per call');
   assert.ok(relaunch.assertions.some((a) => /Agreed seam/.test(a.matches ?? '')));
+});
+
+test('only the GitHub write case of #55 can reach GitHub: its issues are real and no restore point takes them back', () => {
+  const route = cases.filter((c) => c.source.startsWith('#55'));
+  const remotes = route.filter((c) => c.setup?.some((op) => op.remote));
+  assert.deepEqual(remotes.map((c) => c.id), ['aw-wayfinder-github-write']);
+});
+
+test('the draft case leaves no tracker operation at write', () => {
+  const draft = byId.get('aw-wayfinder-github-draft');
+  const access = draft.setup.filter((op) => op.replace === 'docs/agents/tracker.md');
+  assert.ok(access.some((op) => /Default access/.test(op.pattern)));
+  assert.ok(access.some((op) => op.with === '`draft` |'), 'every row of the Operations table');
+  assert.ok(draft.setup.at(-1).commit, 'the run must start from a clean tree');
+});
+
+test('the fast merge runs on the real review, from a point where npm audit is clean: a pre-existing defect alone refuses it', () => {
+  assert.equal(byId.get('aw-fast-verified-build').from.ref, 'uat/audit-fixed');
+  assert.equal(byId.get('aw-fast-merge-write').setup, undefined);
+  assert.ok(byId.get('aw-fast-verified-review').assertions.some((a) => a.matches === 'Proven defects: 0 introduced, 0 pre-existing'));
+});
+
+test('the unproven merge plants its review report after the last commit, so that the report names HEAD', () => {
+  const unproven = byId.get('aw-fast-merge-unproven');
+  const lastCommit = unproven.setup.findLastIndex((op) => op.commit);
+  const reviewed = unproven.setup.findIndex((op) => op.to === '.aw/reviews/29991231-235959-review.md');
+  assert.ok(reviewed > lastCommit);
+  assert.match(unproven.setup[lastCommit].commit, /\n\nDone when: [^\n]+\nTest exception: /);
+  assert.equal(unproven.setup[reviewed].copy, 'fixtures/review-clean-fast.md');
+  assert.match(readFileSync(join(skillDir, 'fixtures/review-clean-fast.md'), 'utf8'), /Proven defects: 0 introduced, 0 pre-existing/);
+});
+
+test('the map of the hand-off case clears with its one open ticket', () => {
+  const read = (name) => readFileSync(join(skillDir, 'fixtures/wayfinder-map', name), 'utf8');
+  const update = read('01-member-reservations.md').split('**Map update**')[1];
+  assert.equal(update.match(/^- .*: grilling, blocked by none$/gm).length, 1);
+  assert.match(update, /#### Not yet specified\n\nNone\./);
+  assert.match(read('02-who-may-reserve.md'), /^Status: done$/m);
+  assert.match(read('03-reservation-order.md'), /^Status: open$/m);
 });
 
 test('fixtures named by the case files exist', () => {

@@ -1,0 +1,26 @@
+{
+  "id": "aw-intake-contract",
+  "title": "aw-intake, a change of contract",
+  "group": "Kept off the fast route",
+  "order": 52,
+  "source": "#55: a task that changes a contract is not classified as fast",
+  "from": {
+    "ref": "ef0ddf0"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-intake Renombra el campo `feeCents` de las respuestas de /loans a `fee_cents`.",
+  "answers": [],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Classified it standard, naming the public API as the reason, stated no Done when criteria and named /aw-spec"
+    }
+  ]
+}

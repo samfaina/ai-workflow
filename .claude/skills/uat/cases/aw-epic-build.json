@@ -1,0 +1,52 @@
+{
+  "id": "aw-epic-build",
+  "title": "aw-build",
+  "group": "Epic route, one deliverable",
+  "order": 63,
+  "source": "#55: on a cleared map, the deliverable is built",
+  "from": {
+    "case": "aw-epic-slices"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-build",
+  "answers": [
+    {
+      "when": "Uncommitted spec, glossary or tickets",
+      "intent": "Commit them separately first",
+      "reason": "they must not land in the slice commit"
+    },
+    {
+      "when": "Which base to branch from or diff against",
+      "intent": "Local main",
+      "reason": "only asked if the remote and local main differ"
+    }
+  ],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "on a work branch",
+      "run": "git branch --show-current",
+      "stdout": "/"
+    },
+    {
+      "name": "the slice is ticked",
+      "file": "docs/specs/reserve-book/spec.md",
+      "matches": "^\\d+\\. \\[ \\] ",
+      "count": 0
+    },
+    {
+      "name": "the tests pass",
+      "run": "npm test"
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Built the slice test-first at the agreed seam, with task checks green and Traceability updated, in one local commit"
+    }
+  ]
+}

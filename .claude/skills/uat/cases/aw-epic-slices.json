@@ -1,0 +1,38 @@
+{
+  "id": "aw-epic-slices",
+  "title": "aw-slices",
+  "group": "Epic route, one deliverable",
+  "order": 62,
+  "source": "#55: on a cleared map, the deliverable is planned before it is built",
+  "from": {
+    "case": "aw-epic-spec"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-slices",
+  "answers": [
+    {
+      "when": "How to split the work",
+      "intent": "One slice: the deliverable is small",
+      "reason": "keeps the case to one build"
+    }
+  ],
+  "turns": [
+    {
+      "intent": "Accept the slice plan and the test strategy",
+      "reason": "the build needs them"
+    }
+  ],
+  "assertions": [
+    {
+      "name": "one slice, not built yet",
+      "file": "docs/specs/reserve-book/spec.md",
+      "matches": "^\\d+\\. \\[ \\] ",
+      "count": 1
+    },
+    {
+      "judge": "Filled in the slice plan and Test strategy without touching the map"
+    }
+  ]
+}

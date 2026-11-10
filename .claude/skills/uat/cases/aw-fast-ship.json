@@ -1,0 +1,55 @@
+{
+  "id": "aw-fast-ship",
+  "title": "aw-ship at default access",
+  "group": "Fast route, no verify skill",
+  "order": 46,
+  "source": "#55: the task reaches a review request with no spec created",
+  "from": {
+    "case": "aw-fast-review"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-ship",
+  "answers": [],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "push drafted",
+      "file": ".aw/drafts/*-push.md"
+    },
+    {
+      "name": "open-review drafted",
+      "file": ".aw/drafts/*-open-review.md"
+    },
+    {
+      "name": "merge drafted",
+      "file": ".aw/drafts/*-merge.md"
+    },
+    {
+      "name": "nothing pushed",
+      "run": "git ls-remote --heads origin \"refs/heads/*/*\"",
+      "stdout": "^$"
+    },
+    {
+      "name": "the review request has its criteria",
+      "file": ".aw/review-requests/*-review-request.md",
+      "matches": "^- \\*\\*Criteria:\\*\\*"
+    },
+    {
+      "name": "no spec created",
+      "run": "git diff --exit-code origin/main HEAD -- docs/specs"
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "In a fresh session it read the criteria back from the commit's Done when lines, and the review request shows what proves each one"
+    },
+    {
+      "judge": "Pushed nothing and created no spec"
+    }
+  ]
+}

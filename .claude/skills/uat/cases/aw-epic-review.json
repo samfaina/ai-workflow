@@ -1,0 +1,48 @@
+{
+  "id": "aw-epic-review",
+  "title": "aw-review",
+  "group": "Epic route, one deliverable",
+  "order": 64,
+  "source": "#55: on a cleared map, the deliverable is reviewed before it ships",
+  "from": {
+    "case": "aw-epic-build"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-review",
+  "answers": [
+    {
+      "when": "Which base to branch from or diff against",
+      "intent": "Local main",
+      "reason": "only asked if the remote and local main differ"
+    }
+  ],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "the three axes are in the report",
+      "file": ".aw/reviews/*-review.md",
+      "matches": "^## (Spec|Standards|Security)$",
+      "count": 3
+    },
+    {
+      "name": "judged against the spec",
+      "file": ".aw/reviews/*-review.md",
+      "matches": "Spec axis judged against: docs/specs/reserve-book/spec\\.md"
+    },
+    {
+      "name": "no introduced defect, or the ship that follows has nothing to ship",
+      "file": ".aw/reviews/*-review.md",
+      "matches": "Proven defects: 0 introduced"
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "The three axes appear side by side, each from its own subagent"
+    }
+  ]
+}

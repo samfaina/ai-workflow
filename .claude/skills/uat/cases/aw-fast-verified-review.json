@@ -1,0 +1,51 @@
+{
+  "id": "aw-fast-verified-review",
+  "title": "aw-review",
+  "group": "Fast route, with a verify skill",
+  "order": 49,
+  "source": "#55: aw-review judges the Spec axis against the criteria, with a verify skill",
+  "from": {
+    "case": "aw-fast-verified-verify"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-review",
+  "answers": [
+    {
+      "when": "Which base to branch from or diff against",
+      "intent": "Local main",
+      "reason": "only asked if the remote and local main differ"
+    }
+  ],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "the three axes are in the report",
+      "file": ".aw/reviews/*-review.md",
+      "matches": "^## (Spec|Standards|Security)$",
+      "count": 3
+    },
+    {
+      "name": "the Spec axis ran",
+      "file": ".aw/reviews/*-review.md",
+      "matches": "Spec axis judged against: (?!nothing)"
+    },
+    {
+      "name": "no proven defect at all, or the merge that follows is refused",
+      "file": ".aw/reviews/*-review.md",
+      "matches": "Proven defects: 0 introduced, 0 pre-existing"
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "The Spec axis judged each Done when criterion"
+    },
+    {
+      "judge": "The three axes appear side by side, each from its own subagent"
+    }
+  ]
+}

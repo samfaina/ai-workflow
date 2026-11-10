@@ -1,0 +1,86 @@
+{
+  "id": "aw-wayfinder-github-write",
+  "title": "aw-intake and aw-wayfinder, GitHub at write",
+  "group": "Epic route",
+  "order": 56,
+  "source": "#55: with a GitHub tracker it creates the map and decision tickets with their blocking edges. It creates real issues in the scratch repo",
+  "from": {
+    "ref": "ef0ddf0"
+  },
+  "setup": [
+    {
+      "remote": "https://github.com/samfaina/aw-scratch.git"
+    }
+  ],
+  "shell": [],
+  "command": "/ai-workflow:aw-intake Queremos que los socios puedan reservar libros que están prestados, con lista de espera, y que se les avise cuando les toque. Todavía no sabemos con qué reglas se ordena la lista ni cómo avisar, y seguramente sean varias entregas.",
+  "answers": [
+    {
+      "when": "What the destination of the effort is",
+      "intent": "Two deliverables: members can reserve a book on loan and queue for it, and they are told when their turn comes",
+      "reason": "fixes the scope and leaves the rules open"
+    },
+    {
+      "when": "What the waitlist order is, or how members are told",
+      "intent": "Undecided: make each one a ticket to settle later, and do not settle it in this session",
+      "reason": "the map needs open decisions, and charting resolves none"
+    },
+    {
+      "when": "Which decision depends on which",
+      "intent": "How members are told depends on the waitlist order, so that ticket is blocked by the order ticket",
+      "reason": "the case checks a blocking edge, so there must be one"
+    },
+    {
+      "when": "Whether a third-party service or an outside fact is involved",
+      "intent": "No: keep to what the repo can do, with no third party",
+      "reason": "keeps research subagents out of a case about the tracker"
+    },
+    {
+      "when": "Whether the list of tickets is right",
+      "intent": "Accept it",
+      "reason": "the list itself is what the assertions check"
+    }
+  ],
+  "turns": [
+    {
+      "intent": "Run /ai-workflow:aw-wayfinder in this same session",
+      "reason": "the route's next skill, with intake's report still in the conversation"
+    }
+  ],
+  "assertions": [
+    {
+      "name": "the map is open on GitHub",
+      "run": "gh issue list --state open --limit 50 --json body --jq \".[].body\"",
+      "stdout": "^Type: wayfinder:map"
+    },
+    {
+      "name": "its decision tickets are open on GitHub",
+      "run": "gh issue list --state open --limit 50 --json body --jq \".[].body\"",
+      "stdout": "^Type: wayfinder:(grilling|prototype|research|task)"
+    },
+    {
+      "name": "no code or test changed",
+      "run": "git diff --exit-code origin/main HEAD -- src tests"
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Intake classified it epic and named /aw-wayfinder"
+    },
+    {
+      "judge": "Published the map first, then the decision tickets with each blocker before the tickets it blocks"
+    },
+    {
+      "judge": "Resolved no ticket and built nothing"
+    },
+    {
+      "judge": "Wired the edges after every ticket had a key: each ticket part of the map, and the ticket on how members are told blocked by the ticket on the order"
+    },
+    {
+      "judge": "Posted the first map update, listing every ticket with its type and blockers, and named /aw-wayfinder for the next ticket"
+    }
+  ]
+}

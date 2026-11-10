@@ -1,0 +1,26 @@
+{
+  "id": "aw-intake-stored-data",
+  "title": "aw-intake, a change of stored data",
+  "group": "Kept off the fast route",
+  "order": 53,
+  "source": "#55: a task that changes stored data is not classified as fast",
+  "from": {
+    "ref": "ef0ddf0"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-intake Guarda en cada préstamo quién lo registró, en un campo nuevo `createdBy`. De momento nadie lo lee.",
+  "answers": [],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Classified it standard, naming the stored loan as the reason, stated no Done when criteria and named /aw-spec"
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "id": "aw-wayfinder-handoff",
+  "title": "aw-wayfinder, the last ticket clears the map",
+  "group": "Epic route, one deliverable",
+  "order": 60,
+  "source": "#55: it never builds, and ends by naming /aw-spec for each deliverable. The map is a fixture with one open ticket",
+  "from": {
+    "ref": "b0c28c8"
+  },
+  "setup": [
+    {
+      "copy": "fixtures/wayfinder-map/01-member-reservations.md",
+      "to": "docs/tickets/01-member-reservations.md"
+    },
+    {
+      "copy": "fixtures/wayfinder-map/02-who-may-reserve.md",
+      "to": "docs/tickets/02-who-may-reserve.md"
+    },
+    {
+      "copy": "fixtures/wayfinder-map/03-reservation-order.md",
+      "to": "docs/tickets/03-reservation-order.md"
+    },
+    {
+      "commit": "Chart the member reservations map"
+    }
+  ],
+  "shell": [],
+  "command": "/ai-workflow:aw-wayfinder el mapa 01",
+  "answers": [
+    {
+      "when": "In what order reservations are served",
+      "intent": "First come, first served: the oldest reservation of a book goes first",
+      "reason": "a HITL ticket resolves only through the person"
+    },
+    {
+      "when": "Whether the answer opens another decision",
+      "intent": "No, nothing else is left to decide",
+      "reason": "this ticket must clear the map"
+    },
+    {
+      "when": "Which deliverables there are, and the order to spec them in",
+      "intent": "The two the destination names, reserve-book first and then cancel-reservation",
+      "reason": "the hand-off must name /aw-spec for each"
+    }
+  ],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "the ticket is done",
+      "file": "docs/tickets/03-reservation-order.md",
+      "matches": "^Status: done$"
+    },
+    {
+      "name": "the map stays open",
+      "file": "docs/tickets/01-member-reservations.md",
+      "matches": "^Status: open$"
+    },
+    {
+      "name": "the deliverables are recorded",
+      "file": "docs/tickets/01-member-reservations.md",
+      "matches": "^#### Deliverables$"
+    },
+    {
+      "name": "no spec written",
+      "file": "docs/specs",
+      "exists": false
+    },
+    {
+      "name": "no code or test changed",
+      "run": "git diff --exit-code origin/main HEAD -- src tests"
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Resolved only the open ticket, with the answer the person gave"
+    },
+    {
+      "judge": "Ended by naming /aw-spec once for each deliverable, naming the deliverable and the map, and did not run it"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "id": "aw-fast-merge-write",
+  "title": "aw-ship at merge: write, every criterion proven",
+  "group": "Fast route, with a verify skill",
+  "order": 50,
+  "source": "#55: at merge: write, aw-ship merges when each criterion is proven, on the real review report",
+  "from": {
+    "case": "aw-fast-verified-review"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-ship",
+  "answers": [],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "the change is on main",
+      "run": "git log main --format=%B --grep=\"Done when:\" -1",
+      "stdout": "^Done when: "
+    },
+    {
+      "name": "the work branch is kept",
+      "run": "git branch --list \"*/*\"",
+      "stdout": "/"
+    },
+    {
+      "name": "no spec created",
+      "run": "git diff --exit-code origin/main HEAD -- docs/specs"
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Merged by itself after checking every merge condition, and showed what proves each criterion: a test that passed in its full run, or a passed verify result"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "id": "aw-fast-verify-skipped",
+  "title": "aw-verify with no verify skill",
+  "group": "Fast route, no verify skill",
+  "order": 44,
+  "source": "#55: aw-verify runs only when a verify skill exists",
+  "from": {
+    "case": "aw-fast-build"
+  },
+  "shell": [],
+  "command": "/ai-workflow:aw-verify",
+  "answers": [],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "no results written",
+      "file": ".aw/verify",
+      "exists": false
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Said the fast route skips this phase with no verify skill, started no app and named /aw-review"
+    }
+  ]
+}

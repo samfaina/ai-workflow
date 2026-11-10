@@ -1,0 +1,66 @@
+{
+  "id": "aw-fast-build",
+  "title": "aw-intake and aw-build",
+  "group": "Fast route, no verify skill",
+  "order": 43,
+  "source": "#55: a free-text task from intake to a build, with no spec",
+  "from": {
+    "ref": "ef0ddf0"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-intake Un socio devolvió un libro el mismo día del vencimiento y le cobraron 25 céntimos. Por ejemplo, un préstamo con vencimiento 2026-10-15 devuelto ese día: GET /members/<socio>/fees da 25 y debería dar 0.",
+  "answers": [
+    {
+      "when": "Which base to branch from or diff against",
+      "intent": "Local main",
+      "reason": "only asked if the remote and local main differ"
+    },
+    {
+      "when": "Which seam to test the due-day fee at",
+      "intent": "A unit test of lateFeeCents, next to the existing ones in tests/fees.test.ts",
+      "reason": "the fast route has no Test strategy, so the seam is agreed here"
+    }
+  ],
+  "turns": [
+    {
+      "intent": "Run /ai-workflow:aw-build in this same session",
+      "reason": "the route's next skill, with intake's report still in the conversation"
+    }
+  ],
+  "assertions": [
+    {
+      "name": "on a work branch",
+      "run": "git branch --show-current",
+      "stdout": "/"
+    },
+    {
+      "name": "the commit carries the criteria",
+      "run": "git log -1 --format=%B --grep=\"Done when:\"",
+      "stdout": "^Done when: "
+    },
+    {
+      "name": "no spec created",
+      "run": "git diff --exit-code origin/main HEAD -- docs/specs"
+    },
+    {
+      "name": "the tests pass",
+      "run": "npm test"
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Intake classified it fast, reproduced the bug first and stated 1 to 3 observable Done when criteria"
+    },
+    {
+      "judge": "The reproduction became the first failing test, and the build went on until each criterion held"
+    },
+    {
+      "judge": "Named /aw-review as the next skill and not /aw-verify, since the repo has no verify skill"
+    }
+  ]
+}

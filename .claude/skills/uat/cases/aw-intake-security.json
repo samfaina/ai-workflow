@@ -1,0 +1,26 @@
+{
+  "id": "aw-intake-security",
+  "title": "aw-intake, a security change",
+  "group": "Kept off the fast route",
+  "order": 54,
+  "source": "#55: a task that changes security is not classified as fast",
+  "from": {
+    "ref": "ef0ddf0"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-intake Limita POST /loans a 10 peticiones por minuto y por IP.",
+  "answers": [],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Classified it standard, naming rate limiting as the reason, stated no Done when criteria and named /aw-spec"
+    }
+  ]
+}

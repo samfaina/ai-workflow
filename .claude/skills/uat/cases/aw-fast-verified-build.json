@@ -1,0 +1,77 @@
+{
+  "id": "aw-fast-verified-build",
+  "title": "aw-intake and aw-build",
+  "group": "Fast route, with a verify skill",
+  "order": 47,
+  "source": "#55: the fast route again, in a repo with a verify skill",
+  "from": {
+    "ref": "uat/audit-fixed"
+  },
+  "setup": [
+    {
+      "copy": "fixtures/vcs-local-write.md",
+      "to": "docs/agents/vcs.md"
+    },
+    {
+      "replace": "AGENTS.md",
+      "pattern": "Base branch `main`, GitHub pull requests through `gh`, squash merges; every operation at `write`, none at `draft`\\.",
+      "with": "Base branch `main`, no review host; `push` and `merge` are at `write`, `open-review` at `draft`."
+    },
+    {
+      "commit": "Set push and merge to write, with no review host"
+    }
+  ],
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-intake Un socio devolvió un libro el mismo día del vencimiento y le cobraron 25 céntimos. Por ejemplo, un préstamo con vencimiento 2026-10-15 devuelto ese día: GET /members/<socio>/fees da 25 y debería dar 0.",
+  "answers": [
+    {
+      "when": "Which base to branch from or diff against",
+      "intent": "Local main",
+      "reason": "only asked if the remote and local main differ"
+    },
+    {
+      "when": "Which seam to test the due-day fee at",
+      "intent": "A unit test of lateFeeCents, next to the existing ones in tests/fees.test.ts",
+      "reason": "the fast route has no Test strategy, so the seam is agreed here"
+    }
+  ],
+  "turns": [
+    {
+      "intent": "Run /ai-workflow:aw-build in this same session",
+      "reason": "the route's next skill, with intake's report still in the conversation"
+    }
+  ],
+  "assertions": [
+    {
+      "name": "on a work branch",
+      "run": "git branch --show-current",
+      "stdout": "/"
+    },
+    {
+      "name": "the commit carries the criteria",
+      "run": "git log -1 --format=%B --grep=\"Done when:\"",
+      "stdout": "^Done when: "
+    },
+    {
+      "name": "no spec created",
+      "run": "git diff --exit-code origin/main HEAD -- docs/specs"
+    },
+    {
+      "name": "the tests pass",
+      "run": "npm test"
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Intake classified it fast and stated 1 to 3 observable Done when criteria"
+    },
+    {
+      "judge": "Named /aw-verify as the next skill, since the repo has a verify skill"
+    }
+  ]
+}
