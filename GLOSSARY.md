@@ -95,7 +95,7 @@ A numbered, verifiable statement in a spec, written `AC-n`.
 _Avoid_: requirement, user story, AC (alone, without a number)
 
 **Done-when criterion**:
-One of the 1 to 3 observable statements `aw-intake` gives a fast-route task in place of a spec. Every phase on the fast route takes them as the definition of done, and `aw-build` writes them into its commit message as `Done when:` lines.
+One of the 1 to 3 statements of behaviour `aw-intake` gives a fast-route task in place of a spec, each one something a run can show: a test at a seam, the verify skill on the running app, or a measurement. A doc's wording, an edit to an existing test or a check passing is never one. Every phase on the fast route takes them as the definition of done, and `aw-build` writes them into its commit message as `Done when:` lines.
 _Avoid_: acceptance criterion (on the fast route), exit criterion
 
 **Evidence**:

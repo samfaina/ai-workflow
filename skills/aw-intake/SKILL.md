@@ -87,7 +87,7 @@ Report in chat, in this shape:
 **Next:** <the skill to run>
 ```
 
-The fast route has no spec, so for every type but investigation, state 1 to 3 **done when** criteria: each one observable, so that `aw-build` can prove it and `aw-review` can judge against it. They are the task's definition of done for every phase after this one: `aw-build` builds until each holds, `aw-verify` proves them on the real app when a verify skill exists, `aw-review` judges the Spec axis against them, and `aw-ship` shows what proves each. When a criterion can only be met by a change step 3 keeps off the fast route, classify the task again as standard.
+The fast route has no spec, so for every type but investigation, state 1 to 3 **done when** criteria. Each one states behaviour of the code that a run can show: a test at a seam, the repo's verify skill on the running app, or a measurement. That is what `aw-ship` takes as proof, so a criterion nothing can run fails at ship. A criterion is never a doc's wording, an edit to an existing test or a check passing: the docs the change makes untrue are an item of `aw-ship`'s pre-ship checklist, a test the new behaviour makes wrong is part of the build, and the checks are `aw-build`'s `task` level and `aw-ship`'s `full`. They are the task's definition of done for every phase after this one: `aw-build` builds until each holds, `aw-verify` proves them on the real app when a verify skill exists, `aw-review` judges the Spec axis against them, and `aw-ship` shows what proves each. When a criterion can only be met by a change step 3 keeps off the fast route, classify the task again as standard.
 
 **Next**, by route:
 

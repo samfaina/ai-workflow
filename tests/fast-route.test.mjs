@@ -96,6 +96,20 @@ test('aw-build refuses the same work aw-intake keeps off the fast route', () => 
   assert.deepEqual(excludedWork(buildRefusal), excludedWork(intakeDefinition));
 });
 
+test('a done-when criterion is behaviour a run can show, never a doc, a test edit or a check', () => {
+  const never = /never a doc's wording, an edit to an existing test or a check passing/i;
+  assert.match(skillText('aw-intake'), /Each one states behaviour of the code that a run can show/);
+  assert.match(skillText('aw-intake'), never);
+  assert.match(readFileSync(join(repoRoot, 'GLOSSARY.md'), 'utf8'), /A doc's wording, an edit to an existing test or a check passing is never one/);
+  const explore = skillLine('aw-build-steps', '**Step 3: explore the task.**');
+  assert.match(explore, /states behaviour a run can show, as `\/aw-intake` defines it/);
+  assert.match(explore, /go to \*\*When the criteria are wrong\*\*/);
+});
+
+test("aw-build writes manual: for a test exception the verify skill's feature map cannot reach", () => {
+  assert.match(skillText('aw-build-steps'), /`manual:`, naming what to check by hand, when it has none or its feature map cannot/);
+});
+
 test("aw-build's stop during the build applies the same refusal", () => {
   assert.match(buildMidBuildStop, /needs a change Step 1 refuses/);
 });
