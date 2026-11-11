@@ -11,7 +11,20 @@
     "npm ci"
   ],
   "command": "/ai-workflow:aw-ship",
-  "answers": [],
+  "answers": [
+    {
+      "when": "Whether the person confirms by hand a Done when criterion that no test or verify result proves (GLOSSARY.md wording)",
+      "intent": "Confirm it holds, after checking the quoted line, so the merge goes ahead",
+      "reason": "the case tests the merge at write; GLOSSARY.md:24 does read as quoted, and refusing leaves the merge as a draft",
+      "drift": true
+    },
+    {
+      "when": "Whether to accept the review's introduced risks, including a spec the change makes false, before shipping",
+      "intent": "Accept and go on; the spec is fixed later with /aw-spec",
+      "reason": "matches the build-step decision to keep the spec edit out of this fast task; none of the risks changes behaviour",
+      "drift": true
+    }
+  ],
   "turns": [],
   "assertions": [
     {

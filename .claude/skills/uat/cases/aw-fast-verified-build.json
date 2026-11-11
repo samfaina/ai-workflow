@@ -35,6 +35,18 @@
       "when": "Which seam to test the due-day fee at",
       "intent": "A unit test of lateFeeCents, next to the existing ones in tests/fees.test.ts",
       "reason": "the fast route has no Test strategy, so the seam is agreed here"
+    },
+    {
+      "when": "Which rule applies on the due day, since GLOSSARY.md and the renew-loan test say the due day is charged",
+      "intent": "No fee on the due day: the fee starts the day after, matching the overdue rule",
+      "reason": "the case tests the fast fix of the reported due-day fee; keeping the rule would end the run before the path under test",
+      "drift": true
+    },
+    {
+      "when": "Whether to accept dropping the renew-loan spec text from Done when criterion 3, leaving it for /aw-spec",
+      "intent": "Accept the correction and stay on the fast route; the spec edit is left for /aw-spec",
+      "reason": "the case tests the fast route and asserts docs/specs is unchanged; moving to standard leaves the path under test",
+      "drift": true
     }
   ],
   "turns": [
