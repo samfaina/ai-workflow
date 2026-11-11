@@ -205,7 +205,7 @@ Done when you can name the task, its type and its done-when criteria, and whethe
 
 **Step 2: the work branch.** Name it by the adapter's branch naming from a slug of the task, such as `fix/<slug>`. On a rerun, stay on the work branch the earlier call made.
 
-**Step 3: explore the task.** There is no spec to read and no Boundaries to keep. Read the pre-step's evidence along with the code: a bug's reproduction, a refactor's characterization tests, a performance baseline. Check that each criterion is observable and can be met within the task; when one cannot, go to **When the criteria are wrong**.
+**Step 3: explore the task.** There is no spec to read and no Boundaries to keep. Read the pre-step's evidence along with the code: a bug's reproduction, a refactor's characterization tests, a performance baseline. Check that each criterion states behaviour a run can show, as `/aw-intake` defines it, and can be met within the task. A criterion, or part of one, that is a doc's wording, an edit to an existing test or a check passing is wrong: no test or verify result can prove it. When a criterion fails either check, go to **When the criteria are wrong**.
 
 Done when you know the seams to propose, the files the task changes, and that every criterion can be met.
 
@@ -213,7 +213,7 @@ Done when you know the seams to propose, the files the task changes, and that ev
 
 - Name each test so that it quotes the criterion it proves, such as `done when: a wrong password shows an error`.
 - The pre-step's evidence comes first: a bug's reproduction becomes the first failing test, a refactor's characterization tests pass before and after every change, and a performance change is measured again against the baseline.
-- **Test exception:** record it in the commit message (step 7), not in a spec, as a line such as ``Test exception: <criterion>. <why a test at the agreed seam would cost too much>; proven by `verify:` evidence instead``. Write `verify:` when the repo has a verify skill at `.claude/skills/verify-<app>/`, and `manual:`, naming what to check by hand, when it has none.
+- **Test exception:** record it in the commit message (step 7), not in a spec, as a line such as ``Test exception: <criterion>. <why a test at the agreed seam would cost too much>; proven by `verify:` evidence instead``. Write `verify:` when the repo has a verify skill at `.claude/skills/verify-<app>/` whose feature map can drive and observe that behaviour, and `manual:`, naming what to check by hand, when it has none or its feature map cannot.
 
 Done when every criterion has a passing test at an agreed seam or a recorded test exception.
 
@@ -223,7 +223,7 @@ Done when every criterion has a passing test at an agreed seam or a recorded tes
 
 Done when the task is in a local commit on the work branch whose message carries every criterion, or in a draft whose path you gave the user.
 
-**Step 8: report each criterion.** In place of the slice, report the task and each done-when criterion with what proves it: its tests, or its test exception. Then name the next skill: `/aw-verify` when the repo has a verify skill at `.claude/skills/verify-<app>/`, and `/aw-review` when it has none. With no verify skill, a criterion with a test exception needs the user to check it by hand: name what to check, and say that `/aw-ship` asks for it and records what they report. With `caller: aw-implement`, end with **Closing lines for `aw-implement`**.
+**Step 8: report each criterion.** In place of the slice, report the task and each done-when criterion with what proves it: its tests, or its test exception. Then name the next skill: `/aw-verify` when the repo has a verify skill at `.claude/skills/verify-<app>/`, and `/aw-review` when it has none. A criterion whose test exception says `manual:` needs the user to check it by hand: name what to check, and say that `/aw-ship` asks for it and records what they report. With `caller: aw-implement`, end with **Closing lines for `aw-implement`**.
 
 ### When the criteria are wrong
 
