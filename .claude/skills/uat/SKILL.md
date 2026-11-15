@@ -26,7 +26,7 @@ Done when `next` can run against a run folder.
 
 Run `next`.
 
-- `ready`: give the person `paste.shell` to run in a terminal, then `paste.command` to type in Claude Code, and list `answers` and `turns` so they know what is coming. Tell them to type `hecho` here when the step is over.
+- `ready`: give the person `paste.shell` to run in a terminal, then `paste.command` to type in Claude Code, and list `answers` and `turns` so they know what is coming. Tell them to type `hecho` here when the step is over. Its `claude` loads the kit from this checkout with `--plugin-dir`, so the case runs the code under test: never have the person install the plugin or run `/aw-setup` to make a skill appear.
 - `blocked`: the case needs the restore point of `needs`, which did not pass. Ask whether to `skip --reason <text>` it, then run `next` again.
 - `done`: go to **Finish**.
 

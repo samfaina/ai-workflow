@@ -211,8 +211,12 @@ function loadCase(state, id) {
 
 const nextId = (state) => state.cases.find((id) => !state.results[id]);
 
+// The case session loads the kit from this checkout, never from an installed
+// copy or a marketplace the source repo's settings name: the run grades the
+// code under test, and a path in those settings is only valid on one machine.
 function briefing(runDir, uatCase, step, stepDir, resumed) {
-  const shell = [`cd "${step.workdir}"`, ...(uatCase.shell ?? []), step.continues ? 'claude --continue' : 'claude'];
+  const claude = `claude${step.continues ? ' --continue' : ''} --plugin-dir "${kitRoot}"`;
+  const shell = [`cd "${step.workdir}"`, ...(uatCase.shell ?? []), claude];
   return {
     status: 'ready',
     case: uatCase.id,
