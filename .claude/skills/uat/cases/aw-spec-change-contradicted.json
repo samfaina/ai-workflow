@@ -1,0 +1,47 @@
+{
+  "id": "aw-spec-change-contradicted",
+  "title": "aw-spec, the contradicted spec",
+  "group": "Kept off the fast route",
+  "order": 57,
+  "source": "#111: aw-spec changes the spec intake names as contradicted, and starts no new one",
+  "continues": "aw-intake-spec-contradiction",
+  "shell": [],
+  "command": "/ai-workflow:aw-spec",
+  "answers": [
+    {
+      "when": "Which rule applies on the due day",
+      "intent": "No fee on the due day: the fee starts the day after, matching the overdue rule",
+      "reason": "the change the bug report asks for"
+    },
+    {
+      "when": "Any other question of the grilling, such as what happens to AC-2 or to the glossary's fee definition",
+      "intent": "Accept the answer it proposes",
+      "reason": "lets the draft reach a first full version; the case tests where the change lands, not its content"
+    }
+  ],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "the spec is back at draft",
+      "file": "docs/specs/renew-loan/spec.md",
+      "frontmatter": {
+        "status": "draft"
+      }
+    },
+    {
+      "name": "no new spec folder",
+      "run": "node -e \"console.log(require('fs').readdirSync('docs/specs').join(','))\"",
+      "stdout": "^renew-loan\\s*$"
+    },
+    {
+      "name": "aw-check-spec passes",
+      "run": "node {{KIT}}/skills/aw-check-spec/scripts/check-spec.mjs"
+    },
+    {
+      "judge": "Went to Changing a spec for renew-loan from the intake report, edited docs/specs/renew-loan/spec.md in place and chose no new slug"
+    },
+    {
+      "judge": "Stopped at the draft and asked for approval, without setting approved"
+    }
+  ]
+}

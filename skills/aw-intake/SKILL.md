@@ -36,7 +36,9 @@ Done when you can state the task in one or two sentences the user agrees with. A
 
 Read the glossary and the ADRs the domain doc points to, when present, and the code the task touches: its entry points, its tests, and the callers of what it changes. Use the glossary's terms from here on.
 
-Done when you can name the modules the task changes and whether it changes a contract, data or security (step 3).
+Read the specs under `docs/specs/` with `status: approved` or `implemented` whose Traceability points at the tests or code the task touches, and compare the task and the done-when criteria it implies against their `AC-n`. Ignore `draft` and `superseded` specs.
+
+Done when you can name the modules the task changes, whether it changes a contract, data or security, and whether it is a spec contradiction (step 3).
 
 ### 3. Classify
 
@@ -48,9 +50,11 @@ Done when you can name the modules the task changes and whether it changes a con
 - **performance**: the same behaviour, faster or using less.
 - **investigation**: a question to answer; nothing changes.
 
+A spec contradiction is a **feature**, even when it is reported as a bug: the task asks for behaviour other than what one of the specs read in step 2 states as intended, so it changes intended behaviour. A bug where the code differs from what a spec states is not a spec contradiction: fixing it makes the spec true again, and the task may stay on the fast route.
+
 **Route**, one of:
 
-- **fast**: fits in one session and changes no contract (a public API, schema, file format, CLI flag or event), no stored data and nothing security-related (authentication, permissions, secrets, input from outside, a new external service integration, CORS, rate limiting or throttling, adding a dependency, or how personal data is collected, handled or shared).
+- **fast**: fits in one session and changes no contract (a public API, schema, file format, CLI flag or event), no stored data and nothing security-related (authentication, permissions, secrets, input from outside, a new external service integration, CORS, rate limiting or throttling, adding a dependency, or how personal data is collected, handled or shared), and is no spec contradiction.
 - **standard**: everything else.
 - **epic**: several sessions or several deliverables, each of which deserves its own spec.
 
@@ -87,12 +91,21 @@ Report in chat, in this shape:
 **Next:** <the skill to run>
 ```
 
+For a spec contradiction, say so plainly in the Type and Route lines, quoting the spec's slug and the `AC-n` it contradicts:
+
+```markdown
+**Type:** feature (reported as a bug), because spec `<slug>` states it as intended: <AC-n, quoted>. Changing it changes intended behaviour, which is not a bug.
+**Route:** standard, because the change contradicts spec `<slug>`, which changes through `/aw-spec`.
+```
+
+Leave out "(reported as a bug)" when the task was not reported as one.
+
 The fast route has no spec, so for every type but investigation, state 1 to 3 **done when** criteria. Each one states behaviour of the code that a run can show: a test at a seam, the repo's verify skill on the running app, or a measurement. That is what `aw-ship` takes as proof, so a criterion nothing can run fails at ship. A criterion is never a doc's wording, an edit to an existing test or a check passing: the docs the change makes untrue are an item of `aw-ship`'s pre-ship checklist, a test the new behaviour makes wrong is part of the build, and the checks are `aw-build`'s `task` level and `aw-ship`'s `full`. They are the task's definition of done for every phase after this one: `aw-build` builds until each holds, `aw-verify` proves them on the real app when a verify skill exists, `aw-review` judges the Spec axis against them, and `aw-ship` shows what proves each. When a criterion can only be met by a change step 3 keeps off the fast route, classify the task again as standard.
 
 **Next**, by route:
 
 - **fast**: `/aw-build`, which works from the done-when criteria with no spec, or `/aw-implement`, which runs the build, `/aw-verify` and `/aw-review` in one call; by hand, `/aw-verify` only when the repo has a verify skill at `.claude/skills/verify-*/`, `/aw-review` and `/aw-ship`, each naming the next. For an investigation, see below.
-- **standard**: `/aw-spec`.
+- **standard**: `/aw-spec`; for a spec contradiction, `/aw-spec docs/specs/<slug>/spec.md`, which changes that spec instead of writing a new one.
 - **epic**: `/aw-wayfinder`, which charts the deliverables; each one then goes to `/aw-spec`.
 - **investigation**: on the fast route, none, unless the answer shows work to do; then `/aw-intake` again with that work as the task. On the epic route, `/aw-wayfinder`, which charts the questions.
 

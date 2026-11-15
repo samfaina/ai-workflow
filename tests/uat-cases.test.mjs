@@ -32,6 +32,7 @@ const EXPECTED = [
   'aw-fast-build', 'aw-fast-verify-skipped', 'aw-fast-review', 'aw-fast-ship',
   'aw-fast-verified-build', 'aw-fast-verified-verify', 'aw-fast-verified-review', 'aw-fast-merge-write', 'aw-fast-merge-unproven',
   'aw-intake-contract', 'aw-intake-stored-data', 'aw-intake-security', 'aw-build-refuses-contract',
+  'aw-intake-spec-contradiction', 'aw-spec-change-contradicted', 'aw-build-spec-contradiction',
   'aw-wayfinder-github-write', 'aw-wayfinder-github-draft', 'aw-wayfinder-none-declined', 'aw-wayfinder-none-accepted',
   'aw-wayfinder-handoff', 'aw-epic-spec', 'aw-epic-slices', 'aw-epic-build', 'aw-epic-review', 'aw-epic-ship',
 ];
@@ -256,4 +257,54 @@ test('the skill stays out of the plugin and the kit tree', () => {
 test('the glossary defines the UAT terms', () => {
   const glossary = readFileSync(join(repoRoot, 'GLOSSARY.md'), 'utf8');
   for (const term of ['UAT case', 'UAT restore point', 'UAT conductor']) assert.match(glossary, new RegExp(`^\\*\\*${term}\\*\\*:`, 'm'), term);
+});
+
+// A spec contradiction (#111): the due-day fee, against the renew-loan spec that
+// uat/audit-fixed holds at implemented.
+test('intake catches the due-day fee as a spec contradiction of renew-loan', () => {
+  const intake = byId.get('aw-intake-spec-contradiction');
+  assert.equal(intake.from.ref, 'uat/audit-fixed', 'the renew-loan spec is implemented there');
+  assert.match(intake.command, /vencimiento/);
+  assert.ok(intake.assertions.some((a) => a.run === 'git status --porcelain' && a.stdout === '^$'));
+  const judged = intake.assertions.filter((a) => a.judge).map((a) => a.judge).join('\n');
+  assert.match(judged, /Type: feature \(reported as a bug\)/);
+  assert.match(judged, /Route: standard/);
+  assert.match(judged, /renew-loan/);
+  assert.match(judged, /AC-\d/);
+  assert.match(judged, /\/aw-spec/);
+});
+
+test('aw-spec, run after that report, sets renew-loan back to draft and starts no new spec', () => {
+  const spec = byId.get('aw-spec-change-contradicted');
+  assert.equal(spec.continues, 'aw-intake-spec-contradiction');
+  assert.ok(spec.assertions.some((a) => a.file === 'docs/specs/renew-loan/spec.md' && a.frontmatter?.status === 'draft'));
+  assert.ok(spec.assertions.some((a) => a.run?.includes("readdirSync('docs/specs')") && a.stdout === String.raw`^renew-loan\s*$`));
+});
+
+test("aw-build stops on a spec contradiction that shows only during the build, and leaves the branch's commits alone", () => {
+  const build = byId.get('aw-build-spec-contradiction');
+  assert.equal(build.from.ref, 'uat/audit-fixed');
+  assert.match(build.from.branch, /\//, 'a work branch');
+  const commits = build.setup.filter((op) => op.commit);
+  assert.equal(commits.length, 1);
+  assert.match(commits[0].commit, /\n\nDone when: /);
+  assert.ok(!build.setup.some((op) => /docs\/specs/.test(op.write ?? op.replace ?? op.to ?? '')), 'the commit is on the fast route');
+  const subject = commits[0].commit.split('\n')[0];
+  assert.ok(build.assertions.some((a) => a.run === 'git log --format=%s -1' && a.stdout === `^${subject}$`), 'no commit is made');
+  assert.ok(build.assertions.some((a) => a.run === 'git rev-list --count main..HEAD' && a.stdout === '^1$'), 'the commit is kept');
+  const judged = build.assertions.filter((a) => a.judge).map((a) => a.judge).join('\n');
+  assert.match(judged, /renew-loan/);
+  assert.match(judged, /AC-\d/);
+  assert.match(judged, /\/aw-intake/);
+  assert.match(judged, /named the branch and its commit/);
+});
+
+test('the fast route with a verify skill fixes a real bug that contradicts no spec', () => {
+  const group = cases.filter((c) => c.group === 'Fast route, with a verify skill');
+  assert.deepEqual(group.map((c) => c.id), ['aw-fast-verified-build', 'aw-fast-verified-verify', 'aw-fast-verified-review', 'aw-fast-merge-write', 'aw-fast-merge-unproven']);
+  for (const c of group) {
+    assert.doesNotMatch(JSON.stringify(c), /vencimiento|due[- ]day|renew-loan|\/aw-spec/i, c.id);
+    assert.ok(!c.answers.some((answer) => answer.drift), `${c.id}: a drift answer about the old bug`);
+  }
+  assert.match(byId.get('aw-fast-verified-build').command, /\/stats\/popular/);
 });

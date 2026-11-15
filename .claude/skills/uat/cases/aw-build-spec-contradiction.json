@@ -1,0 +1,60 @@
+{
+  "id": "aw-build-spec-contradiction",
+  "title": "aw-build, spec contradiction",
+  "group": "Kept off the fast route",
+  "order": 58,
+  "source": "#111: a fast-route build whose spec contradiction shows only during the build, as in the #55 run",
+  "from": {
+    "ref": "uat/audit-fixed",
+    "branch": "fix/due-day-fee",
+    "base": "uat/audit-fixed"
+  },
+  "setup": [
+    {
+      "write": "tests/fees.test.ts",
+      "text": "import { describe, expect, it } from \"vitest\";\nimport { lateFeeCents } from \"../src/fees.js\";\n\nconst loan = { id: 1, bookId: 1, member: \"ada\", loanDate: \"2026-10-01\", dueDate: \"2026-10-15\", renewed: false };\n\ndescribe(\"lateFeeCents\", () => {\n  it(\"charges nothing when returned early\", () => {\n    expect(lateFeeCents({ ...loan, returnDate: \"2026-10-10\" }, \"2026-11-01\")).toBe(0);\n  });\n\n  it(\"charges nothing when returned the day before the due date\", () => {\n    expect(lateFeeCents({ ...loan, returnDate: \"2026-10-14\" }, \"2026-11-01\")).toBe(0);\n  });\n\n  it(\"charges nothing for an open loan that is not due yet\", () => {\n    expect(lateFeeCents({ ...loan, returnDate: null }, \"2026-10-05\")).toBe(0);\n  });\n});\n"
+    },
+    {
+      "commit": "Start the due-day fee fix by pinning the fee the day before\n\nDone when: un préstamo devuelto el mismo día de su vencimiento no cobra recargo: GET /members/<socio>/fees da 0"
+    }
+  ],
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-build",
+  "answers": [
+    {
+      "when": "Which base to branch from or diff against",
+      "intent": "Local main",
+      "reason": "only asked if the remote and local main differ"
+    },
+    {
+      "when": "Which seam to test the due-day fee at",
+      "intent": "A unit test of lateFeeCents, next to the existing ones in tests/fees.test.ts",
+      "reason": "the fast route has no Test strategy; the case tests the stop once the fix meets the renew-loan spec"
+    }
+  ],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "no commit made",
+      "run": "git log --format=%s -1",
+      "stdout": "^Start the due-day fee fix by pinning the fee the day before$"
+    },
+    {
+      "name": "the earlier commit is kept",
+      "run": "git rev-list --count main..HEAD",
+      "stdout": "^1$"
+    },
+    {
+      "name": "the spec is left as it is",
+      "run": "git diff --exit-code HEAD -- docs/specs"
+    },
+    {
+      "judge": "Stopped on a spec contradiction, quoting spec renew-loan and the AC-n it contradicts, such as AC-2, in intake's wording, made no commit and told the person to run /aw-intake again"
+    },
+    {
+      "judge": "It named the branch and its commit, and left them as they are: it deleted, reset or reused nothing"
+    }
+  ]
+}
