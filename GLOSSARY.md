@@ -90,6 +90,10 @@ _Avoid_: issue, task, story, work item
 A durable document in the repo that states the intended behaviour of one change. It outlives the merge and is updated in the same change that alters the behaviour.
 _Avoid_: PRD, plan, design doc, ticket
 
+**Spec contradiction**:
+A task that asks for behaviour other than what an approved or implemented spec states as intended. It is a feature even when it is reported as a bug, and it changes that spec through `aw-spec`. A change that only moves the evidence a spec points to is not one.
+_Avoid_: stale spec, spec drift, spec conflict, untrue spec
+
 **Acceptance criterion**:
 A numbered, verifiable statement in a spec, written `AC-n`.
 _Avoid_: requirement, user story, AC (alone, without a number)
