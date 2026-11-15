@@ -14,7 +14,7 @@
   "answers": [
     {
       "when": "Whether the due day should stop being charged, since the renew-loan spec and GLOSSARY.md say it is",
-      "intent": "Yes: no fee on the due day, the fee starts the day after",
+      "intent": "No fee on the due day: the fee starts the day after",
       "reason": "the person asks for other behaviour than the spec states as intended, which makes the task a spec contradiction"
     }
   ],

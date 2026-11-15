@@ -15,7 +15,7 @@
       "text": "import { describe, expect, it } from \"vitest\";\nimport { lateFeeCents } from \"../src/fees.js\";\n\nconst loan = { id: 1, bookId: 1, member: \"ada\", loanDate: \"2026-10-01\", dueDate: \"2026-10-15\", renewed: false };\n\ndescribe(\"lateFeeCents\", () => {\n  it(\"charges nothing when returned early\", () => {\n    expect(lateFeeCents({ ...loan, returnDate: \"2026-10-10\" }, \"2026-11-01\")).toBe(0);\n  });\n\n  it(\"charges nothing when returned the day before the due date\", () => {\n    expect(lateFeeCents({ ...loan, returnDate: \"2026-10-14\" }, \"2026-11-01\")).toBe(0);\n  });\n\n  it(\"charges nothing for an open loan that is not due yet\", () => {\n    expect(lateFeeCents({ ...loan, returnDate: null }, \"2026-10-05\")).toBe(0);\n  });\n});\n"
     },
     {
-      "commit": "Pin the fee of a loan returned the day before its due date\n\nDone when: un préstamo devuelto el mismo día de su vencimiento no cobra recargo: GET /members/<socio>/fees da 0"
+      "commit": "Start the due-day fee fix by pinning the fee the day before\n\nDone when: un préstamo devuelto el mismo día de su vencimiento no cobra recargo: GET /members/<socio>/fees da 0"
     }
   ],
   "shell": [
@@ -39,7 +39,7 @@
     {
       "name": "no commit made",
       "run": "git log --format=%s -1",
-      "stdout": "^Pin the fee of a loan returned the day before its due date$"
+      "stdout": "^Start the due-day fee fix by pinning the fee the day before$"
     },
     {
       "name": "the earlier commit is kept",
