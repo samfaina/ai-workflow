@@ -3,7 +3,7 @@
   "title": "aw-intake and aw-build",
   "group": "Fast route, with a verify skill",
   "order": 47,
-  "source": "#55: the fast route again, in a repo with a verify skill",
+  "source": "#55: the fast route again, in a repo with a verify skill, on a bug no spec states as intended (#111)",
   "from": {
     "ref": "uat/audit-fixed"
   },
@@ -24,7 +24,7 @@
   "shell": [
     "npm ci"
   ],
-  "command": "/ai-workflow:aw-intake Un socio devolvió un libro el mismo día del vencimiento y le cobraron 25 céntimos. Por ejemplo, un préstamo con vencimiento 2026-10-15 devuelto ese día: GET /members/<socio>/fees da 25 y debería dar 0.",
+  "command": "/ai-workflow:aw-intake `GET /stats/popular` lista libros que nadie ha pedido prestados, con `loans: 0`. Con los datos de ejemplo salen los libros 2 y 4, y solo deberían salir los libros con algún préstamo.",
   "answers": [
     {
       "when": "Which base to branch from or diff against",
@@ -32,21 +32,9 @@
       "reason": "only asked if the remote and local main differ"
     },
     {
-      "when": "Which seam to test the due-day fee at",
-      "intent": "A unit test of lateFeeCents, next to the existing ones in tests/fees.test.ts",
+      "when": "Which seam to test the most borrowed books at",
+      "intent": "A unit test of popularBooks, next to the existing one in tests/stats.test.ts",
       "reason": "the fast route has no Test strategy, so the seam is agreed here"
-    },
-    {
-      "when": "Which rule applies on the due day, since GLOSSARY.md and the renew-loan test say the due day is charged",
-      "intent": "No fee on the due day: the fee starts the day after, matching the overdue rule",
-      "reason": "the case tests the fast fix of the reported due-day fee; keeping the rule would end the run before the path under test",
-      "drift": true
-    },
-    {
-      "when": "Whether to accept dropping the renew-loan spec text from Done when criterion 3, leaving it for /aw-spec",
-      "intent": "Accept the correction and stay on the fast route; the spec edit is left for /aw-spec",
-      "reason": "the case tests the fast route and asserts docs/specs is unchanged; moving to standard leaves the path under test",
-      "drift": true
     }
   ],
   "turns": [
@@ -80,7 +68,7 @@
       "stdout": "^$"
     },
     {
-      "judge": "Intake classified it fast and stated 1 to 3 observable Done when criteria"
+      "judge": "Intake classified it a bug on the fast route, found no spec contradiction, and stated 1 to 3 observable Done when criteria"
     },
     {
       "judge": "Named /aw-verify as the next skill, since the repo has a verify skill"

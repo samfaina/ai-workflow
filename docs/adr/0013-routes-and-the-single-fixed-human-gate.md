@@ -18,5 +18,5 @@ Accepting the change is not a fixed gate. `merge` is a canonical VCS operation a
 
 - **Two fixed gates: spec approval and human PR review**: rejected. Mandatory human PR review came from an earlier corporate setting where every PR was reviewed by hand. A personal kit should allow autonomy once the spec is approved and the evidence is in.
 - **No gates at all**, with spec approval implied once grilling ends: rejected for the reason above.
-- **A spec contradiction stays on the fast route, and `aw-ship` records the stale spec as an accepted risk** (#111): rejected. It leaves a spec in the repo that states behaviour the code no longer has, though a spec is updated in the same change that alters the behaviour (ADR 0003), and it changes intended behaviour without spec approval.
+- **A spec contradiction stays on the fast route, and `aw-ship` records the spec it contradicts as an accepted risk** (#111): rejected. It leaves a spec in the repo that states behaviour the code no longer has, though a spec is updated in the same change that alters the behaviour (ADR 0003), and it changes intended behaviour without spec approval.
 - **Only `aw-intake` catches a spec contradiction**: rejected. Intake may not see it until the build, as in the #55 fast-route UAT run, where the fix itself contradicted an `implemented` spec.

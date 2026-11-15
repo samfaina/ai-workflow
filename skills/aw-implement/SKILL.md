@@ -69,7 +69,7 @@ The arguments are an optional spec path and an optional limit.
 
 - **A spec path:** the standard route, from that spec.
 - **No spec path, and `/aw-intake` reported `Route: fast` for a task in this conversation:** the fast route, from that report.
-- **No spec path, on a branch with a fast-route source:** the fast route, from a journal under `.aw/implement/` that says `Route: fast` and names this branch, or is still at `pending` while this branch is protected, for the `Intake:` report it holds, or else from the work branch's commits since the diff base, when they carry `Done when:` lines and touch no spec under `docs/specs/`.
+- **No spec path, on a branch with a fast-route source:** the fast route, from a journal under `.aw/implement/` that says `Route: fast` and names this branch, or is still at `pending` while this branch is protected, for the `Intake:` report it holds, or else from the work branch's commits since the diff base, when they carry `Done when:` lines and change no spec outside its Traceability section.
 - **Otherwise:** list the specs under `docs/specs/` with their `status` and ask which one.
 
 Done when you know the limit and the route, with its spec or its source.

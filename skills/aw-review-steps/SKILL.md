@@ -71,7 +71,7 @@ Done when you have the diff command, the commits, the branch and both hashes, an
 
 ### 2. Find what the Spec axis judges against
 
-First find the route. It is the fast route when the arguments say so, or when `/aw-intake` reported `Route: fast` for the task in this conversation, or when the commits since the base carry the `Done when:` lines `/aw-build` writes and the diff touches no spec under `docs/specs/`; otherwise it is the standard or epic route.
+First find the route. It is the fast route when the arguments say so, or when `/aw-intake` reported `Route: fast` for the task in this conversation, or when the commits since the base carry the `Done when:` lines `/aw-build` writes and change no spec outside its Traceability section; otherwise it is the standard or epic route.
 
 **Standard or epic route: the spec.** Take the spec the user names or the arguments name, or else the one the diff touches under `docs/specs/<slug>/spec.md` (`/aw-build` commits its spec edits with each slice), or else the one whose slug the branch name holds. When more than one fits, or none does, list the specs under `docs/specs/` with their `status` and ask which one. Read its frontmatter:
 

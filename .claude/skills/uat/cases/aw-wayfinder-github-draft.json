@@ -2,7 +2,7 @@
   "id": "aw-wayfinder-github-draft",
   "title": "aw-wayfinder, GitHub at draft",
   "group": "Epic route",
-  "order": 57,
+  "order": 60,
   "source": "#55: at draft it drafts the map, the tickets and their edges. origin stays local, so a stray gh write cannot reach GitHub",
   "from": {
     "ref": "uat/setup-audit-fixed"

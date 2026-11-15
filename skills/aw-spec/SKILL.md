@@ -27,7 +27,7 @@ When the block or an adapter is missing, a skill keeps going on these defaults a
 
 ### 1. Start from intake
 
-Take the task, its type, its route, its ticket key and its pre-step evidence from the `/aw-intake` report in this conversation. When the user names an existing spec instead, go to **Changing a spec** below.
+Take the task, its type, its route, its ticket key and its pre-step evidence from the `/aw-intake` report in this conversation. When intake's report names a spec contradiction, or the user names an existing spec, go to **Changing a spec** below for that spec.
 
 On the epic route, the user names a **deliverable** of a cleared `/aw-wayfinder` map instead: its name and the map. `fetch-ticket` the map and read its latest map update, whose Deliverables section lists the deliverable with its type and the decision tickets it rests on, then `fetch-ticket` each of those tickets for its resolution. The task is the deliverable and its route is epic. It has no ticket key of its own: the map stays open until every deliverable ships, so leave `ticket:` out, and name the map and the decision tickets in Design instead. A bug, refactor or performance deliverable needs its pre-step: take its evidence from an `/aw-intake` report on the deliverable in this conversation; when there is none, tell the user to run `/aw-intake` on it first, naming the deliverable and the map, and go on only if they ask you to.
 
@@ -97,7 +97,7 @@ Done when the spec is at `approved` and the check reports no finding on it. Then
 
 ## Changing a spec
 
-A spec is a living document: a later change that alters its behaviour updates it. To change an existing spec, whether `approved` or `implemented`, set it back to `status: draft`, run steps 2 to 5 for the change, and ask for approval again (step 6).
+A spec is a living document: a later change that alters its behaviour updates it. To change an existing spec, whether `approved` or `implemented`, set it back to `status: draft`, run steps 2 to 5 for the change, and ask for approval again (step 6). The spec keeps its slug and its folder: step 4 edits it in place and chooses no new slug.
 
 ## Credits
 

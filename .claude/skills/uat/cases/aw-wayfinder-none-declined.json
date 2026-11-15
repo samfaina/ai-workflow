@@ -2,7 +2,7 @@
   "id": "aw-wayfinder-none-declined",
   "title": "aw-wayfinder, no tracker, offer declined",
   "group": "Epic route",
-  "order": 58,
+  "order": 61,
   "source": "#55: with tracker none it offers a local-markdown tracker and stops if declined",
   "from": {
     "ref": "908296b"

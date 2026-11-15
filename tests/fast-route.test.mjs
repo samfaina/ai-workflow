@@ -4,7 +4,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { repoRoot } from './fixtures.mjs';
 
@@ -112,4 +112,94 @@ test("aw-build writes manual: for a test exception the verify skill's feature ma
 
 test("aw-build's stop during the build applies the same refusal", () => {
   assert.match(buildMidBuildStop, /needs a change Step 1 refuses/);
+});
+
+// A spec contradiction (#111): a task that asks for behaviour other than what an
+// approved or implemented spec states as intended takes the standard route.
+
+test('the fast route needs no spec contradiction', () => {
+  assert.match(intakeDefinition, /no spec contradiction/);
+});
+
+test('intake looks for a spec contradiction in the specs whose Traceability points at what the task touches', () => {
+  const explore = skillLine('aw-intake', 'Read the specs under `docs/specs/`');
+  assert.match(explore, /`status: approved` or `implemented`/);
+  assert.match(explore, /whose Traceability points at the tests or code the task touches/);
+  assert.match(explore, /against their `AC-n`/);
+  assert.match(explore, /Ignore `draft` and `superseded` specs/);
+});
+
+// The wording intake reports a spec contradiction in, which aw-build repeats.
+const contradictionType = '**Type:** feature (reported as a bug), because spec `<slug>` states it as intended: <AC-n, quoted>. Changing it changes intended behaviour, which is not a bug.';
+const contradictionRoute = '**Route:** standard, because the change contradicts spec `<slug>`, which changes through `/aw-spec`.';
+
+test('intake reports a spec contradiction as a feature on the standard route, quoting the spec and the criterion', () => {
+  const lines = skillText('aw-intake').split('\n');
+  assert.ok(lines.includes(contradictionType));
+  assert.ok(lines.includes(contradictionRoute));
+  assert.match(skillText('aw-intake'), /A spec contradiction is a \*\*feature\*\*, even when it is reported as a bug/);
+});
+
+test('a bug whose fix makes a spec true again is not a spec contradiction, and may stay fast', () => {
+  assert.match(
+    skillText('aw-intake'),
+    /A bug where the code differs from what a spec states is not a spec contradiction: fixing it makes the spec true again, and the task may stay on the fast route/,
+  );
+});
+
+test("intake's Next names /aw-spec with the contradicted spec", () => {
+  assert.match(skillLine('aw-intake', '- **standard**: `/aw-spec`'), /for a spec contradiction, `\/aw-spec docs\/specs\/<slug>\/spec\.md`, which changes that spec/);
+});
+
+test('aw-spec changes the spec an intake report names as contradicted, and starts no new slug', () => {
+  const start = skillLine('aw-spec', 'Take the task, its type, its route');
+  assert.match(start, /When intake's report names a spec contradiction, or the user names an existing spec, go to \*\*Changing a spec\*\* below for that spec/);
+  const changing = skillLine('aw-spec', 'A spec is a living document');
+  assert.match(changing, /set it back to `status: draft`/);
+  assert.match(changing, /keeps its slug and its folder: step 4 edits it in place and chooses no new slug/);
+});
+
+test('aw-build refuses a spec contradiction on the fast route, in the wording intake reports it in', () => {
+  const stop = skillLine('aw-build-steps', '**A spec contradiction:**');
+  assert.match(stop, /commit nothing/);
+  assert.match(stop, /spec `<slug>` states it as intended: <AC-n, quoted>/);
+  assert.match(stop, /run `\/aw-intake` again/);
+  assert.match(stop, /name the branch and those commits, and leave them as they are/);
+  assert.match(buildRefusal, /a spec contradiction/);
+  assert.match(buildMidBuildStop, /is a spec contradiction/);
+  assert.match(buildMidBuildStop, /\*\*A spec contradiction:\*\*/);
+});
+
+test('aw-build looks for a spec contradiction the way intake does', () => {
+  const explore = skillLine('aw-build-steps', '**Step 3: explore the task.**');
+  assert.match(explore, /the specs with `status: approved` or `implemented` whose Traceability points at the tests or code the task touches/);
+});
+
+// The fast-route recognition rule every phase after intake reads the branch by.
+const recognisers = ['aw-build-steps', 'aw-verify-steps', 'aw-review-steps', 'aw-ship', 'aw-implement'];
+
+for (const skill of recognisers) {
+  test(`${skill} still recognises a fast-route change that edits only a spec's Traceability`, () => {
+    assert.match(skillText(skill), /`Done when:` lines[^.]*and change no spec outside its Traceability section/);
+    assert.doesNotMatch(skillText(skill), /touch(es)? no spec under/);
+  });
+}
+
+test("a fast-route build may edit a spec's Traceability, only that section, and checks each spec it edits", () => {
+  const traceability = skillLine('aw-build-steps', "**Step 6: a spec's Traceability, and nothing else.**");
+  assert.match(traceability, /may edit a spec's Traceability section, and only that section, to keep its evidence pointing at the right files/);
+  assert.match(traceability, /Call the Skill tool with "aw-check-spec" on each spec it edits this way/);
+});
+
+test("no skill or ADR names a spec contradiction by one of the glossary's Avoid terms", () => {
+  const avoid = readFileSync(join(repoRoot, 'GLOSSARY.md'), 'utf8').match(/\*\*Spec contradiction\*\*:\n[^\n]*\n_Avoid_: ([^\n]*)/)[1].split(', ');
+  assert.deepEqual(avoid, ['stale spec', 'spec drift', 'spec conflict', 'untrue spec']);
+  const files = [
+    ...readdirSync(join(repoRoot, 'skills')).map((skill) => join(repoRoot, 'skills', skill, 'SKILL.md')),
+    ...readdirSync(join(repoRoot, 'docs', 'adr')).map((adr) => join(repoRoot, 'docs', 'adr', adr)),
+  ];
+  for (const file of files) {
+    const text = readFileSync(file, 'utf8').toLowerCase();
+    for (const term of avoid) assert.ok(!text.includes(term), `${file} says "${term}"`);
+  }
 });
