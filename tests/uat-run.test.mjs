@@ -6,7 +6,10 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, join } from 'node:path';
 import test from 'node:test';
 
+import { repoRoot } from './fixtures.mjs';
 import { git, makeRun } from './uat-fixtures.mjs';
+
+const kitRoot = repoRoot.replaceAll('\\', '/');
 
 const caseFile = (id, extra = {}) => ({
   id,
@@ -82,7 +85,7 @@ test('next applies the case setup in order, and shows what to paste', (t) => {
   assert.equal(git(workdir, 'log', '-1', '--format=%s'), 'fixture commit');
   assert.equal(git(workdir, 'status', '--porcelain'), '');
   assert.equal(readFileSync(join(workdir, '.aw/reviews/1-review.md'), 'utf8'), `# Review: main at ${git(workdir, 'rev-parse', '--short', 'HEAD')}\n`);
-  assert.deepEqual(output.paste, { shell: [`cd "${workdir}"`, 'npm ci', 'claude'], command: '/c1' });
+  assert.deepEqual(output.paste, { shell: [`cd "${workdir}"`, 'npm ci', `claude --plugin-dir "${kitRoot}"`], command: '/c1' });
 });
 
 test('a setup that cannot apply stops the run with its reason', (t) => {
@@ -432,7 +435,7 @@ test('a case that continues a session reuses that step\'s working copy and resto
 
   assert.equal(spec2.workdir, intake.workdir);
   assert.ok(existsSync(join(spec2.workdir, 'report.txt')));
-  assert.equal(spec2.paste.shell.at(-1), 'claude --continue');
+  assert.equal(spec2.paste.shell.at(-1), `claude --continue --plugin-dir "${kitRoot}"`);
   const step = JSON.parse(readFileSync(join(spec2.stepDir, 'step.json'), 'utf8'));
   assert.equal(step.continues, true);
 });
