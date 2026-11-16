@@ -155,6 +155,18 @@ test("intake's Next names /aw-spec with the contradicted spec", () => {
   assert.match(skillLine('aw-intake', '- **standard**: `/aw-spec`'), /for a spec contradiction, `\/aw-spec docs\/specs\/<slug>\/spec\.md`, which changes that spec/);
 });
 
+// #115: the fast route's Next must hold in a repo with no verify skill, where
+// aw-implement skips verify.
+test("intake's fast Next describes /aw-implement without naming /aw-verify, and names it by hand only with a verify skill", () => {
+  const next = skillLine('aw-intake', '- **fast**: `/aw-build`');
+  const [, implement] = next.match(/`\/aw-implement`(.*?); by hand,/) ?? [];
+  assert.ok(implement, 'no description of /aw-implement before the by-hand sequence');
+  assert.doesNotMatch(implement, /aw-verify/);
+  assert.match(implement, /every phase from the build to a review with no introduced defect in one call/);
+  assert.match(implement, /skipping the verify phase in a repo with no verify skill/);
+  assert.match(next, /; by hand, `\/aw-verify` only when the repo has a verify skill at `\.claude\/skills\/verify-\*\/`, `\/aw-review` and `\/aw-ship`/);
+});
+
 test('aw-spec changes the spec an intake report names as contradicted, and starts no new slug', () => {
   const start = skillLine('aw-spec', 'Take the task, its type, its route');
   assert.match(start, /When intake's report names a spec contradiction, or the user names an existing spec, go to \*\*Changing a spec\*\* below for that spec/);

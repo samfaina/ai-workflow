@@ -342,6 +342,18 @@ test('aw-fast-build checks that no runnable reproduction is left in .aw/ after t
   assert.ok(build.assertions.some((a) => a.judge && /reproduction/.test(a.judge) && /committed test/.test(a.judge) && /deleted/.test(a.judge)));
 });
 
+// #115: intake's report, not only the build's, must leave /aw-verify out of its
+// Next line in a repo with no verify skill.
+test("aw-fast-build judges that intake's Next line does not name /aw-verify, since the repo has no verify skill", () => {
+  const build = byId.get('aw-fast-build');
+  assert.equal(build.group, 'Fast route, no verify skill');
+  const judged = build.assertions.filter((a) => a.judge).map((a) => a.judge);
+  assert.ok(
+    judged.some((j) => /^Intake's `Next:` line does not name \/aw-verify/.test(j) && /no verify skill/.test(j)),
+    judged.join('\n'),
+  );
+});
+
 test('aw-fast-ship checks that no Criteria line cites a test absent from the diff and the base', () => {
   const ship = byId.get('aw-fast-ship');
   const judged = ship.assertions.filter((a) => a.judge).map((a) => a.judge).join('\n');
