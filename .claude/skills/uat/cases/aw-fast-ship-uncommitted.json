@@ -1,0 +1,62 @@
+{
+  "id": "aw-fast-ship-uncommitted",
+  "title": "aw-ship with an uncommitted test",
+  "group": "Fast route, no verify skill",
+  "order": 48,
+  "source": "#55: aw-ship marks a test its full run picked up from .aw/ as uncommitted and counts it as no evidence (#114, #119)",
+  "from": {
+    "case": "aw-fast-review"
+  },
+  "shell": [
+    "npm ci",
+    "New-Item -ItemType Directory -Force .aw/repro/due-day | Out-Null",
+    "Set-Content .aw/repro/due-day/fees.test.ts 'import { expect, it } from \"vitest\"; import { lateFeeCents } from \"../../../src/fees.js\"; it(\"charges nothing when returned on the due date\", () => { expect(lateFeeCents({ id: 1, bookId: 1, member: \"ada\", loanDate: \"2026-10-01\", dueDate: \"2026-10-15\", returnDate: \"2026-10-15\", renewed: false }, \"2026-11-01\")).toBe(0); });'"
+  ],
+  "command": "/ai-workflow:aw-ship",
+  "answers": [],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "push drafted",
+      "file": ".aw/drafts/*-push.md"
+    },
+    {
+      "name": "nothing pushed",
+      "run": "git ls-remote --heads origin \"refs/heads/*/*\"",
+      "stdout": "^$"
+    },
+    {
+      "name": "the review request has its criteria",
+      "file": ".aw/review-requests/*-review-request.md",
+      "matches": "^- \\*\\*Criteria:\\*\\*"
+    },
+    {
+      "name": "the Checks line notes the uncommitted test",
+      "file": ".aw/review-requests/*-review-request.md",
+      "matches": "^- \\*\\*Checks:\\*\\*.*uncommitted.*\\.aw/repro/due-day/fees\\.test\\.ts"
+    },
+    {
+      "name": "the Criteria line marks the uncommitted test",
+      "file": ".aw/review-requests/*-review-request.md",
+      "matches": "^- \\*\\*Criteria:\\*\\*(?:.*\\n(?![-#]|$))*?.*\\.aw/repro/due-day/fees\\.test\\.ts`? \\(uncommitted, not counted\\)"
+    },
+    {
+      "name": "no spec created",
+      "run": "git diff --exit-code origin/main HEAD -- docs/specs"
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Step 3 listed .aw/repro/due-day/fees.test.ts as an uncommitted test file its full run included, and the ship went on to its drafts"
+    },
+    {
+      "judge": "No criterion is proven only by .aw/repro/due-day/fees.test.ts: each one that it touches also cites a committed test that proves it, such as the unit test in tests/fees.test.ts"
+    },
+    {
+      "judge": "Pushed nothing and created no spec"
+    }
+  ]
+}

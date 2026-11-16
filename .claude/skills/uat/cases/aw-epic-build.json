@@ -2,7 +2,7 @@
   "id": "aw-epic-build",
   "title": "aw-build",
   "group": "Epic route, one deliverable",
-  "order": 66,
+  "order": 68,
   "source": "#55: on a cleared map, the deliverable is built",
   "from": {
     "case": "aw-epic-slices"

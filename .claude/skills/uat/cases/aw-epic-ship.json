@@ -2,7 +2,7 @@
   "id": "aw-epic-ship",
   "title": "aw-ship does not close the map",
   "group": "Epic route, one deliverable",
-  "order": 68,
+  "order": 70,
   "source": "#55: shipping a deliverable's spec does not close the map",
   "from": {
     "case": "aw-epic-review"

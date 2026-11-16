@@ -17,6 +17,8 @@ const cases = readdirSync(casesDir)
   .map((name) => ({ name, ...JSON.parse(readFileSync(join(casesDir, name), 'utf8')) }))
   .sort((a, b) => a.order - b.order);
 const byId = new Map(cases.map((c) => [c.id, c]));
+const assertionNamed = (c, name) => c.assertions.find((a) => a.name === name);
+const judgedText = (c) => c.assertions.filter((a) => a.judge).map((a) => a.judge).join('\n');
 
 // One entry per result line of the #49 comment, plus what it left unproven, then
 // the fast and epic routes of #55.
@@ -31,7 +33,7 @@ const EXPECTED = [
   'aw-build-fix-standard', 'aw-build-fix-fast',
   'aw-converge-clean', 'aw-converge-limit',
   'aw-implement-clean', 'aw-implement-hitl', 'aw-implement-stop', 'aw-implement-relaunch',
-  'aw-fast-build', 'aw-fast-verify-skipped', 'aw-fast-review', 'aw-fast-ship',
+  'aw-fast-build', 'aw-fast-verify-skipped', 'aw-fast-review', 'aw-fast-ship', 'aw-fast-build-repro-committed', 'aw-fast-ship-uncommitted',
   'aw-fast-verified-build', 'aw-fast-verified-verify', 'aw-fast-verified-review', 'aw-fast-merge-write', 'aw-fast-merge-unproven',
   'aw-intake-contract', 'aw-intake-stored-data', 'aw-intake-security', 'aw-build-refuses-contract',
   'aw-intake-spec-contradiction', 'aw-spec-change-contradicted', 'aw-build-spec-contradiction',
@@ -268,7 +270,7 @@ test('intake catches the due-day fee as a spec contradiction of renew-loan', () 
   assert.equal(intake.from.ref, 'uat/audit-fixed', 'the renew-loan spec is implemented there');
   assert.match(intake.command, /vencimiento/);
   assert.ok(intake.assertions.some((a) => a.run === 'git status --porcelain' && a.stdout === '^$'));
-  const judged = intake.assertions.filter((a) => a.judge).map((a) => a.judge).join('\n');
+  const judged = judgedText(intake);
   assert.match(judged, /Type: feature \(reported as a bug\)/);
   assert.match(judged, /Route: standard/);
   assert.match(judged, /renew-loan/);
@@ -294,7 +296,7 @@ test("aw-build stops on a spec contradiction that shows only during the build, a
   const subject = commits[0].commit.split('\n')[0];
   assert.ok(build.assertions.some((a) => a.run === 'git log --format=%s -1' && a.stdout === `^${subject}$`), 'no commit is made');
   assert.ok(build.assertions.some((a) => a.run === 'git rev-list --count main..HEAD' && a.stdout === '^1$'), 'the commit is kept');
-  const judged = build.assertions.filter((a) => a.judge).map((a) => a.judge).join('\n');
+  const judged = judgedText(build);
   assert.match(judged, /renew-loan/);
   assert.match(judged, /AC-\d/);
   assert.match(judged, /\/aw-intake/);
@@ -314,6 +316,13 @@ test('the fast route with a verify skill fixes a real bug that contradicts no sp
 // #114: a bug's reproduction ends the fast build committed or deleted, and the
 // review request cites no test that is absent from the diff and the base.
 
+// Runs a case's command in a working copy and returns its trimmed stdout.
+function runIn(workdir, command) {
+  const result = spawnSync(command, { cwd: workdir, shell: true, encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  return result.stdout.trim();
+}
+
 // Runs a case's command in a working copy whose .aw/ holds the given files.
 function runWithAw(command, files) {
   const workdir = mkdtempSync(join(tmpdir(), 'uat-aw-'));
@@ -322,9 +331,7 @@ function runWithAw(command, files) {
       mkdirSync(dirname(join(workdir, '.aw', file)), { recursive: true });
       writeFileSync(join(workdir, '.aw', file), '');
     }
-    const result = spawnSync(command, { cwd: workdir, shell: true, encoding: 'utf8' });
-    assert.equal(result.status, 0, result.stderr);
-    return result.stdout.trim();
+    return runIn(workdir, command);
   } finally {
     rmSync(workdir, { recursive: true, force: true });
   }
@@ -356,7 +363,94 @@ test("aw-fast-build judges that intake's Next line does not name /aw-verify, sin
 
 test('aw-fast-ship checks that no Criteria line cites a test absent from the diff and the base', () => {
   const ship = byId.get('aw-fast-ship');
-  const judged = ship.assertions.filter((a) => a.judge).map((a) => a.judge).join('\n');
+  const judged = judgedText(ship);
   assert.match(judged, /No `- \*\*Criteria:\*\*` line cites as evidence a test that is absent from both the diff and the base/);
   assert.ok(ship.assertions.some((a) => a.file === '.aw/review-requests/*-review-request.md' && a.matches === String.raw`\.aw/repro/` && a.count === 0));
+});
+
+// #119: the two #114 behaviours that the cases above never reach.
+
+// Runs a case's command in a git repo whose origin/main is an empty commit and
+// whose HEAD adds the given files on top of it.
+function runOnCommit(command, files) {
+  const workdir = mkdtempSync(join(tmpdir(), 'uat-git-'));
+  const git = (...args) => {
+    const result = spawnSync('git', ['-c', 'user.name=uat', '-c', 'user.email=uat@example.invalid', ...args], { cwd: workdir, encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+  };
+  const commit = (message) => git('commit', '--quiet', '--allow-empty', '-m', message);
+  try {
+    git('init', '--quiet');
+    commit('base');
+    git('update-ref', 'refs/remotes/origin/main', 'HEAD');
+    for (const [file, text] of Object.entries(files)) {
+      mkdirSync(dirname(join(workdir, file)), { recursive: true });
+      writeFileSync(join(workdir, file), text);
+    }
+    git('add', '--all');
+    commit('build');
+    return runIn(workdir, command);
+  } finally {
+    rmSync(workdir, { recursive: true, force: true });
+  }
+}
+
+test("a fast build whose seam answer takes the reproduction's seam commits the reproduction outside .aw/", () => {
+  const committedRepro = byId.get('aw-fast-build-repro-committed');
+  const build = byId.get('aw-fast-build');
+  assert.ok(committedRepro, 'no case where the build commits the reproduction');
+  assert.equal(committedRepro.group, 'Fast route, no verify skill');
+  assert.deepEqual(committedRepro.from, build.from);
+  assert.equal(committedRepro.command, build.command, 'the same due-day fee task');
+  const seam = committedRepro.answers.find((answer) => /seam/i.test(answer.when));
+  assert.match(seam.intent, /when it also proposes the seam the reproduction exercises, the fees endpoint, take that seam too/, 'the build, not the answer, proposes the endpoint');
+  assert.doesNotMatch(seam.intent, /keep only the unit seam/);
+
+  const committed = assertionNamed(committedRepro, 'the reproduction is a committed test outside .aw/');
+  assert.ok(committed, 'no assertion that the reproduction is committed');
+  const committedIn = (files) => new RegExp(committed.stdout, 'm').test(runOnCommit(committed.run, files));
+  assert.ok(committedIn({ 'tests/fees-endpoint.test.ts': 'const res = await request(app).get("/members/ada/fees");\n' }));
+  assert.ok(committedIn({ 'tests/fees-endpoint.test.ts': 'it("done when: GET /members/ada/fees da 0", async () => {\n  const res = await fetch(base + "/members/ada/fees");\n' }));
+  assert.ok(!committedIn({ 'tests/fees.test.ts': 'import { lateFeeCents } from "../src/fees.js";\nconst loan = { member: "ada" };\n' }), 'a unit test alone is not the reproduction');
+  assert.ok(!committedIn({ 'tests/fees.test.ts': '  it("done when: GET /members/ada/fees da 0", () => {\n    expect(lateFeeCents(loan, "2026-11-01")).toBe(0);\n' }), 'a unit test named after the criterion is not the reproduction');
+  assert.ok(!committedIn({ 'tests/members/fees.test.ts': 'expect(lateFeeCents(loan, "2026-11-01")).toBe(0);\n' }), 'a path is not a request');
+  assert.ok(!committedIn({ 'src/routes.ts': 'app.get("/members/:member/fees", handler);\n' }), 'a test outside tests/ is not counted');
+
+  assert.deepEqual(assertionNamed(committedRepro, 'no reproduction left in .aw/'), assertionNamed(build, 'no reproduction left in .aw/'));
+  assert.ok(committedRepro.assertions.some((a) => a.run === 'npm test'), 'the tests pass');
+  const judged = judgedText(committedRepro);
+  assert.match(judged, /fees endpoint/);
+  assert.match(judged, /committed/);
+  assert.match(judged, /not .*deleted/);
+});
+
+test('a ship whose full run picks up a test under .aw/repro/ marks it uncommitted and counts it for no criterion', () => {
+  const ship = byId.get('aw-fast-ship-uncommitted');
+  assert.ok(ship, "no case for ship's uncommitted marking");
+  assert.equal(ship.group, 'Fast route, no verify skill');
+  assert.equal(ship.from.case, 'aw-fast-review', 'a built and reviewed branch');
+  assert.match(ship.command, /^\/ai-workflow:aw-ship$/);
+  const file = '.aw/repro/due-day/fees.test.ts';
+  const written = ship.shell.find((line) => line.includes(file));
+  assert.ok(written, `the shell writes no ${file}`);
+  assert.match(written, /from "vitest"/, 'the file is a test the full check runs');
+
+  const matches = (assertion, text) => new RegExp(assertion.matches, 'gm').test(text);
+  const checks = assertionNamed(ship, 'the Checks line notes the uncommitted test');
+  assert.equal(checks.file, '.aw/review-requests/*-review-request.md');
+  assert.ok(matches(checks, `- **Checks:** \`npm test\` passed at abc1234. The local run included uncommitted test files \`${file}\`.`));
+  assert.ok(!matches(checks, '- **Checks:** `npm test` passed at abc1234.'));
+  assert.ok(!matches(checks, `- **Criteria:**\n  - returned on the due date: \`${file}\` (uncommitted, not counted)`), 'only the Checks line counts');
+
+  const criteria = assertionNamed(ship, 'the Criteria line marks the uncommitted test');
+  assert.equal(criteria.file, '.aw/review-requests/*-review-request.md');
+  // The Evidence section of a review request, with the given Criteria line,
+  // and the marking once more in the section after it.
+  const evidence = (criteriaLine) => `## Evidence\n\n- **Checks:** \`npm test\` passed at abc1234.\n${criteriaLine}\n\n## Merge Danger\n\n**Door:** two-way, as \`${file}\` (uncommitted, not counted) stays local.\n`;
+  assert.ok(matches(criteria, evidence(`- **Criteria:** returned on the due date: \`tests/fees.test.ts\`; \`${file}\` (uncommitted, not counted)`)));
+  assert.ok(matches(criteria, evidence(`- **Criteria:**\n  - returned early: \`tests/fees.test.ts\`\n  - returned on the due date: \`tests/fees.test.ts\`; \`${file} (uncommitted, not counted)\``)));
+  assert.ok(!matches(criteria, evidence(`- **Criteria:** returned on the due date: \`${file}\``)), 'cited as evidence, unmarked, and marked only outside the Criteria line');
+  assert.ok(!matches(criteria, `- **Checks:** included \`${file}\` (uncommitted, not counted)`), 'the Checks line is not the Criteria line');
+
+  assert.match(judgedText(ship), /No criterion is proven only by/);
 });

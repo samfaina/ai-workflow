@@ -1,0 +1,79 @@
+{
+  "id": "aw-fast-build-repro-committed",
+  "title": "aw-intake and aw-build, reproduction committed",
+  "group": "Fast route, no verify skill",
+  "order": 47,
+  "source": "#55: the fast build commits a bug's reproduction as a test when the seam answer takes the seam it exercises (#114, #119)",
+  "from": {
+    "ref": "uat/setup-audit-fixed"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-intake Un socio devolvió un libro el mismo día del vencimiento y le cobraron 25 céntimos. Por ejemplo, un préstamo con vencimiento 2026-10-15 devuelto ese día: GET /members/<socio>/fees da 25 y debería dar 0.",
+  "answers": [
+    {
+      "when": "Which base to branch from or diff against",
+      "intent": "Local main",
+      "reason": "only asked if the remote and local main differ"
+    },
+    {
+      "when": "Which seam to test the due-day fee at",
+      "intent": "A unit test of lateFeeCents, next to the existing ones in tests/fees.test.ts; when it also proposes the seam the reproduction exercises, the fees endpoint, take that seam too",
+      "reason": "taking the reproduction's seam makes the build commit the reproduction as a test instead of deleting it, the path aw-fast-build never takes (#114); the answer leaves it to the build to propose that seam"
+    }
+  ],
+  "turns": [
+    {
+      "intent": "Run /ai-workflow:aw-build in this same session",
+      "reason": "the route's next skill, with intake's report still in the conversation"
+    }
+  ],
+  "assertions": [
+    {
+      "name": "on a work branch",
+      "run": "git branch --show-current",
+      "stdout": "/"
+    },
+    {
+      "name": "the commit carries the criteria",
+      "run": "git log -1 --format=%B --grep=\"Done when:\"",
+      "stdout": "^Done when: "
+    },
+    {
+      "name": "no spec created",
+      "run": "git diff --exit-code origin/main HEAD -- docs/specs"
+    },
+    {
+      "name": "the reproduction is a committed test outside .aw/",
+      "run": "git diff -U0 origin/main HEAD -- tests",
+      "stdout": "^\\+(?!\\+\\+)(?!.*\\b(?:it|test|describe)\\().*/members/"
+    },
+    {
+      "name": "no reproduction left in .aw/",
+      "run": "node -e \"const fs=require('fs'),path=require('path');const files=fs.existsSync('.aw')?fs.readdirSync('.aw',{recursive:true}).map((f)=>f.split(path.sep).join('/')).filter((f)=>fs.statSync(path.join('.aw',f)).isFile()):[];console.log(files.filter((f)=>f.startsWith('repro/')||/[.](test|spec)[.]/.test(f)).join(' '))\"",
+      "stdout": "^$"
+    },
+    {
+      "name": "the tests pass",
+      "run": "npm test"
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Intake classified it fast, reproduced the bug first through the fees endpoint and stated 1 to 3 observable Done when criteria"
+    },
+    {
+      "judge": "The seam question offered the fees endpoint the reproduction exercises, with one line on what it catches and what it misses, and the agreed seams kept it"
+    },
+    {
+      "judge": "The build moved the reproduction to where the project keeps its tests at the fees endpoint seam and committed it in the build's commit; the report names it as committed, not as deleted"
+    },
+    {
+      "judge": "Named /aw-review as the next skill and not /aw-verify, since the repo has no verify skill"
+    }
+  ]
+}

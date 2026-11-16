@@ -2,7 +2,7 @@
   "id": "aw-wayfinder-handoff",
   "title": "aw-wayfinder, the last ticket clears the map",
   "group": "Epic route, one deliverable",
-  "order": 63,
+  "order": 65,
   "source": "#55: it never builds, and ends by naming /aw-spec for each deliverable. The map is a fixture with one open ticket",
   "from": {
     "ref": "uat/setup-local-audit-fixed"
