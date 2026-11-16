@@ -62,6 +62,9 @@
       "judge": "Intake classified it fast, reproduced the bug first and stated 1 to 3 observable Done when criteria"
     },
     {
+      "judge": "Intake's `Next:` line does not name /aw-verify, since the repo has no verify skill"
+    },
+    {
       "judge": "The reproduction drove the first failing test at the agreed seam, and the build went on until each criterion held"
     },
     {
