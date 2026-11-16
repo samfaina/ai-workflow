@@ -11,6 +11,9 @@
 //   node run.mjs report --run <dir>
 //   node run.mjs clean  --run <dir>
 //
+// --source defaults to UAT_SOURCE. For init only, --run defaults to
+// <UAT_TARGET>/<yyyymmdd>; every other command needs the run folder by name.
+//
 // Everything lives in the run folder, outside this repo. The source repo is
 // only ever read: its commits are fetched once, into the run's own store.
 //
@@ -468,12 +471,19 @@ function clean(options) {
   print({ status: 'cleaned', run: runDir });
 }
 
+// The local date as yyyymmdd, the name of a run folder made under UAT_TARGET.
+function today() {
+  const now = new Date();
+  return `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+}
+
 const COMMANDS = { init, next, check, record, skip, drift, report, clean };
 const [command, ...rest] = process.argv.slice(2);
 if (!Object.hasOwn(COMMANDS, command ?? '')) usage(`usage: run.mjs ${Object.keys(COMMANDS).join('|')} --run <dir> [options]`);
 try {
   const options = parseArgs(rest);
-  if (!options.run) usage('--run <dir> is required');
+  if (command === 'init' && !options.run && process.env.UAT_TARGET) options.run = join(process.env.UAT_TARGET, today());
+  if (!options.run) usage(command === 'init' ? '--run <dir> is required, or the UAT_TARGET environment variable' : '--run <dir> is required');
   options.source ??= process.env.UAT_SOURCE;
   COMMANDS[command](options);
 } catch (error) {
