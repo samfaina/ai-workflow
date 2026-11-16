@@ -199,7 +199,7 @@ The action intake runs according to the task's type before any change: reproduce
 _Avoid_: prerequisite, setup step
 
 **Reproduction**:
-The one command a bug's pre-step builds that goes red on the bug, with any test file it runs under `.aw/repro/`. It is temporary and never proof: on the fast route `aw-build` turns it into a committed test at an agreed seam or deletes it, and `aw-ship` counts only committed tests.
+The one command a bug's pre-step builds that goes red on the bug, with any test file it runs kept under `.aw/repro/` until `aw-build` commits it as a test or deletes it.
 _Avoid_: repro test, scratch test
 
 **Human gate**:

@@ -12,6 +12,10 @@ function skillText(skill) {
   return readFileSync(join(repoRoot, 'skills', skill, 'SKILL.md'), 'utf8');
 }
 
+function repoFile(path) {
+  return readFileSync(join(repoRoot, path), 'utf8');
+}
+
 function skillLine(skill, start) {
   const line = skillText(skill).split('\n').find((candidate) => candidate.startsWith(start));
   assert.ok(line, `${skill} has no line starting "${start}"`);
@@ -100,7 +104,7 @@ test('a done-when criterion is behaviour a run can show, never a doc, a test edi
   const never = /never a doc's wording, an edit to an existing test or a check passing/i;
   assert.match(skillText('aw-intake'), /Each one states behaviour of the code that a run can show/);
   assert.match(skillText('aw-intake'), never);
-  assert.match(readFileSync(join(repoRoot, 'GLOSSARY.md'), 'utf8'), /A doc's wording, an edit to an existing test or a check passing is never one/);
+  assert.match(repoFile('GLOSSARY.md'), /A doc's wording, an edit to an existing test or a check passing is never one/);
   const explore = skillLine('aw-build-steps', '**Step 3: explore the task.**');
   assert.match(explore, /states behaviour a run can show, as `\/aw-intake` defines it/);
   assert.match(explore, /go to \*\*When the criteria are wrong\*\*/);
@@ -192,7 +196,7 @@ test("a fast-route build may edit a spec's Traceability, only that section, and 
 });
 
 test("no skill or ADR names a spec contradiction by one of the glossary's Avoid terms", () => {
-  const avoid = readFileSync(join(repoRoot, 'GLOSSARY.md'), 'utf8').match(/\*\*Spec contradiction\*\*:\n[^\n]*\n_Avoid_: ([^\n]*)/)[1].split(', ');
+  const avoid = repoFile('GLOSSARY.md').match(/\*\*Spec contradiction\*\*:\n[^\n]*\n_Avoid_: ([^\n]*)/)[1].split(', ');
   assert.ok(avoid.length > 0);
   const files = [
     ...readdirSync(join(repoRoot, 'skills')).map((skill) => join(repoRoot, 'skills', skill, 'SKILL.md')),
@@ -205,7 +209,7 @@ test("no skill or ADR names a spec contradiction by one of the glossary's Avoid 
 });
 
 // A bug's reproduction (#114): build promotes it to a committed test at an
-// agreed seam or deletes it, and ship counts only committed tests as proof.
+// agreed seam or deletes it, and ship counts only committed tests as evidence.
 
 const reproduction = skillLine('aw-build-steps', '- **The reproduction.**');
 
@@ -220,35 +224,35 @@ test('the build report names a deleted reproduction and the behaviour no committ
   assert.match(report, /When step 4 deleted a bug's reproduction, name its file and the behaviour it exercised that no committed test now covers/);
 });
 
-test("when the agreed seams do not reach the reproduction, build proposes its seam in the one seam question, hitl and afk", () => {
-  assert.match(reproduction, /When the agreed seams do not reach that behaviour[^.]*, propose the reproduction's seam as an additional one in the seam question above/);
-  const step4 = skillLine('aw-build-steps', '**Step 4: test-first.**');
-  assert.match(step4, /end with `Stop: seam to agree` as step 4 says, its `Question:` line proposing the reproduction's seam too when it is not among them/);
-  assert.match(step4, /A reproduction's seam the arguments' `agreed seams:` leave out was declined/);
+test('when the agreed seams do not reach the reproduction, build proposes its seam in the one seam question, hitl and afk', () => {
+  assert.match(reproduction, /When no agreed seam reaches that behaviour[^.]*, propose the reproduction's seam as an additional one in the seam question above/);
+  assert.match(reproduction, /In the `afk` variant, propose it in the `Question:` line of `Stop: seam to agree`, even when the arguments' `agreed seams:` cover every criterion, unless they say the user declined it/);
 });
 
-test("aw-ship proves a fast-route criterion only by a committed test, never an uncommitted one", () => {
+test('aw-ship proves a fast-route criterion only by a committed test, never an uncommitted one', () => {
   const condition = skillLine('aw-ship', '3. **The spec is proven.**');
   assert.match(condition, /proven by a test committed on the work branch or present on the base that passed in step 3's run/);
-  assert.match(condition, /A test file that is not committed is never proof, even when step 3's run ran it/);
+  assert.match(condition, /A test file that is not committed is never evidence, even when step 3's run ran it/);
   assert.match(skillLine('aw-ship', '- on the standard and epic routes, the spec is `implemented`'), /proven by a committed test, a verify result or a check by hand/);
 });
 
 test("aw-ship's review request marks an uncommitted test on its Criteria line and notes it on its Checks line", () => {
-  assert.match(skillLine('aw-ship', '- **Criteria:**'), /an uncommitted test file that touches the criterion as `<file> \(uncommitted, not counted\)`/);
-  assert.match(skillLine('aw-ship', '- **Checks:**'), /The local run included uncommitted test files: <files>/);
-  assert.match(skillText('aw-ship'), /each test file its output names that `git ls-files --error-unmatch <file>` does not find/);
+  assert.match(skillLine('aw-ship', '- **Criteria:**'), /An uncommitted test file that touches the criterion appears as `<file> \(uncommitted, not counted\)`/);
+  assert.match(skillLine('aw-ship', '- **Checks:**'), /<The local run included uncommitted test files <files>, when step 3 found any\.>/);
+  const step3 = skillText('aw-ship').split('\n### ').find((section) => section.startsWith('3. Run the full check level'));
+  assert.match(step3, /the test files it ran, from its whole output, that `git cat-file -e HEAD:<file>` does not find/);
+  assert.match(step3, /When the output names no files, check each untracked or ignored file `git status --porcelain --ignored` lists against the files the project's test configuration selects/);
 });
 
-test('no rule on the reproduction or on committed proof names a test runner or a glob', () => {
-  const texts = [skillText('aw-build-steps'), skillText('aw-ship'), skillText('aw-intake'), readFileSync(join(repoRoot, 'skills', 'aw-intake', 'PRE-STEPS.md'), 'utf8'), readFileSync(join(repoRoot, 'GLOSSARY.md'), 'utf8')];
+test('aw-build-steps, aw-ship, aw-intake, its pre-steps and the glossary name no test runner and no glob', () => {
+  const texts = [skillText('aw-build-steps'), skillText('aw-ship'), skillText('aw-intake'), repoFile('skills/aw-intake/PRE-STEPS.md'), repoFile('GLOSSARY.md')];
   for (const text of texts) assert.doesNotMatch(text, /vitest|jest|mocha|pytest|\*\*\/|\*\.test\./i);
 });
 
 test("intake's bug pre-step writes the reproduction under .aw/ and says it lasts until aw-build promotes or deletes it", () => {
-  const bug = readFileSync(join(repoRoot, 'skills', 'aw-intake', 'PRE-STEPS.md'), 'utf8').split('\n## ').find((section) => section.startsWith('Bug: reproduce'));
+  const bug = repoFile('skills/aw-intake/PRE-STEPS.md').split('\n## ').find((section) => section.startsWith('Bug: reproduce'));
   assert.ok(bug, 'PRE-STEPS.md has no "Bug: reproduce" section');
   assert.match(bug, /When the red command runs a test file, write it under `\.aw\/repro\/<slug>\/` and commit nothing/);
   assert.match(bug, /It is temporary: `aw-build` turns it into a committed test at an agreed seam or deletes it/);
-  assert.match(readFileSync(join(repoRoot, 'GLOSSARY.md'), 'utf8'), /\*\*Reproduction\*\*:\nThe one command a bug's pre-step builds that goes red on the bug/);
+  assert.match(repoFile('GLOSSARY.md'), /\*\*Reproduction\*\*:\nThe one command a bug's pre-step builds that goes red on the bug, with any test file it runs kept under `\.aw\/repro\/` until `aw-build` commits it as a test or deletes it\.\n/);
 });
