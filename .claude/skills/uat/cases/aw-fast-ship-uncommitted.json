@@ -38,7 +38,7 @@
     {
       "name": "the Criteria line marks the uncommitted test",
       "file": ".aw/review-requests/*-review-request.md",
-      "matches": "^(?!- \\*\\*Checks:\\*\\*).*\\.aw/repro/due-day/fees\\.test\\.ts`? \\(uncommitted, not counted\\)"
+      "matches": "^- \\*\\*Criteria:\\*\\*(?:.*\\n(?![-#]|$))*?.*\\.aw/repro/due-day/fees\\.test\\.ts`? \\(uncommitted, not counted\\)"
     },
     {
       "name": "no spec created",

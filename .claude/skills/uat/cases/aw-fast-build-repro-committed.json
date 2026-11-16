@@ -1,6 +1,6 @@
 {
-  "id": "aw-fast-build-promoted",
-  "title": "aw-intake and aw-build, reproduction promoted",
+  "id": "aw-fast-build-repro-committed",
+  "title": "aw-intake and aw-build, reproduction committed",
   "group": "Fast route, no verify skill",
   "order": 47,
   "source": "#55: the fast build commits a bug's reproduction as a test when the seam answer takes the seam it exercises (#114, #119)",
@@ -19,8 +19,8 @@
     },
     {
       "when": "Which seam to test the due-day fee at",
-      "intent": "A unit test of lateFeeCents, next to the existing ones in tests/fees.test.ts, and also the seam the reproduction exercises, the fees endpoint GET /members/<socio>/fees; when it proposes that seam, take it",
-      "reason": "taking the reproduction's seam makes the build commit the reproduction as a test instead of deleting it, the path aw-fast-build never takes (#114)"
+      "intent": "A unit test of lateFeeCents, next to the existing ones in tests/fees.test.ts; when it also proposes the seam the reproduction exercises, the fees endpoint, take that seam too",
+      "reason": "taking the reproduction's seam makes the build commit the reproduction as a test instead of deleting it, the path aw-fast-build never takes (#114); the answer leaves it to the build to propose that seam"
     }
   ],
   "turns": [
@@ -47,7 +47,7 @@
     {
       "name": "the reproduction is a committed test outside .aw/",
       "run": "git diff -U0 origin/main HEAD -- tests",
-      "stdout": "^\\+.*/members/"
+      "stdout": "^\\+(?!\\+\\+)(?!.*\\b(?:it|test|describe)\\().*/members/"
     },
     {
       "name": "no reproduction left in .aw/",
