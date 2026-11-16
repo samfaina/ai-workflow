@@ -302,11 +302,13 @@ test('the seam question proposes a seam for any part of a criterion the proposed
 
 test('a part no agreed seam reaches, because the user kept the narrower seam, is a test exception that names it', () => {
   assert.match(fastTestException, /no agreed seam reaches a part of a criterion, because the user kept a narrower seam/);
-  assert.match(fastTestException, /``Test exception: <criterion>: <the part>\. No agreed seam reaches it, and the user declined <the seam that would>; proven by `manual:` evidence instead``/);
+  assert.match(fastTestException, /``Test exception: <criterion>: <the part>\. No agreed seam reaches it, and the user declined <the seam that would>; proven by `verify:` evidence instead``/);
   assert.match(fastTestException, /Write `verify:` when the repo has a verify skill/);
   const entry = repoFile('GLOSSARY.md').match(/\*\*Test exception\*\*:\n([^\n]*)/)[1];
   assert.match(entry, /because a test at the agreed seam would cost far more than it is worth/);
-  assert.match(entry, /On the fast route it also records a part of a criterion that no agreed seam reaches, because the user declined the seam that would/);
+  assert.match(entry, /On the fast route, which has no slices, it is a line of the commit message, and it also records a part of a criterion that no agreed seam reaches, because the user declined the seam that would/);
+  const report = skillLine('aw-build-steps', '**Step 8: report each criterion.**');
+  assert.match(report, /with what proves it: its tests, its test exception, or both/);
 });
 
 test("the fix run names a test against a fast-route criterion by the fast route's own rule, without restating it", () => {
