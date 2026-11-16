@@ -3,7 +3,7 @@
   "title": "aw-intake and aw-build",
   "group": "Fast route, with a verify skill",
   "order": 49,
-  "source": "#55: the fast route again, in a repo with a verify skill, on a bug no spec states as intended (#111)",
+  "source": "#55: the fast route again, in a repo with a verify skill, on a bug no spec states as intended (#111); its done when: test names quote the criteria verbatim (#123)",
   "from": {
     "ref": "uat/audit-fixed"
   },
@@ -33,8 +33,8 @@
     },
     {
       "when": "Which seam to test the most borrowed books at",
-      "intent": "A unit test of popularBooks, next to the existing one in tests/stats.test.ts",
-      "reason": "the fast route has no Test strategy, so the seam is agreed here"
+      "intent": "A unit test of popularBooks, next to the existing one in tests/stats.test.ts; when it also proposes a seam for a part of a criterion the unit test cannot reach, decline it and keep only the unit seam",
+      "reason": "the fast route has no Test strategy, so the seam is agreed here; declining the wider seam makes the build record the part it cannot reach as a test exception (#123)"
     }
   ],
   "turns": [
@@ -59,6 +59,10 @@
       "run": "git diff --exit-code origin/main HEAD -- docs/specs"
     },
     {
+      "name": "each done when: test name quotes a Done when: line verbatim",
+      "run": "node {{KIT}}/.claude/skills/uat/scripts/done-when-names.mjs"
+    },
+    {
       "name": "the tests pass",
       "run": "npm test"
     },
@@ -69,6 +73,9 @@
     },
     {
       "judge": "Intake classified it a bug on the fast route, found no spec contradiction, and stated 1 to 3 observable Done when criteria"
+    },
+    {
+      "judge": "When the seam question proposed a seam for a part of a criterion the unit test cannot reach, with one line on what it catches and what it misses, and the answer declined it, the commit carries a `Test exception:` line that names that part"
     },
     {
       "judge": "Named /aw-verify as the next skill, since the repo has a verify skill"

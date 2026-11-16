@@ -316,11 +316,18 @@ test('the fast route with a verify skill fixes a real bug that contradicts no sp
 // #114: a bug's reproduction ends the fast build committed or deleted, and the
 // review request cites no test that is absent from the diff and the base.
 
-// Runs a case's command in a working copy and returns its trimmed stdout.
-function runIn(workdir, command) {
+// Runs a case's command in a working copy and returns its exit status and
+// trimmed stdout.
+function spawnIn(workdir, command) {
   const result = spawnSync(command, { cwd: workdir, shell: true, encoding: 'utf8' });
+  return { status: result.status, stdout: result.stdout.trim(), stderr: result.stderr };
+}
+
+// As spawnIn, for a command that must succeed: returns its trimmed stdout.
+function runIn(workdir, command) {
+  const result = spawnIn(workdir, command);
   assert.equal(result.status, 0, result.stderr);
-  return result.stdout.trim();
+  return result.stdout;
 }
 
 // Runs a case's command in a working copy whose .aw/ holds the given files.
@@ -371,8 +378,9 @@ test('aw-fast-ship checks that no Criteria line cites a test absent from the dif
 // #119: the two #114 behaviours that the cases above never reach.
 
 // Runs a case's command in a git repo whose origin/main is an empty commit and
-// whose HEAD adds the given files on top of it.
-function runOnCommit(command, files) {
+// whose HEAD adds the given files on top of it, with the given message, and
+// returns the command's exit status and trimmed stdout.
+function spawnOnCommit(command, files, message = 'build') {
   const workdir = mkdtempSync(join(tmpdir(), 'uat-git-'));
   const git = (...args) => {
     const result = spawnSync('git', ['-c', 'user.name=uat', '-c', 'user.email=uat@example.invalid', ...args], { cwd: workdir, encoding: 'utf8' });
@@ -388,11 +396,18 @@ function runOnCommit(command, files) {
       writeFileSync(join(workdir, file), text);
     }
     git('add', '--all');
-    commit('build');
-    return runIn(workdir, command);
+    commit(message);
+    return spawnIn(workdir, command);
   } finally {
     rmSync(workdir, { recursive: true, force: true });
   }
+}
+
+// As spawnOnCommit, for a command that must succeed: returns its trimmed stdout.
+function runOnCommit(command, files) {
+  const result = spawnOnCommit(command, files);
+  assert.equal(result.status, 0, result.stderr);
+  return result.stdout;
 }
 
 test("a fast build whose seam answer takes the reproduction's seam commits the reproduction outside .aw/", () => {
@@ -453,4 +468,43 @@ test('a ship whose full run picks up a test under .aw/repro/ marks it uncommitte
   assert.ok(!matches(criteria, `- **Checks:** included \`${file}\` (uncommitted, not counted)`), 'the Checks line is not the Criteria line');
 
   assert.match(judgedText(ship), /No criterion is proven only by/);
+});
+
+// #123: on the fast route each done-when test name quotes its criterion whole,
+// in intake's words and language.
+test("aw-fast-verified-build checks that each done when: test name quotes a Done when: line of the commit, verbatim", () => {
+  const build = byId.get('aw-fast-verified-build');
+  const namesCheck = assertionNamed(build, 'each done when: test name quotes a Done when: line verbatim');
+  assert.ok(namesCheck, 'no assertion on the done when: test names');
+  const seam = build.answers.find((answer) => /seam/i.test(answer.when));
+  assert.match(seam.intent, /when it also proposes a seam for a part of a criterion the unit test cannot reach, decline it and keep only the unit seam/, 'the build, not the answer, proposes the wider seam');
+  assert.match(judgedText(build), /a `Test exception:` line that names that part/);
+  const command = namesCheck.run.replaceAll('{{KIT}}', repoRoot.replaceAll('\\', '/'));
+  const criteria = [
+    'Done when: `GET /stats/popular` lista solo los libros con algún préstamo, de más a menos préstamos, en ese orden.',
+    'Done when: sin préstamos, `popularBooks` devuelve `[]`.',
+  ];
+  const message = ['fix: popular books list unborrowed books', '', ...criteria].join('\n');
+  // A test file whose tests are named by the given source literals.
+  const testFile = (...tests) => ({ 'tests/stats.test.ts': tests.map((name) => `  it(${name}, () => {});\n`).join('') });
+  const check = (files) => spawnOnCommit(command, files, message);
+
+  const whole = check(testFile(
+    '"done when: `GET /stats/popular` lista solo los libros con algún préstamo, de más a menos préstamos, en ese orden."',
+    "'done when: sin préstamos, `popularBooks` devuelve `[]`.'",
+  ));
+  assert.equal(whole.status, 0, whole.stdout);
+  assert.equal(whole.stdout, '');
+  assert.equal(check(testFile('`done when: sin préstamos, \\`popularBooks\\` devuelve \\`[]\\``')).status, 0, 'a template literal, with no final period');
+  assert.equal(check(testFile('"done when: sin préstamos, `popularBooks` devuelve `[]`. (unit seam)"')).status, 0, 'a suffix that names the part');
+  assert.equal(check(testFile('"done when: sin préstamos, `popularBooks` devuelve `[]`: unit seam"')).status, 0, 'a suffix after a colon');
+  assert.equal(check({ ...testFile('"done when: sin préstamos, `popularBooks` devuelve `[]`."'), 'docs/notes.md': '- `done when: popular lists only borrowed books`\n' }).status, 0, 'a file that is not a test');
+
+  const paraphrase = check(testFile('"done when: popular books lists only borrowed books"'));
+  assert.notEqual(paraphrase.status, 0, 'an English paraphrase');
+  assert.match(paraphrase.stdout, /done when: popular books lists only borrowed books/);
+  assert.notEqual(check(testFile('"done when: `GET /stats/popular` lista solo los libros con algún préstamo, de más a menos préstamos"')).status, 0, 'a dropped clause');
+  assert.notEqual(check(testFile('"done when: sin préstamos, `popularBooks` devuelve un array vacío"')).status, 0, 'a reworded criterion');
+  assert.notEqual(check(testFile('"stats lists the most borrowed books"')).status, 0, 'no done when: test name at all');
+  assert.notEqual(spawnOnCommit(command, testFile('"done when: sin préstamos, `popularBooks` devuelve `[]`."')).status, 0, 'a commit with no Done when: lines');
 });
