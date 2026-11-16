@@ -198,6 +198,10 @@ _Avoid_: track, lane, mode, flow
 The action intake runs according to the task's type before any change: reproduce a bug, add characterization tests before a refactor, measure a performance baseline.
 _Avoid_: prerequisite, setup step
 
+**Reproduction**:
+The one command a bug's pre-step builds that goes red on the bug, with any test file it runs kept under `.aw/repro/` until `aw-build` commits it as a test or deletes it.
+_Avoid_: repro test, scratch test
+
 **Human gate**:
 A point where the work continues only after a person explicitly decides it should. The kit has one fixed gate: spec approval.
 _Avoid_: checkpoint, approval step, sign-off

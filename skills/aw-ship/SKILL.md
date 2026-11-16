@@ -39,7 +39,7 @@ At `merge: write`, merge only when all of these hold; otherwise leave the merge 
 
 1. **No proven defect.** The latest review report, step 2's, says `Proven defects: 0 introduced, 0 pre-existing`. A pre-existing defect still blocks the merge by itself: the user may ship it, but a person merges.
 2. **`full` passed.** `run-check full` passed in this session, in step 3, on `HEAD` as it was then, and the only commit since is this skill's spec commit. A level with no command is not run, so it never counts as passed.
-3. **The spec is proven.** On the standard and epic routes, the spec is `implemented` and `aw-check-spec` passed on it, script-verified, in step 4 of this session. On the fast route there is no spec: instead, each done-when criterion is proven by a test that passed in step 3's run, a `passed` verify result, or a check by hand the user reported in this session, and its pre-ship checklist item is ticked.
+3. **The spec is proven.** On the standard and epic routes, the spec is `implemented` and `aw-check-spec` passed on it, script-verified, in step 4 of this session. On the fast route there is no spec: instead, each done-when criterion is proven by a test committed on the work branch or present on the base that passed in step 3's run, a `passed` verify result, or a check by hand the user reported in this session, and its pre-ship checklist item is ticked. A test file that is not committed is never evidence, even when step 3's run ran it.
 
 With a review host, there is nothing to merge until `push` and `open-review` were performed in step 6: when either was drafted, the merge is drafted too.
 
@@ -93,7 +93,7 @@ Done when you have the report's path, its counts, its introduced risks and the c
 
 ### 3. Run the full check level
 
-Run `run-check full` on `HEAD` from the repo root, with every commit step 2 accepted. Keep the exact command, its exit code and the tail of its output for the Evidence section.
+Run `run-check full` on `HEAD` from the repo root, with every commit step 2 accepted. Keep the exact command, its exit code and the tail of its output for the Evidence section. Then list the uncommitted test files it ran: the test files it ran, from its whole output, that `git cat-file -e HEAD:<file>` does not find. When the output names no files, check each untracked or ignored file `git status --porcelain --ignored` lists against the files the project's test configuration selects. A reproduction left under `.aw/` is one: `.aw/` is ignored, so step 1 never sees it as an uncommitted change. A clean checkout runs without these files, so its result can differ from this one.
 
 - **It fails:** stop. Report the failure with its output; push nothing. The user fixes it with `/aw-build`, then runs `/aw-review` and this skill again.
 - **The level has no command:** propose one from the project's manifest, as the checks adapter's defaults say, run it, and say it was proposed, not configured. When nothing can be run, `full` was not run: say so. Shipping may go on, but the merge conditions do not hold.
@@ -128,10 +128,10 @@ Write the body to `.aw/review-requests/<yyyymmdd-hhmmss>-review-request.md`. It 
 
 - **Before:** <at the merge-base: the failing test, the output or the screenshot that shows the old behaviour>
 - **After:** <at HEAD: the same, now passing>
-- **Checks:** `<the full command>` passed at <short hash>.
+- **Checks:** `<the full command>` passed at <short hash>. <The local run included uncommitted test files <files>, when step 3 found any.>
 - **Review:** `<path of the review report>`: <n> introduced defects, <m> pre-existing, <k> introduced risks.
 - **After the review:** <one line per commit in `<short hash>..HEAD`, from the report's heading: `<short hash>` <subject>, and that it changed only adapters, or, for this skill's spec commit, changed only the spec's status; or "none", when the report names `HEAD`>
-- **Criteria:** <one line per AC-n with its Traceability evidence; or, on the fast route, one line per done-when criterion with what proves it: its tests, its verify result under `.aw/verify/`, or the check by hand the user reported>
+- **Criteria:** <one line per AC-n with its Traceability evidence; or, on the fast route, one line per done-when criterion with what proves it: its committed tests, its verify result under `.aw/verify/`, or the check by hand the user reported. An uncommitted test file that touches the criterion appears as `<file> (uncommitted, not counted)`>
 
 ## Merge Danger
 
@@ -164,7 +164,7 @@ Write the body to `.aw/review-requests/<yyyymmdd-hhmmss>-review-request.md`. It 
 - the `full` check level passed, with its command;
 - the review report shows no introduced defect;
 - each introduced risk from the report, listed for the user to accept;
-- on the standard and epic routes, the spec is `implemented` and `aw-check-spec` passes; on the fast route, each done-when criterion is met, proven by a test, a verify result or a check by hand. For a criterion with none, such as one whose test exception named a check by hand, ask the user for that check and record only what they report;
+- on the standard and epic routes, the spec is `implemented` and `aw-check-spec` passes; on the fast route, each done-when criterion is met, proven by a committed test, a verify result or a check by hand. For a criterion with none, such as one whose test exception named a check by hand, ask the user for that check and record only what they report;
 - no debugging leftovers or unresolved TODOs in the diff: `git diff <base>...HEAD` searched for them;
 - no secrets in the diff: searched for keys, tokens and passwords;
 - dependency changes, if any, listed, with the review's Security axis on them;

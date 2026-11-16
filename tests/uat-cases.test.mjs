@@ -2,8 +2,10 @@
 // routes #55 runs.
 
 import assert from 'node:assert/strict';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
 import test from 'node:test';
 
 import { repoRoot } from './fixtures.mjs';
@@ -307,4 +309,42 @@ test('the fast route with a verify skill fixes a real bug that contradicts no sp
     assert.ok(!c.answers.some((answer) => answer.drift), `${c.id}: a drift answer about the old bug`);
   }
   assert.match(byId.get('aw-fast-verified-build').command, /\/stats\/popular/);
+});
+
+// #114: a bug's reproduction ends the fast build committed or deleted, and the
+// review request cites no test that is absent from the diff and the base.
+
+// Runs a case's command in a working copy whose .aw/ holds the given files.
+function runWithAw(command, files) {
+  const workdir = mkdtempSync(join(tmpdir(), 'uat-aw-'));
+  try {
+    for (const file of files) {
+      mkdirSync(dirname(join(workdir, '.aw', file)), { recursive: true });
+      writeFileSync(join(workdir, '.aw', file), '');
+    }
+    const result = spawnSync(command, { cwd: workdir, shell: true, encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+    return result.stdout.trim();
+  } finally {
+    rmSync(workdir, { recursive: true, force: true });
+  }
+}
+
+test('aw-fast-build checks that no runnable reproduction is left in .aw/ after the build', () => {
+  const build = byId.get('aw-fast-build');
+  const left = build.assertions.find((a) => a.name === 'no reproduction left in .aw/');
+  assert.ok(left, 'no assertion on what the build left in .aw/');
+  assert.equal(left.stdout, '^$');
+  assert.match(runWithAw(left.run, ['repro/due-day/fees.test.ts', 'reviews/r.md']), /repro\/due-day\/fees\.test\.ts/);
+  assert.match(runWithAw(left.run, ['scratch/fees.spec.ts']), /scratch\/fees\.spec\.ts/);
+  assert.equal(runWithAw(left.run, ['reviews/r.md', 'verify/v.md']), '');
+  assert.equal(runWithAw(left.run, []), '');
+  assert.ok(build.assertions.some((a) => a.judge && /reproduction/.test(a.judge) && /committed test/.test(a.judge) && /deleted/.test(a.judge)));
+});
+
+test('aw-fast-ship checks that no Criteria line cites a test absent from the diff and the base', () => {
+  const ship = byId.get('aw-fast-ship');
+  const judged = ship.assertions.filter((a) => a.judge).map((a) => a.judge).join('\n');
+  assert.match(judged, /No `- \*\*Criteria:\*\*` line cites as evidence a test that is absent from both the diff and the base/);
+  assert.ok(ship.assertions.some((a) => a.file === '.aw/review-requests/*-review-request.md' && a.matches === String.raw`\.aw/repro/` && a.count === 0));
 });
