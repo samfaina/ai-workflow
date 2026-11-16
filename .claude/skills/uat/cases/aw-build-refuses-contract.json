@@ -2,7 +2,7 @@
   "id": "aw-build-refuses-contract",
   "title": "aw-build refuses a criterion that changes a contract",
   "group": "Kept off the fast route",
-  "order": 55,
+  "order": 57,
   "source": "#55: aw-build refuses a criterion that needs a change kept off the fast route",
   "from": {
     "ref": "uat/setup-audit-fixed"

@@ -2,7 +2,7 @@
   "id": "aw-fast-merge-write",
   "title": "aw-ship at merge: write, every criterion proven",
   "group": "Fast route, with a verify skill",
-  "order": 50,
+  "order": 52,
   "source": "#55: at merge: write, aw-ship merges when each criterion is proven, on the real review report",
   "from": {
     "case": "aw-fast-verified-review"

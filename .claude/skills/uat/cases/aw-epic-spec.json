@@ -2,7 +2,7 @@
   "id": "aw-epic-spec",
   "title": "aw-spec for one deliverable",
   "group": "Epic route, one deliverable",
-  "order": 64,
+  "order": 66,
   "source": "#55: on a cleared map, aw-spec for one deliverable",
   "from": {
     "case": "aw-wayfinder-handoff"

@@ -2,7 +2,7 @@
   "id": "aw-fast-verified-review",
   "title": "aw-review",
   "group": "Fast route, with a verify skill",
-  "order": 49,
+  "order": 51,
   "source": "#55: aw-review judges the Spec axis against the criteria, with a verify skill",
   "from": {
     "case": "aw-fast-verified-verify"

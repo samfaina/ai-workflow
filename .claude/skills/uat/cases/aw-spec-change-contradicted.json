@@ -2,7 +2,7 @@
   "id": "aw-spec-change-contradicted",
   "title": "aw-spec, the contradicted spec",
   "group": "Kept off the fast route",
-  "order": 57,
+  "order": 59,
   "source": "#111: aw-spec changes the spec intake names as contradicted, and starts no new one",
   "continues": "aw-intake-spec-contradiction",
   "shell": [],

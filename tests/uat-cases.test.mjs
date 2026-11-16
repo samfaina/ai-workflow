@@ -31,7 +31,7 @@ const EXPECTED = [
   'aw-build-fix-standard', 'aw-build-fix-fast',
   'aw-converge-clean', 'aw-converge-limit',
   'aw-implement-clean', 'aw-implement-hitl', 'aw-implement-stop', 'aw-implement-relaunch',
-  'aw-fast-build', 'aw-fast-verify-skipped', 'aw-fast-review', 'aw-fast-ship',
+  'aw-fast-build', 'aw-fast-verify-skipped', 'aw-fast-review', 'aw-fast-ship', 'aw-fast-build-promoted', 'aw-fast-ship-uncommitted',
   'aw-fast-verified-build', 'aw-fast-verified-verify', 'aw-fast-verified-review', 'aw-fast-merge-write', 'aw-fast-merge-unproven',
   'aw-intake-contract', 'aw-intake-stored-data', 'aw-intake-security', 'aw-build-refuses-contract',
   'aw-intake-spec-contradiction', 'aw-spec-change-contradicted', 'aw-build-spec-contradiction',
@@ -359,4 +359,90 @@ test('aw-fast-ship checks that no Criteria line cites a test absent from the dif
   const judged = ship.assertions.filter((a) => a.judge).map((a) => a.judge).join('\n');
   assert.match(judged, /No `- \*\*Criteria:\*\*` line cites as evidence a test that is absent from both the diff and the base/);
   assert.ok(ship.assertions.some((a) => a.file === '.aw/review-requests/*-review-request.md' && a.matches === String.raw`\.aw/repro/` && a.count === 0));
+});
+
+// #119: the two #114 behaviours that the cases above never reach.
+
+// Runs a case's command in a git repo whose origin/main is a first commit and
+// whose HEAD adds the given files on top of it.
+function runOnCommit(command, files) {
+  const workdir = mkdtempSync(join(tmpdir(), 'uat-git-'));
+  const git = (...args) => {
+    const result = spawnSync('git', args, { cwd: workdir, encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+  };
+  try {
+    git('init', '--quiet');
+    git('-c', 'user.name=uat', '-c', 'user.email=uat@example.invalid', 'commit', '--quiet', '--allow-empty', '-m', 'base');
+    git('update-ref', 'refs/remotes/origin/main', 'HEAD');
+    for (const [file, text] of Object.entries(files)) {
+      mkdirSync(dirname(join(workdir, file)), { recursive: true });
+      writeFileSync(join(workdir, file), text);
+    }
+    git('add', '--all');
+    git('-c', 'user.name=uat', '-c', 'user.email=uat@example.invalid', 'commit', '--quiet', '--allow-empty', '-m', 'build');
+    const result = spawnSync(command, { cwd: workdir, shell: true, encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+    return result.stdout.trim();
+  } finally {
+    rmSync(workdir, { recursive: true, force: true });
+  }
+}
+
+test("a fast build whose seam answer takes the reproduction's seam commits the reproduction outside .aw/", () => {
+  const promoted = byId.get('aw-fast-build-promoted');
+  const build = byId.get('aw-fast-build');
+  assert.ok(promoted, 'no case for the promote path');
+  assert.equal(promoted.group, 'Fast route, no verify skill');
+  assert.deepEqual(promoted.from, build.from);
+  assert.equal(promoted.command, build.command, 'the same due-day fee task');
+  const seam = promoted.answers.find((answer) => /seam/i.test(answer.when));
+  assert.match(seam.intent, /fees endpoint/);
+  assert.doesNotMatch(seam.intent, /keep only the unit seam/);
+
+  const committed = promoted.assertions.find((a) => a.name === 'the reproduction is a committed test outside .aw/');
+  assert.ok(committed, 'no assertion that the reproduction is committed');
+  const matches = (files) => new RegExp(committed.stdout, 'm').test(runOnCommit(committed.run, files));
+  assert.ok(matches({ 'tests/fees-endpoint.test.ts': 'const res = await request(app).get("/members/ada/fees");\n' }));
+  assert.ok(!matches({ 'tests/fees.test.ts': 'import { lateFeeCents } from "../src/fees.js";\nconst loan = { member: "ada" };\n' }), 'a unit test alone is not the reproduction');
+  assert.ok(!matches({ 'src/routes.ts': 'app.get("/members/:member/fees", handler);\n' }), 'a test outside tests/ is not counted');
+
+  const left = promoted.assertions.find((a) => a.name === 'no reproduction left in .aw/');
+  assert.deepEqual(left, build.assertions.find((a) => a.name === 'no reproduction left in .aw/'));
+  assert.ok(promoted.assertions.some((a) => a.run === 'npm test'), 'the tests pass');
+  const judged = promoted.assertions.filter((a) => a.judge).map((a) => a.judge).join('\n');
+  assert.match(judged, /fees endpoint/);
+  assert.match(judged, /committed/);
+  assert.match(judged, /not .*deleted/);
+});
+
+test('a ship whose full run picks up a test under .aw/repro/ marks it uncommitted and counts it for no criterion', () => {
+  const ship = byId.get('aw-fast-ship-uncommitted');
+  assert.ok(ship, "no case for ship's uncommitted marking");
+  assert.equal(ship.group, 'Fast route, no verify skill');
+  assert.equal(ship.from.case, 'aw-fast-review', 'a built and reviewed branch');
+  assert.match(ship.command, /^\/ai-workflow:aw-ship$/);
+  const file = '.aw/repro/due-day/fees.test.ts';
+  const written = ship.shell.find((line) => line.includes(file));
+  assert.ok(written, `the shell writes no ${file}`);
+  assert.match(written, /Set-Content/, 'the case shell is PowerShell');
+  assert.match(written, /from "vitest"/, 'the file is a test the full check runs');
+
+  const request = (name) => ship.assertions.find((a) => a.name === name);
+  const matches = (assertion, text) => new RegExp(assertion.matches, 'm').test(text);
+  const checks = request('the Checks line notes the uncommitted test');
+  assert.equal(checks.file, '.aw/review-requests/*-review-request.md');
+  assert.ok(matches(checks, `- **Checks:** \`npm test\` passed at abc1234. The local run included uncommitted test files \`${file}\`.`));
+  assert.ok(!matches(checks, '- **Checks:** `npm test` passed at abc1234.'));
+  assert.ok(!matches(checks, `- **Criteria:**\n  - returned on the due date: \`${file}\` (uncommitted, not counted)`), 'only the Checks line counts');
+
+  const criteria = request('the Criteria line marks the uncommitted test');
+  assert.equal(criteria.file, '.aw/review-requests/*-review-request.md');
+  assert.ok(matches(criteria, `- **Criteria:** returned on the due date: \`tests/fees.test.ts\`; \`${file}\` (uncommitted, not counted)`));
+  assert.ok(matches(criteria, `- **Criteria:**\n  - returned on the due date: \`tests/fees.test.ts\`; \`${file} (uncommitted, not counted)\``));
+  assert.ok(!matches(criteria, `- **Criteria:** returned on the due date: \`${file}\``), 'cited as evidence, unmarked');
+  assert.ok(!matches(criteria, `- **Checks:** included \`${file}\` (uncommitted, not counted)`), 'the Checks line is not the Criteria line');
+
+  const judged = ship.assertions.filter((a) => a.judge).map((a) => a.judge).join('\n');
+  assert.match(judged, /No criterion is proven only by/);
 });
