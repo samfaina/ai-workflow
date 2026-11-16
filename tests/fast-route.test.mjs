@@ -162,8 +162,8 @@ test("intake's fast Next describes /aw-implement without naming /aw-verify, and 
   const [, implement] = next.match(/`\/aw-implement`(.*?); by hand,/) ?? [];
   assert.ok(implement, 'no description of /aw-implement before the by-hand sequence');
   assert.doesNotMatch(implement, /aw-verify/);
-  assert.match(implement, /every phase from the build to a review with no introduced defect, in one call/);
-  assert.match(implement, /skips the verify phase in a repo with no verify skill/);
+  assert.match(implement, /every phase from the build to a review with no introduced defect in one call/);
+  assert.match(implement, /skipping the verify phase in a repo with no verify skill/);
   assert.match(next, /; by hand, `\/aw-verify` only when the repo has a verify skill at `\.claude\/skills\/verify-\*\/`, `\/aw-review` and `\/aw-ship`/);
 });
 
