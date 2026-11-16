@@ -19,8 +19,8 @@
     },
     {
       "when": "Which seam to test the due-day fee at",
-      "intent": "A unit test of lateFeeCents, next to the existing ones in tests/fees.test.ts",
-      "reason": "the fast route has no Test strategy, so the seam is agreed here"
+      "intent": "A unit test of lateFeeCents, next to the existing ones in tests/fees.test.ts; when it also proposes the seam the reproduction exercises, the fees endpoint, keep only the unit seam",
+      "reason": "the fast route has no Test strategy, so the seam is agreed here; keeping only the narrower seam makes the build delete the reproduction (#114)"
     }
   ],
   "turns": [
@@ -45,6 +45,11 @@
       "run": "git diff --exit-code origin/main HEAD -- docs/specs"
     },
     {
+      "name": "no reproduction left in .aw/",
+      "run": "node -e \"const fs=require('fs'),path=require('path');const files=fs.existsSync('.aw')?fs.readdirSync('.aw',{recursive:true}).map((f)=>f.split(path.sep).join('/')).filter((f)=>fs.statSync(path.join('.aw',f)).isFile()):[];console.log(files.filter((f)=>f.startsWith('repro/')||/[.](test|spec)[.]/.test(f)).join(' '))\"",
+      "stdout": "^$"
+    },
+    {
       "name": "the tests pass",
       "run": "npm test"
     },
@@ -57,7 +62,10 @@
       "judge": "Intake classified it fast, reproduced the bug first and stated 1 to 3 observable Done when criteria"
     },
     {
-      "judge": "The reproduction became the first failing test, and the build went on until each criterion held"
+      "judge": "The reproduction drove the first failing test at the agreed seam, and the build went on until each criterion held"
+    },
+    {
+      "judge": "The build ended with the reproduction either a committed test at an agreed seam or deleted from .aw/; a deleted one is named in the report with the behaviour it exercised that no committed test now covers"
     },
     {
       "judge": "Named /aw-review as the next skill and not /aw-verify, since the repo has no verify skill"

@@ -308,3 +308,21 @@ test('the fast route with a verify skill fixes a real bug that contradicts no sp
   }
   assert.match(byId.get('aw-fast-verified-build').command, /\/stats\/popular/);
 });
+
+// #114: a bug's reproduction ends the fast build committed or deleted, and the
+// review request cites no test that is absent from the diff and the base.
+
+test('aw-fast-build checks that no runnable reproduction is left in .aw/ after the build', () => {
+  const build = byId.get('aw-fast-build');
+  const left = build.assertions.find((a) => a.name === 'no reproduction left in .aw/');
+  assert.ok(left, 'no assertion on what the build left in .aw/');
+  assert.match(left.run, /readdirSync\('\.aw'/);
+  assert.match(left.run, /repro\//);
+  assert.equal(left.stdout, '^$');
+  assert.ok(build.assertions.some((a) => a.judge && /reproduction/.test(a.judge) && /committed test/.test(a.judge) && /deleted/.test(a.judge)));
+});
+
+test('aw-fast-ship checks that no Criteria line cites a test absent from the diff and the base', () => {
+  const judged = byId.get('aw-fast-ship').assertions.filter((a) => a.judge).map((a) => a.judge).join('\n');
+  assert.match(judged, /No `- \*\*Criteria:\*\*` line cites as proof a test that is absent from both the diff and the base/);
+});

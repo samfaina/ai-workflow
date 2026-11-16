@@ -203,3 +203,52 @@ test("no skill or ADR names a spec contradiction by one of the glossary's Avoid 
     for (const term of avoid) assert.ok(!text.includes(term), `${file} says "${term}"`);
   }
 });
+
+// A bug's reproduction (#114): build promotes it to a committed test at an
+// agreed seam or deletes it, and ship counts only committed tests as proof.
+
+const reproduction = skillLine('aw-build-steps', '- **The reproduction.**');
+
+test("on the fast route a bug's reproduction ends the build as a committed test at an agreed seam, or deleted from .aw/", () => {
+  assert.match(reproduction, /A bug's reproduction ends the build as a committed test at an agreed seam, or deleted from `\.aw\/`/);
+  assert.match(reproduction, /The build never leaves a runnable test file in `\.aw\/` after its commit/);
+});
+
+test('the build report names a deleted reproduction and the behaviour no committed test now covers', () => {
+  assert.match(reproduction, /delete the reproduction's files from `\.aw\/` and name it in step 8/);
+  const report = skillLine('aw-build-steps', '**Step 8: report each criterion.**');
+  assert.match(report, /When step 4 deleted a bug's reproduction, name its file and the behaviour it exercised that no committed test now covers/);
+});
+
+test("when the agreed seams do not reach the reproduction, build proposes its seam in the one seam question, hitl and afk", () => {
+  assert.match(reproduction, /When the agreed seams do not reach that behaviour[^.]*, propose the reproduction's seam as an additional one in the seam question above/);
+  const step4 = skillLine('aw-build-steps', '**Step 4: test-first.**');
+  assert.match(step4, /end with `Stop: seam to agree` as step 4 says, its `Question:` line proposing the reproduction's seam too when it is not among them/);
+  assert.match(step4, /A reproduction's seam the arguments' `agreed seams:` leave out was declined/);
+});
+
+test("aw-ship proves a fast-route criterion only by a committed test, never an uncommitted one", () => {
+  const condition = skillLine('aw-ship', '3. **The spec is proven.**');
+  assert.match(condition, /proven by a test committed on the work branch or present on the base that passed in step 3's run/);
+  assert.match(condition, /A test file that is not committed is never proof, even when step 3's run ran it/);
+  assert.match(skillLine('aw-ship', '- on the standard and epic routes, the spec is `implemented`'), /proven by a committed test, a verify result or a check by hand/);
+});
+
+test("aw-ship's review request marks an uncommitted test on its Criteria line and notes it on its Checks line", () => {
+  assert.match(skillLine('aw-ship', '- **Criteria:**'), /an uncommitted test file that touches the criterion as `<file> \(uncommitted, not counted\)`/);
+  assert.match(skillLine('aw-ship', '- **Checks:**'), /The local run included uncommitted test files: <files>/);
+  assert.match(skillText('aw-ship'), /each test file its output names that `git ls-files --error-unmatch <file>` does not find/);
+});
+
+test('no rule on the reproduction or on committed proof names a test runner or a glob', () => {
+  const texts = [skillText('aw-build-steps'), skillText('aw-ship'), skillText('aw-intake'), readFileSync(join(repoRoot, 'skills', 'aw-intake', 'PRE-STEPS.md'), 'utf8'), readFileSync(join(repoRoot, 'GLOSSARY.md'), 'utf8')];
+  for (const text of texts) assert.doesNotMatch(text, /vitest|jest|mocha|pytest|\*\*\/|\*\.test\./i);
+});
+
+test("intake's bug pre-step writes the reproduction under .aw/ and says it lasts until aw-build promotes or deletes it", () => {
+  const bug = readFileSync(join(repoRoot, 'skills', 'aw-intake', 'PRE-STEPS.md'), 'utf8').split('\n## ').find((section) => section.startsWith('Bug: reproduce'));
+  assert.ok(bug, 'PRE-STEPS.md has no "Bug: reproduce" section');
+  assert.match(bug, /When the red command runs a test file, write it under `\.aw\/repro\/<slug>\/` and commit nothing/);
+  assert.match(bug, /It is temporary: `aw-build` turns it into a committed test at an agreed seam or deletes it/);
+  assert.match(readFileSync(join(repoRoot, 'GLOSSARY.md'), 'utf8'), /\*\*Reproduction\*\*:\nThe one command a bug's pre-step builds that goes red on the bug/);
+});

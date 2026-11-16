@@ -8,6 +8,8 @@ Run a check level through `run-check <level>`. With no checks adapter, propose t
 
 Call the Skill tool with "aw-diagnosing-bugs" and work through its Phase 1 (build a feedback loop) and Phase 2 (reproduce and minimise). Stop there: the hypothesis, the fix and the regression test come later, in `aw-build`.
 
+When the red command runs a test file, write it under `.aw/repro/<slug>/` and commit nothing: it is the bug's **reproduction**. It is temporary: `aw-build` turns it into a committed test at an agreed seam or deletes it, and until then the project's test runner may pick it up.
+
 Done when you have one command, already run, that goes red on this bug, and the smallest input that still reproduces it. When that skill's Phase 1 says no loop can be built, report what you tried and what it asks the user for; the bug counts as not reproduced.
 
 ## Refactor: characterization tests

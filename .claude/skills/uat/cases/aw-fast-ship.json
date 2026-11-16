@@ -49,6 +49,9 @@
       "judge": "In a fresh session it read the criteria back from the commit's Done when lines, and the review request shows what proves each one"
     },
     {
+      "judge": "No `- **Criteria:**` line cites as proof a test that is absent from both the diff and the base, such as one left under .aw/; one the full run included is marked uncommitted and not counted, and the Checks line notes it"
+    },
+    {
       "judge": "Pushed nothing and created no spec"
     }
   ]
