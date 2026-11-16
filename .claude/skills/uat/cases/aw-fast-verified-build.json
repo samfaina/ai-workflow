@@ -3,7 +3,7 @@
   "title": "aw-intake and aw-build",
   "group": "Fast route, with a verify skill",
   "order": 49,
-  "source": "#55: the fast route again, in a repo with a verify skill, on a bug no spec states as intended (#111)",
+  "source": "#55: the fast route again, in a repo with a verify skill, on a bug no spec states as intended (#111); its done when: test names quote the criteria verbatim (#123)",
   "from": {
     "ref": "uat/audit-fixed"
   },
@@ -57,6 +57,10 @@
     {
       "name": "no spec created",
       "run": "git diff --exit-code origin/main HEAD -- docs/specs"
+    },
+    {
+      "name": "each done when: test name quotes a Done when: line verbatim",
+      "run": "node {{KIT}}/.claude/skills/uat/scripts/done-when-names.mjs"
     },
     {
       "name": "the tests pass",

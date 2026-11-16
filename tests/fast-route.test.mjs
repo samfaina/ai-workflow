@@ -27,7 +27,7 @@ const buildRefusal = skillLine('aw-build-steps', 'Refuse to go on, and tell the 
 const buildMidBuildStop = skillLine('aw-build-steps', 'When building shows that a done-when criterion is wrong');
 
 test('the Standards axis does not prove as a breach the criterion a test name must quote', () => {
-  assert.match(skillLine('aw-build-steps', '- Name each test so that it quotes the criterion'), /quotes the criterion/);
+  assert.match(skillLine('aw-build-steps', '- Name each test that proves a criterion'), /quoting the criterion whole/);
   assert.match(skillText('aw-review-steps'), /A test name that quotes a done-when criterion keeps the criterion's words/);
 });
 
@@ -267,4 +267,50 @@ test("intake's bug pre-step writes the reproduction under .aw/ and says it lasts
   assert.match(bug, /When the red command runs a test file, write it under `\.aw\/repro\/<slug>\/` and commit nothing/);
   assert.match(bug, /It is temporary: `aw-build` turns it into a committed test at an agreed seam or deletes it/);
   assert.match(repoFile('GLOSSARY.md'), /\*\*Reproduction\*\*:\nThe one command a bug's pre-step builds that goes red on the bug, with any test file it runs kept under `\.aw\/repro\/` until `aw-build` commits it as a test or deletes it\.\n/);
+});
+
+// #123: on the fast route a test name quotes its criterion whole and verbatim,
+// and every part of every criterion has evidence at an agreed seam or a test
+// exception.
+
+const fastNaming = skillLine('aw-build-steps', '- Name each test that proves a criterion');
+const fastTestFirst = skillLine('aw-build-steps', '**Step 4: test-first.**');
+const fastTestException = skillLine('aw-build-steps', '- **Test exception:** record it in the commit message');
+
+test('a fast-route test name quotes its criterion whole, in intake\'s words and language, never translated or paraphrased', () => {
+  assert.match(fastNaming, /as `done when: <criterion>`, quoting the criterion whole, in intake's words and language/);
+  assert.match(fastNaming, /never translate it, paraphrase it or drop a clause of it, even when the code and the other tests are in another language/);
+  assert.match(fastNaming, /`` done when: `GET \/stats\/popular` lista solo los libros con algún préstamo, en ese orden ``, never `done when: lists only borrowed books`/);
+});
+
+test('each test that proves part of a criterion still quotes it whole, and may name its part in a suffix', () => {
+  assert.match(fastNaming, /When several tests prove parts of one criterion, each name still quotes it whole, and may end with a suffix that names its part/);
+});
+
+test("the fast route's test-first step is done only when every behaviour in every criterion has evidence", () => {
+  const lines = skillText('aw-build-steps').split('\n');
+  const fastRoute = lines.slice(lines.indexOf('## The fast route'));
+  assert.ok(fastRoute.includes('Done when every behaviour in every criterion has a passing test at an agreed seam or a recorded test exception.'));
+  assert.ok(!fastRoute.includes('Done when every criterion has a passing test at an agreed seam or a recorded test exception.'));
+});
+
+test('the seam question proposes a seam for any part of a criterion the proposed seams cannot reach, hitl and afk', () => {
+  assert.match(fastTestFirst, /When a part of a criterion is behaviour the proposed seams cannot reach, such as an HTTP status when the seam is one function, propose in the same question a seam that reaches it, with one line on what it catches and what it misses/);
+  assert.match(fastTestFirst, /In the `afk` variant no one can answer: end with `Stop: seam to agree` as step 4 says, with each seam you propose in its `Question:` line/);
+  assert.match(fastTestFirst, /unless the arguments' `agreed seams:` reach every part of every criterion, or say the user declined the seam that reaches the rest/);
+});
+
+test('a part no agreed seam reaches, because the user kept the narrower seam, is a test exception that names it', () => {
+  assert.match(fastTestException, /no agreed seam reaches a part of a criterion, because the user kept a narrower seam/);
+  assert.match(fastTestException, /``Test exception: <criterion>: <the part>\. No agreed seam reaches it, and the user declined <the seam that would>; proven by `manual:` evidence instead``/);
+  assert.match(fastTestException, /Write `verify:` when the repo has a verify skill/);
+  const entry = repoFile('GLOSSARY.md').match(/\*\*Test exception\*\*:\n([^\n]*)/)[1];
+  assert.match(entry, /because a test at the agreed seam would cost far more than it is worth/);
+  assert.match(entry, /On the fast route it also records a part of a criterion that no agreed seam reaches, because the user declined the seam that would/);
+});
+
+test("the fix run names a test against a fast-route criterion by the fast route's own rule, without restating it", () => {
+  const fix = skillLine('aw-build-steps', '**Fix test-first.**');
+  assert.match(fix, /names it as step 4 says, or on the fast route as \*\*Step 4\*\* of \*\*The fast route\*\* says/);
+  assert.doesNotMatch(fix, /on the fast route quotes it/);
 });
