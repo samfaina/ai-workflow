@@ -2,12 +2,13 @@
 // throwaway source repo and throwaway UAT case files.
 
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, isAbsolute, join } from 'node:path';
+import { basename, dirname, isAbsolute, join } from 'node:path';
 import test from 'node:test';
 
 import { repoRoot } from './fixtures.mjs';
-import { git, makeRun } from './uat-fixtures.mjs';
+import { git, makeRun, runScript } from './uat-fixtures.mjs';
 
 const kitRoot = repoRoot.replaceAll('\\', '/');
 
@@ -578,4 +579,25 @@ test('a file assertion can require an exact number of matches, on files with eit
 
   assert.deepEqual(output.results.map((r) => r.ok), [true, false]);
   assert.match(output.results[1].detail, /2/);
+});
+
+test('init without --run creates the run in UAT_TARGET, in a folder named after the date', (t) => {
+  const run = makeRun(t, [caseFile('a')]);
+  const target = join(dirname(run.runDir), 'target');
+  const env = { ...process.env, UAT_TARGET: target, UAT_SOURCE: run.source };
+  const result = spawnSync(process.execPath, [runScript, 'init', '--cases-dir', run.casesDir], { encoding: 'utf8', env });
+
+  assert.equal(result.status, 0, result.stdout);
+  const { run: runDir } = JSON.parse(result.stdout);
+  assert.equal(dirname(runDir), target);
+  assert.match(basename(runDir), /^\d{8}$/);
+  assert.ok(existsSync(join(runDir, 'state.json')));
+});
+
+test('only init falls back to UAT_TARGET: another command without --run is a usage error', (t) => {
+  const run = makeRun(t, [caseFile('a')]);
+  const env = { ...process.env, UAT_TARGET: dirname(run.runDir) };
+  const result = spawnSync(process.execPath, [runScript, 'next'], { encoding: 'utf8', env });
+
+  assert.equal(result.status, 2);
 });
