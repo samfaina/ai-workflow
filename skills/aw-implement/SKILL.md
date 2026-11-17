@@ -166,7 +166,7 @@ Read the journal once more, then report in chat:
 - what is left: any slice not done, and the defects left in the latest review report, each with its file and line;
 - every `Spec change:` line in the journal, for the user to make with `/aw-spec` before shipping, with those under an earlier heading marked `(from an earlier call)`;
 - how the run ended, and which of these holds:
-  - **Clean:** the latest review report holds no introduced defect. Name `/aw-ship`; introduced risks are for the user to accept or fix before shipping.
+  - **Clean:** the latest review report holds no introduced defect. Name `/aw-ship`. An introduced risk never blocks the merge. `/aw-ship` lists each one for the person who merges to accept. When `/aw-ship` merges by itself at `merge: write`, it reports each one as merged without a person's acceptance instead.
   - **Limit reached:** list the defects left. Say that running `/aw-implement` again starts a new count of rounds, and that a call can raise the limit.
   - **Stopped:** say at which point it stopped, why, with the line that ended the run quoted, and what to run to continue: the skill its `Next:` line names, if any, then `/aw-implement` again, which resumes from the first slice not done.
 
