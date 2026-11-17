@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { repoRoot } from './fixtures.mjs';
+import { repoRoot, skillSection } from './fixtures.mjs';
 
 function skillText(skill) {
   return readFileSync(join(repoRoot, 'skills', skill, 'SKILL.md'), 'utf8');
@@ -50,11 +50,8 @@ const askFirstWording = [
 ];
 
 test('every Ask First item has its wording here', () => {
-  const lines = skillText('aw-security-and-hardening').split('\n');
-  const start = lines.indexOf('### Ask First');
-  const end = lines.indexOf('### Never Do');
-  const items = lines
-    .slice(start, end)
+  const items = skillSection('aw-security-and-hardening', '### Ask First', '### Never Do')
+    .split('\n')
     .filter((line) => line.startsWith('- '))
     .map((line) => line.slice(2).replace(' **(web)**', ''));
   assert.deepEqual(items, askFirstWording.map(([item]) => item));
@@ -251,7 +248,7 @@ test('aw-ship proves a fast-route criterion only by a committed test, never an u
 test("aw-ship's review request marks an uncommitted test on its Criteria line and notes it on its Checks line", () => {
   assert.match(skillLine('aw-ship', '- **Criteria:**'), /An uncommitted test file that touches the criterion appears as `<file> \(uncommitted, not counted\)`/);
   assert.match(skillLine('aw-ship', '- **Checks:**'), /<The local run included uncommitted test files <files>, when step 3 found any\.>/);
-  const step3 = skillText('aw-ship').split('\n### ').find((section) => section.startsWith('3. Run the full check level'));
+  const step3 = skillSection('aw-ship', '### 3. Run the full check level', '### 4. Set the spec to implemented');
   assert.match(step3, /the test files it ran, from its whole output, that `git cat-file -e HEAD:<file>` does not find/);
   assert.match(step3, /When the output names no files, check each untracked or ignored file `git status --porcelain --ignored` lists against the files the project's test configuration selects/);
 });
@@ -262,7 +259,7 @@ test('aw-build-steps, aw-ship, aw-intake, its pre-steps and the glossary name no
 });
 
 test("intake's bug pre-step writes the reproduction under .aw/ and says it lasts until aw-build promotes or deletes it", () => {
-  const bug = repoFile('skills/aw-intake/PRE-STEPS.md').split('\n## ').find((section) => section.startsWith('Bug: reproduce'));
+  const bug = skillSection('aw-intake/PRE-STEPS.md', '## Bug: reproduce', '## Refactor: characterization tests');
   assert.ok(bug, 'PRE-STEPS.md has no "Bug: reproduce" section');
   assert.match(bug, /When the red command runs a test file, write it under `\.aw\/repro\/<slug>\/` and commit nothing/);
   assert.match(bug, /It is temporary: `aw-build` turns it into a committed test at an agreed seam or deletes it/);
@@ -288,8 +285,7 @@ test('each test that proves part of a criterion still quotes it whole, and may n
 });
 
 test("the fast route's test-first step is done only when every behaviour in every criterion has evidence", () => {
-  const lines = skillText('aw-build-steps').split('\n');
-  const fastRoute = lines.slice(lines.indexOf('## The fast route'));
+  const fastRoute = skillSection('aw-build-steps', '## The fast route').split('\n');
   assert.ok(fastRoute.includes('Done when every behaviour in every criterion has a passing test at an agreed seam or a recorded test exception.'));
   assert.ok(!fastRoute.includes('Done when every criterion has a passing test at an agreed seam or a recorded test exception.'));
 });

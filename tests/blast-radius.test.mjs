@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { repoRoot } from './fixtures.mjs';
+import { repoRoot, skillSection } from './fixtures.mjs';
 
 const skillDir = join(repoRoot, 'skills/aw-blast-radius');
 const skill = readFileSync(join(skillDir, 'SKILL.md'), 'utf8');
@@ -23,7 +23,7 @@ function section(text, heading) {
 
 // The report's template holds `## ` headings of its own, so this section runs up
 // to the heading after the template.
-const report = skill.slice(skill.indexOf('\n## Report\n'), skill.indexOf('\n## Credits\n'));
+const report = skillSection('aw-blast-radius', '## Report', '## Credits');
 
 test('it is model-invoked: no invocation flag and no agents/openai.yaml', () => {
   assert.match(frontmatter, /^name: aw-blast-radius$/m);

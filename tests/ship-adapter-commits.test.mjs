@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 
-import { repoRoot, writeFiles } from './fixtures.mjs';
+import { repoRoot, skillSection, writeFiles } from './fixtures.mjs';
 import { tempDir } from './uat-fixtures.mjs';
 
 const skill = readFileSync(join(repoRoot, 'skills', 'aw-ship', 'SKILL.md'), 'utf8').replaceAll('\r\n', '\n');
@@ -50,8 +50,8 @@ function namedCommand(pattern, reviewed) {
   return found[1].replace('<short hash>', reviewed).split(' ').slice(1);
 }
 
-const stepTwo = skill.slice(skill.indexOf('### 2. Read the latest review report'), skill.indexOf('### 3. Run the full check level'));
-const stepThree = skill.slice(skill.indexOf('### 3. Run the full check level'), skill.indexOf('### 4. Set the spec to implemented'));
+const stepTwo = skillSection('aw-ship', '### 2. Read the latest review report', '### 3. Run the full check level');
+const stepThree = skillSection('aw-ship', '### 3. Run the full check level', '### 4. Set the spec to implemented');
 
 // One of the numbered checks or bulleted items of the step, by its bold name.
 function item(name) {

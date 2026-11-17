@@ -9,19 +9,12 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 
-import { repoRoot } from './fixtures.mjs';
+import { repoRoot, skillSection } from './fixtures.mjs';
 
 const read = (...path) => readFileSync(join(repoRoot, ...path), 'utf8').replaceAll('\r\n', '\n');
 const skill = read('skills', 'aw-ship', 'SKILL.md');
 
-function between(from, to) {
-  const start = skill.indexOf(from);
-  const end = skill.indexOf(to);
-  assert.ok(start !== -1 && end > start, `aw-ship has "${from}" before "${to}"`);
-  return skill.slice(start, end);
-}
-
-const stepFive = between('### 5. Write the review request body', '### 6. Push and open the review request');
+const stepFive = skillSection('aw-ship', '### 5. Write the review request body', '### 6. Push and open the review request');
 
 // The two meanings of the item, each true in its own case.
 const PERSON_MERGES = 'listed for the person who merges to accept';
@@ -64,7 +57,7 @@ test('with a review host, the published item stays true whether aw-ship or a per
   assert.ok(host.includes(`"${SHIP_MERGED}, if \`aw-ship\` merges this request; ${PERSON_MERGES}, if a person does"`), host);
 });
 
-const stepSeven = between('### 7. Merge', '### 8. Report');
+const stepSeven = skillSection('aw-ship', '### 7. Merge', '### 8. Report');
 const localMerge = stepSeven.split('\n').find((line) => line.startsWith('- **With no review host:**'));
 
 test('after a local merge, step 7 words each risk item as merged without acceptance, in the body and its copy', () => {
@@ -74,7 +67,7 @@ test('after a local merge, step 7 words each risk item as merged without accepta
   assert.match(localMerge, /The items stay `\[ \]`/);
 });
 
-const mergeConditions = between('## Merge conditions', '## Steps');
+const mergeConditions = skillSection('aw-ship', '## Merge conditions', '## Steps');
 
 test('the merge conditions are unchanged, and say introduced risks are not one of them', () => {
   const conditions = mergeConditions.split('\n').filter((line) => /^\d+\. /.test(line));
@@ -83,7 +76,7 @@ test('the merge conditions are unchanged, and say introduced risks are not one o
   assert.match(mergeConditions, /\nIntroduced risks are not a condition: one never blocks the merge, and the checklist and step 8 report it instead\.\n/);
 });
 
-const stepEight = skill.slice(skill.indexOf('### 8. Report'));
+const stepEight = skillSection('aw-ship', '### 8. Report');
 
 test('step 8 reports each introduced risk and what happened to it, or that there were none', () => {
   const risks = stepEight.split('\n').find((line) => line.startsWith('- each introduced risk'));

@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { repoRoot } from './fixtures.mjs';
+import { repoRoot, skillSection } from './fixtures.mjs';
 import { skillDir as uatSkillDir } from './uat-fixtures.mjs';
 
 const skillDir = join(repoRoot, 'skills/aw-create-verify');
@@ -24,11 +24,11 @@ function section(text, heading) {
   return lines.slice(start + 1, end === -1 ? undefined : end).join('\n');
 }
 
-const introduction = skill.slice(skill.indexOf('# Create verify'), skill.indexOf('## Configuration'));
+const introduction = skillSection('aw-create-verify', '# Create verify', '## Configuration');
 const findTheApp = section(skill, '### 1. Find the app');
 const writeTheSkill = section(skill, '### 3. Write the verify skill');
 const runItOnce = section(skill, '### 4. Run it once end to end');
-const templateIntro = template.slice(template.indexOf('# Verify <app>'), template.indexOf('## Start'));
+const templateIntro = skillSection('aw-create-verify/VERIFY-TEMPLATE.md', '# Verify <app>', '## Start');
 const templateStart = section(template, '## Start');
 const templateCleanUp = section(template, '## Clean up');
 
