@@ -75,6 +75,9 @@
       "judge": "Intake classified it a bug on the fast route, found no spec contradiction, and stated 1 to 3 observable Done when criteria"
     },
     {
+      "judge": "The `Done when:` lines in the commit are in Spanish, the language of the request, so the verbatim-quote check above covers criteria not written in English (#123)"
+    },
+    {
       "judge": "When the seam question proposed a seam for a part of a criterion the unit test cannot reach, with one line on what it catches and what it misses, and the answer declined it, the commit carries a `Test exception:` line that names that part"
     },
     {
