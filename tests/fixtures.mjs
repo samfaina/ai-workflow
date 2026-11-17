@@ -1,9 +1,10 @@
-// Helpers shared by the CLI tests: writing fixture kits, running a CLI the
-// way CI runs it, and asserting on its findings. Not a test file itself.
+// Helpers shared by the tests: writing fixture kits, running a CLI the way CI
+// runs it, asserting on its findings, and reading a section of a skill's text.
+// Not a test file itself.
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -40,6 +41,22 @@ export function manifests(skills) {
       plugins: [{ name: 'fixture-kit', source: './', version: '1.2.3' }],
     },
   };
+}
+
+// The text of a skill's file, from the line `fromHeading` up to the first line
+// `toHeading` after it, or to the end when `toHeading` is omitted.
+// `skillOrFile` is a skill's name, which reads its SKILL.md, or a path under
+// `skills/` to another file of a skill. Line endings are normalized to `\n`. A
+// heading is a whole line, and a missing one throws, naming it.
+export function skillSection(skillOrFile, fromHeading, toHeading) {
+  const file = skillOrFile.includes('/') ? skillOrFile : `${skillOrFile}/SKILL.md`;
+  const lines = readFileSync(join(repoRoot, 'skills', file), 'utf8').replaceAll('\r\n', '\n').split('\n');
+  const start = lines.indexOf(fromHeading);
+  if (start === -1) throw new Error(`skills/${file} has no heading "${fromHeading}"`);
+  if (toHeading === undefined) return lines.slice(start).join('\n');
+  const end = lines.indexOf(toHeading, start + 1);
+  if (end === -1) throw new Error(`skills/${file} has no heading "${toHeading}" after "${fromHeading}"`);
+  return lines.slice(start, end).join('\n') + '\n';
 }
 
 // Runs a CLI with node; every non-blank stdout line is a finding.

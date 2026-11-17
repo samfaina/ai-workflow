@@ -11,14 +11,11 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 
-import { repoRoot, writeFiles } from './fixtures.mjs';
+import { skillSection, writeFiles } from './fixtures.mjs';
 import { skillDir, tempDir } from './uat-fixtures.mjs';
 
-const skill = readFileSync(join(repoRoot, 'skills', 'aw-ship', 'SKILL.md'), 'utf8').replaceAll('\r\n', '\n');
-
-const between = (from, to) => skill.slice(skill.indexOf(from), skill.indexOf(to));
-const stepFive = between('### 5. Write the review request body', '### 6. Push and open the review request');
-const stepSeven = between('### 7. Merge', '### 8. Report');
+const stepFive = skillSection('aw-ship', '### 5. Write the review request body', '### 6. Push and open the review request');
+const stepSeven = skillSection('aw-ship', '### 7. Merge', '### 8. Report');
 
 const IDENTITY = { GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@local', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@local' };
 

@@ -10,7 +10,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 
-import { repoRoot } from './fixtures.mjs';
+import { repoRoot, skillSection } from './fixtures.mjs';
 
 const read = (...path) => readFileSync(join(repoRoot, ...path), 'utf8').replaceAll('\r\n', '\n');
 
@@ -34,8 +34,7 @@ for (const { skill, line } of ROUTERS) {
 }
 
 test("the shared sentence uses aw-ship's own words for both outcomes of an introduced risk", () => {
-  const ship = read('skills', 'aw-ship', 'SKILL.md');
-  const report = ship.slice(ship.indexOf('### 8. Report'));
+  const report = skillSection('aw-ship', '### 8. Report');
   const risks = report.split('\n').find((candidate) => candidate.startsWith('- each introduced risk'));
   assert.ok(risks, 'aw-ship step 8 lists the introduced risks');
   for (const words of ['the person who merges to accept', "without a person's acceptance"]) {
