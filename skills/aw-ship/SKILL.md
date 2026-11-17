@@ -41,6 +41,8 @@ At `merge: write`, merge only when all of these hold; otherwise leave the merge 
 2. **`full` passed.** `run-check full` passed in this session, in step 3, on `HEAD` as it was then, and the only commit since is this skill's spec commit. A level with no command is not run, so it never counts as passed.
 3. **The spec is proven.** On the standard and epic routes, the spec is `implemented` and `aw-check-spec` passed on it, script-verified, in step 4 of this session. On the fast route there is no spec: instead, each done-when criterion is proven by a test committed on the work branch or present on the base that passed in step 3's run, a `passed` verify result, or a check by hand the user reported in this session, and its pre-ship checklist item is ticked. A test file that is not committed is never evidence, even when step 3's run ran it.
 
+Introduced risks are not a condition: one never blocks the merge, and the checklist and step 8 report it instead.
+
 With a review host, there is nothing to merge until `push` and `open-review` were performed in step 6: when either was drafted, the merge is drafted too.
 
 The host may refuse the merge, for instance while required CI checks are pending or failing. Report its output, leave the merge as a draft, and never bypass the host with an admin or force option.
@@ -163,12 +165,17 @@ Write the body to `.aw/review-requests/<yyyymmdd-hhmmss>-review-request.md`. It 
 
 - the `full` check level passed, with its command;
 - the review report shows no introduced defect;
-- each introduced risk from the report, listed for the user to accept;
+- each introduced risk from the report, one item each with its text, likelihood and cost as the report states them, and what happens to it, as **Introduced risks** says. It is always `[ ]`: never tick it, since nobody accepted it;
 - on the standard and epic routes, the spec is `implemented` and `aw-check-spec` passes; on the fast route, each done-when criterion is met, proven by a committed test, a verify result or a check by hand. For a criterion with none, such as one whose test exception named a check by hand, ask the user for that check and record only what they report;
 - no debugging leftovers or unresolved TODOs in the diff: `git diff <base>...HEAD` searched for them;
 - no secrets in the diff: searched for keys, tokens and passwords;
 - dependency changes, if any, listed, with the review's Security axis on them;
 - docs the change makes untrue are updated in the same change.
+
+**Introduced risks.** A risk never blocks the merge, and this skill never asks the user to accept one, at either merge level (ADR 0013). Its item reads `- [ ] Introduced risk: <file:line>: <what may go wrong>; likelihood <…>; cost <…>: <what happens to it>`, and it must stay true whether or not step 7's merge lands, though this step comes first. In a body written in another language, use these words translated, and step 7 replaces the translation:
+
+- **With no review host, or at `merge: draft`:** write "listed for the person who merges to accept". After a local merge, step 7 replaces those words with "merged by `aw-ship` without a person's acceptance, left to review after the merge". When the merge is drafted or fails, they stay true.
+- **With a review host at `merge: write`:** when a merge condition already fails, or `push` or `open-review` is at `draft`, a person merges: write "listed for the person who merges to accept". Otherwise the body reaches the host in step 6, before the merge, and the adapter has no operation that edits it, so write the words that hold in both outcomes: "merged by `aw-ship` without a person's acceptance, left to review after the merge, if `aw-ship` merges this request; listed for the person who merges to accept, if a person does".
 
 **Rollback plan.** The steps undo the change without rewriting history: `git revert -m 1 <merge commit>` once it is merged, or `git revert <commits>` for a fast-forward or squash, pushed through a new review request. Write `<merge commit>` as it stands: after a local merge, step 7 replaces it with the hash. When the change is a one-way door, say what a revert cannot undo and how to recover from it.
 
@@ -192,7 +199,7 @@ At `merge: draft`, the default, write the exact command to `.aw/drafts/<yyyymmdd
 At `merge: write`, check **Merge conditions**. When one fails, draft the merge, and say which condition failed and why. When all hold, merge as the adapter's `merge` row says:
 
 - **With a review host:** merge the review request opened in step 6, with the adapter's merge method.
-- **With no review host:** merge locally into the base branch, as the adapter says, such as `git switch <base>` then `git merge --no-ff <branch>`. The work branch is kept, and the base branch is never pushed by the agent. The body file is the review request, so nothing else fills in its rollback plan: take the merge commit's hash with `git rev-parse --short HEAD`, on the base branch right after the merge, and replace `<merge commit>` with it in the body file from step 5 and in its copy in `.aw/drafts/<yyyymmdd-hhmmss>-open-review.md`, when step 6 wrote one.
+- **With no review host:** merge locally into the base branch, as the adapter says, such as `git switch <base>` then `git merge --no-ff <branch>`. The work branch is kept, and the base branch is never pushed by the agent. The body file is the review request, so nothing else fills in its rollback plan or corrects its risk items. Take the merge commit's hash with `git rev-parse --short HEAD`, on the base branch right after the merge. Then edit the body file from step 5 and its copy in `.aw/drafts/<yyyymmdd-hhmmss>-open-review.md`, when step 6 wrote one. In both, replace `<merge commit>` with the hash. In each introduced-risk item, replace "listed for the person who merges to accept", or its translation, with "merged by `aw-ship` without a person's acceptance, left to review after the merge", translated the same way. The items stay `[ ]`.
 
 With a review host, or when the merge is drafted or fails, leave the body file and its copy as step 5 wrote them.
 
@@ -207,6 +214,7 @@ Report in chat:
 - the branch, the base, and the spec's path and status, or the done-when criteria;
 - the `full` check result, and the `aw-check-spec` result on the standard and epic routes;
 - the review report's path and counts;
+- each introduced risk from the report, with its file and line, what may go wrong, its likelihood and cost, and what happened to it: merged without a person's acceptance, when this skill merged; left for the person who merges to accept, when the merge was drafted or failed, or `merge` is at `draft`. With none, say "no introduced risks";
 - the path of the review request body;
 - for `push`, `open-review` and `merge`: performed, with the URL, number or merge commit, or drafted, with the draft's path and, for a drafted merge at `merge: write`, the condition that failed.
 

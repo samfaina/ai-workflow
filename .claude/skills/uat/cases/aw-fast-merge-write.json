@@ -39,6 +39,9 @@
     },
     {
       "judge": "Merged by itself after checking every merge condition, and showed what proves each criterion: a test that passed in its full run, or a passed verify result"
+    },
+    {
+      "judge": "Each introduced-risk item of the review request body and its open-review copy, one per introduced risk in the review report, states that the risk was merged without a person's acceptance and is not ticked, and it never asked the user to accept a risk. The chat report names each introduced risk and says it was merged without acceptance, or says there were none when the report has none"
     }
   ]
 }
