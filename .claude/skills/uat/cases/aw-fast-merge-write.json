@@ -34,6 +34,17 @@
       "stdout": "^$"
     },
     {
+      "name": "the rollback plan has no placeholder left",
+      "file": ".aw/review-requests/*-review-request.md",
+      "matches": "<merge commit>",
+      "count": 0
+    },
+    {
+      "name": "the rollback plan names the merge commit",
+      "file": ".aw/review-requests/*-review-request.md",
+      "matches": "git revert -m 1 [0-9a-f]{7,40}\\b"
+    },
+    {
       "judge": "Merged by itself after checking every merge condition, and showed what proves each criterion: a test that passed in its full run, or a passed verify result"
     }
   ]

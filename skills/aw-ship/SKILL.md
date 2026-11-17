@@ -170,7 +170,7 @@ Write the body to `.aw/review-requests/<yyyymmdd-hhmmss>-review-request.md`. It 
 - dependency changes, if any, listed, with the review's Security axis on them;
 - docs the change makes untrue are updated in the same change.
 
-**Rollback plan.** The steps undo the change without rewriting history: `git revert -m 1 <merge commit>` once it is merged, or `git revert <commits>` for a fast-forward or squash, pushed through a new review request. When the change is a one-way door, say what a revert cannot undo and how to recover from it.
+**Rollback plan.** The steps undo the change without rewriting history: `git revert -m 1 <merge commit>` once it is merged, or `git revert <commits>` for a fast-forward or squash, pushed through a new review request. Write `<merge commit>` as it stands: after a local merge, step 7 replaces it with the hash. When the change is a one-way door, say what a revert cannot undo and how to recover from it.
 
 Done when the body file holds every section, filled in.
 
@@ -192,7 +192,9 @@ At `merge: draft`, the default, write the exact command to `.aw/drafts/<yyyymmdd
 At `merge: write`, check **Merge conditions**. When one fails, draft the merge, and say which condition failed and why. When all hold, merge as the adapter's `merge` row says:
 
 - **With a review host:** merge the review request opened in step 6, with the adapter's merge method.
-- **With no review host:** merge locally into the base branch, as the adapter says, such as `git switch <base>` then `git merge --no-ff <branch>`. The work branch is kept, and the base branch is never pushed by the agent.
+- **With no review host:** merge locally into the base branch, as the adapter says, such as `git switch <base>` then `git merge --no-ff <branch>`. The work branch is kept, and the base branch is never pushed by the agent. The body file is the review request, so nothing else fills in its rollback plan: take the merge commit's hash with `git rev-parse --short HEAD`, on the base branch right after the merge, and replace `<merge commit>` with it in the body file from step 5 and in its copy in `.aw/drafts/<yyyymmdd-hhmmss>-open-review.md`, when step 6 wrote one.
+
+With a review host, or when the merge is drafted or fails, leave the body file and its copy as step 5 wrote them.
 
 When the merge fails, report its output and leave the merge as a draft. Never delete the work branch, local or remote.
 
