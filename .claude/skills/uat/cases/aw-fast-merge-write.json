@@ -34,6 +34,10 @@
       "stdout": "^$"
     },
     {
+      "name": "the rollback plan names the merge commit, in the body and its open-review copy",
+      "run": "node {{KIT}}/.claude/skills/uat/scripts/rollback-names-merge.mjs"
+    },
+    {
       "judge": "Merged by itself after checking every merge condition, and showed what proves each criterion: a test that passed in its full run, or a passed verify result"
     }
   ]

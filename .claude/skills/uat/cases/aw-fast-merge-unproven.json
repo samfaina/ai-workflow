@@ -62,6 +62,11 @@
       "matches": "^- \\[ \\] "
     },
     {
+      "name": "the rollback plan keeps its placeholder",
+      "file": ".aw/review-requests/*-review-request.md",
+      "matches": "git revert -m 1 <merge commit>"
+    },
+    {
       "judge": "Asked for the check by hand, recorded that nobody made it, drafted the merge and named the merge condition that failed"
     }
   ]
