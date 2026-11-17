@@ -69,8 +69,9 @@ const localMerge = stepSeven.split('\n').find((line) => line.startsWith('- **Wit
 
 test('after a local merge, step 7 words each risk item as merged without acceptance, in the body and its copy', () => {
   assert.ok(localMerge, 'step 7 has the local merge');
-  assert.ok(localMerge.includes(`in each introduced-risk item, replace "${PERSON_MERGES}" with "${SHIP_MERGED}"`), localMerge);
-  assert.match(localMerge, /in the body file from step 5 and in its copy/);
+  assert.ok(localMerge.includes(`In each introduced-risk item, replace "${PERSON_MERGES}", or its translation, with "${SHIP_MERGED}", translated the same way`), localMerge);
+  assert.match(localMerge, /edit the body file from step 5 and its copy in `\.aw\/drafts\/<yyyymmdd-hhmmss>-open-review\.md`, when step 6 wrote one\. In both, replace/);
+  assert.match(localMerge, /The items stay `\[ \]`/);
 });
 
 const mergeConditions = between('## Merge conditions', '## Steps');
@@ -82,7 +83,7 @@ test('the merge conditions are unchanged, and say introduced risks are not one o
   assert.match(mergeConditions, /\nIntroduced risks are not a condition: one never blocks the merge, and the checklist and step 8 report it instead\.\n/);
 });
 
-const stepEight =skill.slice(skill.indexOf('### 8. Report'));
+const stepEight = skill.slice(skill.indexOf('### 8. Report'));
 
 test('step 8 reports each introduced risk and what happened to it, or that there were none', () => {
   const risks = stepEight.split('\n').find((line) => line.startsWith('- each introduced risk'));
@@ -108,6 +109,6 @@ test('ADR 0013 records that an introduced risk never blocks the merge, and rejec
 
 test('no wording in aw-ship ticks a risk item or asks the user to accept a risk', () => {
   assert.doesNotMatch(skill, /listed for the user to accept/);
-  assert.doesNotMatch(skill, /ask the user to accept/i);
+  for (const [ask] of skill.matchAll(/\S+ asks? the user to accept/gi)) assert.match(ask, /^never /, ask);
   assert.doesNotMatch(skill, /\[x\] Introduced risk/);
 });

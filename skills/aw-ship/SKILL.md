@@ -165,7 +165,7 @@ Write the body to `.aw/review-requests/<yyyymmdd-hhmmss>-review-request.md`. It 
 
 - the `full` check level passed, with its command;
 - the review report shows no introduced defect;
-- each introduced risk from the report, one item each with its text, likelihood and cost as the report states them, and what happens to it, as **Introduced risks** says. It is always `[ ]`: never tick it, at either merge level, since nobody accepted it;
+- each introduced risk from the report, one item each with its text, likelihood and cost as the report states them, and what happens to it, as **Introduced risks** says. It is always `[ ]`: never tick it, since nobody accepted it;
 - on the standard and epic routes, the spec is `implemented` and `aw-check-spec` passes; on the fast route, each done-when criterion is met, proven by a committed test, a verify result or a check by hand. For a criterion with none, such as one whose test exception named a check by hand, ask the user for that check and record only what they report;
 - no debugging leftovers or unresolved TODOs in the diff: `git diff <base>...HEAD` searched for them;
 - no secrets in the diff: searched for keys, tokens and passwords;
@@ -199,7 +199,7 @@ At `merge: draft`, the default, write the exact command to `.aw/drafts/<yyyymmdd
 At `merge: write`, check **Merge conditions**. When one fails, draft the merge, and say which condition failed and why. When all hold, merge as the adapter's `merge` row says:
 
 - **With a review host:** merge the review request opened in step 6, with the adapter's merge method.
-- **With no review host:** merge locally into the base branch, as the adapter says, such as `git switch <base>` then `git merge --no-ff <branch>`. The work branch is kept, and the base branch is never pushed by the agent. The body file is the review request, so nothing else fills in its rollback plan or corrects its risk items: take the merge commit's hash with `git rev-parse --short HEAD`, on the base branch right after the merge, then replace `<merge commit>` with it and, in each introduced-risk item, replace "listed for the person who merges to accept" with "merged by `aw-ship` without a person's acceptance, left to review after the merge", in the body file from step 5 and in its copy in `.aw/drafts/<yyyymmdd-hhmmss>-open-review.md`, when step 6 wrote one. The items stay `[ ]`.
+- **With no review host:** merge locally into the base branch, as the adapter says, such as `git switch <base>` then `git merge --no-ff <branch>`. The work branch is kept, and the base branch is never pushed by the agent. The body file is the review request, so nothing else fills in its rollback plan or corrects its risk items. Take the merge commit's hash with `git rev-parse --short HEAD`, on the base branch right after the merge. Then edit the body file from step 5 and its copy in `.aw/drafts/<yyyymmdd-hhmmss>-open-review.md`, when step 6 wrote one. In both, replace `<merge commit>` with the hash. In each introduced-risk item, replace "listed for the person who merges to accept", or its translation, with "merged by `aw-ship` without a person's acceptance, left to review after the merge", translated the same way. The items stay `[ ]`.
 
 With a review host, or when the merge is drafted or fails, leave the body file and its copy as step 5 wrote them.
 
