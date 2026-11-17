@@ -222,13 +222,11 @@ test('the fast merge runs on the real review: a pre-existing defect alone refuse
 });
 
 test('after a local merge, the body\'s rollback plan names the merge commit; a drafted merge leaves the placeholder', () => {
-  const body = (c) => c.assertions.filter((a) => a.file === '.aw/review-requests/*-review-request.md');
   for (const id of ['aw-ship-merge-write', 'aw-fast-merge-write']) {
-    const checks = body(byId.get(id));
-    assert.ok(checks.some((a) => a.matches === '<merge commit>' && a.count === 0), `${id}: no placeholder left`);
-    assert.ok(checks.some((a) => a.matches === 'git revert -m 1 [0-9a-f]{7,40}\\b' && a.count === undefined), `${id}: the hash is named`);
+    const checks = byId.get(id).assertions;
+    assert.ok(checks.some((a) => a.run === 'node {{KIT}}/.claude/skills/uat/scripts/rollback-names-merge.mjs'), id);
   }
-  const drafted = body(byId.get('aw-fast-merge-unproven'));
+  const drafted = byId.get('aw-fast-merge-unproven').assertions.filter((a) => a.file === '.aw/review-requests/*-review-request.md');
   assert.ok(drafted.some((a) => a.matches === 'git revert -m 1 <merge commit>' && a.count === undefined), 'the drafted merge keeps the placeholder');
 });
 

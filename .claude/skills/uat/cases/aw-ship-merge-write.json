@@ -51,15 +51,8 @@
       "run": "node {{KIT}}/skills/aw-check-spec/scripts/check-spec.mjs"
     },
     {
-      "name": "the rollback plan has no placeholder left",
-      "file": ".aw/review-requests/*-review-request.md",
-      "matches": "<merge commit>",
-      "count": 0
-    },
-    {
-      "name": "the rollback plan names the merge commit",
-      "file": ".aw/review-requests/*-review-request.md",
-      "matches": "git revert -m 1 [0-9a-f]{7,40}\\b"
+      "name": "the rollback plan names the merge commit, in the body and its open-review copy",
+      "run": "node {{KIT}}/.claude/skills/uat/scripts/rollback-names-merge.mjs"
     },
     {
       "judge": "With no proven defect and full passing, it merged at write access. The review report is a fixture, so this case tests the ship guard alone."
