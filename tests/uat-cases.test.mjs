@@ -230,6 +230,14 @@ test('after a local merge, the body\'s rollback plan names the merge commit; a d
   assert.ok(drafted.some((a) => a.matches === 'git revert -m 1 <merge commit>' && a.count === undefined), 'the drafted merge keeps the placeholder');
 });
 
+test('the fast merge judges that each introduced risk is merged without acceptance, never ticked, and named in the chat report', () => {
+  const judged = judgedText(byId.get('aw-fast-merge-write'));
+  assert.match(judged, /introduced-risk item/);
+  assert.match(judged, /merged without a person's acceptance/);
+  assert.match(judged, /not ticked/);
+  assert.match(judged, /chat report names each introduced risk/);
+});
+
 test('the unproven merge plants its review report after the last commit, so that the report names HEAD', () => {
   const unproven = byId.get('aw-fast-merge-unproven');
   const lastCommit = unproven.setup.findLastIndex((op) => op.commit);
