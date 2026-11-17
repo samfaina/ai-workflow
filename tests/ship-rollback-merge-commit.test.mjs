@@ -1,12 +1,13 @@
 // After a local merge with no review host, aw-ship fills the `<merge commit>`
-// placeholder of the rollback plan it wrote in step 5 (#128). The decision is
-// the skill's text, so these tests hold that text, and run the commands it names
-// on a real repo. The UAT cases check a real run with rollback-names-merge.mjs,
+// placeholder of the rollback plan it wrote in step 5 (#128), or, when the
+// adapter's merge makes no merge commit, writes step 5's other revert form
+// (#133). The decision is the skill's text, so these tests hold that text, and
+// run the commands it names on a real repo. The UAT cases check a real run with rollback-names-merge.mjs,
 // tested here too.
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 
@@ -45,24 +46,33 @@ function paragraph(label) {
 
 const localMerge = paragraph('With no review host:');
 
-// A repo whose work branch fix/app is merged into main with the commands step 7
-// names, and the hash the skill takes for the merge commit.
-function mergedRepo(t) {
+// A repo on main with the work branch fix/app checked out, one commit ahead.
+function branchRepo(t) {
   const dir = tempDir(t);
   gitOutput(dir, 'init', '-q', '-b', 'main');
   gitOutput(dir, 'config', 'core.autocrlf', 'false');
   commit(dir, { 'src/app.js': 'old\n' }, 'Base');
   gitOutput(dir, 'switch', '-q', '-c', 'fix/app');
   commit(dir, { 'src/app.js': 'new\n' }, 'Change the app');
+  return dir;
+}
 
+// The hash step 7 takes on the base branch right after the merge.
+function hashAfterMerge(dir) {
+  const named = localMerge.match(/the merge commit's hash with `(git [^`]+)`/);
+  assert.ok(named, 'step 7 names the command that takes the merge commit');
+  return gitOutput(dir, ...argv(named[1]));
+}
+
+// A repo whose work branch fix/app is merged into main with the commands step 7
+// names, and the hash the skill takes for the merge commit.
+function mergedRepo(t) {
+  const dir = branchRepo(t);
   const merge = localMerge.match(/`(git switch <base>)` then `(git merge --no-ff <branch>)`/);
   assert.ok(merge, 'step 7 names the local merge commands');
   gitOutput(dir, ...argv(merge[1].replace('<base>', 'main')));
   gitOutput(dir, ...argv(merge[2].replace('<branch>', 'fix/app')));
-
-  const named = localMerge.match(/the merge commit's hash with `(git [^`]+)`/);
-  assert.ok(named, 'step 7 names the command that takes the merge commit');
-  return { dir, hash: gitOutput(dir, ...argv(named[1])) };
+  return { dir, hash: hashAfterMerge(dir) };
 }
 
 const placeholder = stepFive.match(/`(git revert -m 1 <merge commit>)`/)?.[1];
@@ -84,6 +94,76 @@ test('the hash the skill takes after a local merge fills a rollback plan that un
   const rollback = placeholder.replace('<merge commit>', hash);
   gitOutput(dir, ...argv(rollback), '--no-edit');
   assert.equal(readFileSync(join(dir, 'src/app.js'), 'utf8'), 'old\n', 'the filled rollback plan undoes the change');
+});
+
+// A merge the adapter makes with no merge commit (#133): fix/app, two commits
+// ahead of main, lands on main with the adapter's merge commands, between the
+// hash step 7 takes of the base before the merge and the one it takes after.
+// beforeMerge, when given, runs on main before the base's hash is taken.
+function mergedWithoutMergeCommit(t, mergeCommands, { beforeMerge } = {}) {
+  const dir = branchRepo(t);
+  commit(dir, { 'src/extra.js': 'extra\n' }, 'Add a file');
+  gitOutput(dir, 'switch', '-q', 'main');
+  beforeMerge?.(dir);
+
+  // The sentence that names the merge also says when to take the base's hash.
+  const before = localMerge.match(/`git merge --no-ff <branch>`, and between switching and merging take the base's hash with `(git [^`]+)`/);
+  assert.ok(before, 'step 7 names the command that takes the base between the switch and the merge');
+  const base = gitOutput(dir, ...argv(before[1]));
+  for (const command of mergeCommands) gitOutput(dir, ...command);
+  return { dir, base, hash: hashAfterMerge(dir) };
+}
+
+// Whether step 7's check finds a merge commit at HEAD.
+function isMergeCommit(dir) {
+  const check = localMerge.match(/Tell whether HEAD is a merge commit with `(git [^`]+)`/);
+  assert.ok(check, 'step 7 names the command that tells a merge commit');
+  return spawnSync('git', ['-C', dir, ...argv(check[1])], { encoding: 'utf8' }).status === 0;
+}
+
+// The rollback command step 7 writes when HEAD has no second parent.
+const noMergeCommitRollback = localMerge.match(/replace `git revert -m 1 <merge commit>` with step 5's `git revert <commits>` form, `(git revert [^`]+)`/)?.[1];
+
+function assertRollbackUndoes(dir, base, hash) {
+  assert.ok(noMergeCommitRollback, 'step 7 says what to write when HEAD has one parent');
+  const rollback = noMergeCommitRollback.replace('<base hash>', base).replace('<hash>', hash);
+  gitOutput(dir, ...argv(rollback), '--no-edit');
+  assert.equal(readFileSync(join(dir, 'src/app.js'), 'utf8'), 'old\n', 'the rollback plan undoes the change');
+  assert.equal(existsSync(join(dir, 'src/extra.js')), false, 'the rollback plan removes the added file');
+}
+
+test('after a fast-forward, step 7 finds no merge commit and writes a rollback plan that undoes the merge', (t) => {
+  const { dir, base, hash } = mergedWithoutMergeCommit(t, [['merge', '-q', '--ff-only', 'fix/app']]);
+  assert.equal(isMergeCommit(dir), false);
+  assertRollbackUndoes(dir, base, hash);
+});
+
+test('after a squash merge, step 7 finds no merge commit and writes a rollback plan that undoes the merge', (t) => {
+  const { dir, base, hash } = mergedWithoutMergeCommit(t, [['merge', '-q', '--squash', 'fix/app'], ['commit', '-q', '-m', 'Fix the app']]);
+  assert.equal(isMergeCommit(dir), false);
+  assertRollbackUndoes(dir, base, hash);
+});
+
+test('after a fast-forward over a branch that merged the base, the rollback plan still undoes the merge', (t) => {
+  const { dir, base, hash } = mergedWithoutMergeCommit(t, [['merge', '-q', '--ff-only', 'fix/app']], {
+    beforeMerge: (dir) => {
+      commit(dir, { 'src/base.js': 'base\n' }, 'Work on the base');
+      gitOutput(dir, 'switch', '-q', 'fix/app');
+      gitOutput(dir, 'merge', '-q', '--no-edit', 'main');
+      commit(dir, { 'src/last.js': 'last\n' }, 'Finish the fix');
+      gitOutput(dir, 'switch', '-q', 'main');
+    },
+  });
+  assert.equal(isMergeCommit(dir), false);
+  assertRollbackUndoes(dir, base, hash);
+  assert.equal(readFileSync(join(dir, 'src/base.js'), 'utf8'), 'base\n', 'the rollback plan keeps the base\'s own work');
+  assert.equal(existsSync(join(dir, 'src/last.js')), false);
+});
+
+test('after a --no-ff merge, step 7 finds the merge commit, so the plan keeps git revert -m 1', (t) => {
+  const { dir } = mergedRepo(t);
+  assert.equal(isMergeCommit(dir), true);
+  assert.match(localMerge, /replace `<merge commit>` with the hash when HEAD has a second parent/);
 });
 
 test('with a review host, or when the merge is drafted or fails, the body is left as step 5 wrote it', () => {
