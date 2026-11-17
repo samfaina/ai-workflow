@@ -11,3 +11,7 @@ Default five-role vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `
 ### Domain docs
 
 Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+## Changing a rule
+
+Skills are self-contained, so a rule is often restated word for word in several skills. When a change alters a rule, `git grep` its wording under `skills/` and treat every copy as part of the change, in the ticket's scope and in its diff.
