@@ -121,7 +121,7 @@ Report in chat:
 - one line per round: its fix commit, its `/aw-verify` result or "not run", and its review report's path with its count of introduced defects;
 - every `Spec change:` line the fix runs reported, for the user to make with `/aw-spec` before shipping;
 - how the run ended, and which of these holds:
-  - **Clean:** the latest review report holds no introduced defect. Name `/aw-ship`; introduced risks are for the user to accept or fix before shipping.
+  - **Clean:** the latest review report holds no introduced defect. Name `/aw-ship`. An introduced risk never blocks the merge. `/aw-ship` lists each one for the person who merges to accept. When `/aw-ship` merges by itself at `merge: write`, it reports each one as merged without a person's acceptance instead.
   - **Limit reached:** list the defects left, from the latest review report's `Defects introduced`, each with its file and line. Say that running `/aw-converge` again starts a new count, and that a call can raise the limit.
   - **Stopped:** give its reason and the line that ended the run, quoted, with the defects left in the latest review report, and name the skill its `Next:` line names, if any.
 
