@@ -10,7 +10,7 @@ import { skillSection } from './fixtures.mjs';
 const confirm = skillSection('aw-setup', '### 3. Confirm', '### 4. Write');
 
 test('the Confirm step shows the set before the confirmation question', () => {
-  assert.match(confirm, /Show the user what you will write, together, before you ask them to confirm:/);
+  assert.match(confirm, /Show the user the whole set you will write, before you ask them to confirm:/);
   assert.match(confirm, /Then ask\./);
 });
 
@@ -19,7 +19,7 @@ test('the Confirm step puts the set in chat or the question\'s preview, and a to
   assert.match(confirm, /Output inside a tool call does not count\./);
 });
 
-test('the Confirm step shows each file with its path, in full when new and as a diff on a re-run', () => {
+test('the Confirm step shows each file with its path, in full as it will be written or, on a re-run, as a diff', () => {
   assert.match(confirm, /the `## Agent skills` block \(step 4\), with the file it goes into;/);
   assert.match(confirm, /the three adapters and the domain doc in full, as they will be written, each with its path/);
   assert.match(confirm, /on a re-run, only the lines that change, as a diff with the file's path;/);
@@ -30,7 +30,7 @@ test('the Confirm step writes nothing until the person confirms, then step 4 wri
   assert.match(confirm, /Write nothing until they confirm, and once they do, step 4 writes the approved set\./);
 });
 
-test('the Confirm step keeps letting the person edit, and its Done when line', () => {
-  assert.match(confirm, /Let them edit\./);
+test('the Confirm step lets the person edit and shows each edit before they confirm, and keeps its Done when line', () => {
+  assert.match(confirm, /Let them edit, and show each edit the same way before they confirm\./);
   assert.match(confirm, /Done when the user approves the set\./);
 });
