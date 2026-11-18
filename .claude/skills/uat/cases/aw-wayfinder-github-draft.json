@@ -54,6 +54,30 @@
       "when": "Whether the list of tickets is right",
       "intent": "Accept it",
       "reason": "the list itself is what the assertions check"
+    },
+    {
+      "when": "Which canonical terms the glossary uses",
+      "intent": "Accept the proposed terms",
+      "reason": "vocabulary settles no waitlist-order or notification rule, so accepting it keeps the decisions open",
+      "drift": true
+    },
+    {
+      "when": "Whether a reservation applies only to a book that is on loan",
+      "intent": "Yes: reserving an available book is out of scope",
+      "reason": "matches the destination, a member reserves a book on loan, and settles neither open decision",
+      "drift": true
+    },
+    {
+      "when": "What else is out of scope, such as several copies of a book, member authentication, persistence or a UI",
+      "intent": "Accept it, and add that no third-party service is used, only what the repo can do",
+      "reason": "keeps to the destination and to what the repo can do, so no research ticket appears",
+      "drift": true
+    },
+    {
+      "when": "Whether the fog or the map's Notes are right",
+      "intent": "Accept them",
+      "reason": "neither creates a ticket nor settles a decision, and a Note that the map authorizes no build supports the never-builds criterion",
+      "drift": true
     }
   ],
   "turns": [],
