@@ -2,7 +2,7 @@
   "id": "aw-epic-slices",
   "title": "aw-slices",
   "group": "Epic route, one deliverable",
-  "order": 67,
+  "order": 68,
   "source": "#55: on a cleared map, the deliverable is planned before it is built",
   "from": {
     "case": "aw-epic-spec"

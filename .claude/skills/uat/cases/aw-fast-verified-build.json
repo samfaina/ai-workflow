@@ -2,7 +2,7 @@
   "id": "aw-fast-verified-build",
   "title": "aw-intake and aw-build",
   "group": "Fast route, with a verify skill",
-  "order": 49,
+  "order": 50,
   "source": "#55: the fast route again, in a repo with a verify skill, on a bug no spec states as intended (#111); its done when: test names quote the criteria verbatim (#123)",
   "from": {
     "ref": "uat/audit-fixed"

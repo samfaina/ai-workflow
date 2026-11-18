@@ -2,7 +2,7 @@
   "id": "aw-fast-build-repro-committed",
   "title": "aw-intake and aw-build, reproduction committed",
   "group": "Fast route, no verify skill",
-  "order": 47,
+  "order": 48,
   "source": "#55: the fast build commits a bug's reproduction as a test when the seam answer takes the seam it exercises (#114, #119)",
   "from": {
     "ref": "uat/setup-audit-fixed"

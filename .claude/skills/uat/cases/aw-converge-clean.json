@@ -2,7 +2,7 @@
   "id": "aw-converge-clean",
   "title": "aw-converge, ends with a clean review",
   "group": "aw-converge",
-  "order": 37,
+  "order": 38,
   "source": "#95: one introduced defect on the fast route, on a branch that otherwise reviews clean",
   "from": {
     "ref": "review/clean"

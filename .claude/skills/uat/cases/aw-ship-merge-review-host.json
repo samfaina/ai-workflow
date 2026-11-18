@@ -1,0 +1,100 @@
+{
+  "id": "aw-ship-merge-review-host",
+  "title": "aw-ship at merge: write, through the review host",
+  "group": "Feature route (loan renewal)",
+  "order": 30,
+  "source": "#132: at merge: write with GitHub as the review host, aw-ship merges the review request on the host and leaves its body as step 5 wrote it (#128, #129). It pushes to the GitHub scratch repo and merges into uat/ship-review-host there, a base of its own: the shell force-pushes it back to the restore point's main, then pushes the work branch and deletes it, so that the delete never fails, the run's own push is never rejected, and a request an earlier run left open is closed. A rerun starts clean that way; a request an earlier run merged stays on the host, so the first assertion checks that the request it reads is this run's",
+  "from": {
+    "ref": "49d218e",
+    "branch": "feat/renew-loan",
+    "base": "ef0ddf0"
+  },
+  "setup": [
+    {
+      "copy": "fixtures/vcs-github-write.md",
+      "to": "docs/agents/vcs.md"
+    },
+    {
+      "replace": "AGENTS.md",
+      "pattern": "Base branch `main`, GitHub pull requests through `gh`, squash merges; `push`, `open-review` and `merge` are at `draft`\\.",
+      "with": "Base branch `uat/ship-review-host`, GitHub pull requests through `gh`, merge commits; `push`, `open-review` and `merge` are at `write`."
+    },
+    {
+      "commit": "Set push, open-review and merge to write, with merge commits into uat/ship-review-host"
+    },
+    {
+      "copy": "fixtures/review-risk-host.md",
+      "to": ".aw/reviews/29991231-235959-review.md"
+    },
+    {
+      "remote": "https://github.com/samfaina/aw-scratch.git"
+    }
+  ],
+  "shell": [
+    "git push --force origin main:refs/heads/uat/ship-review-host HEAD:refs/heads/feat/renew-loan",
+    "git push origin --delete feat/renew-loan",
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-ship",
+  "answers": [],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "the request on the host is this run's, not one an earlier run merged",
+      "run": "node -e \"const run = (command) => require('child_process').execSync(command, { encoding: 'utf8' }).trim(); process.exit(run('gh pr view feat/renew-loan --json headRefOid --jq .headRefOid') === run('git rev-parse feat/renew-loan') ? 0 : 1)\""
+    },
+    {
+      "name": "the review request was merged on the host",
+      "run": "gh pr view feat/renew-loan --json state --jq .state",
+      "stdout": "^MERGED$"
+    },
+    {
+      "name": "into the case's own base",
+      "run": "gh pr view feat/renew-loan --json baseRefName --jq .baseRefName",
+      "stdout": "^uat/ship-review-host$"
+    },
+    {
+      "name": "nothing merged into the local main",
+      "run": "git branch --merged main --list feat/renew-loan",
+      "stdout": "^$"
+    },
+    {
+      "name": "spec is implemented",
+      "file": "docs/specs/renew-loan/spec.md",
+      "frontmatter": {
+        "status": "implemented"
+      }
+    },
+    {
+      "name": "aw-check-spec passes",
+      "run": "node {{KIT}}/skills/aw-check-spec/scripts/check-spec.mjs"
+    },
+    {
+      "name": "the body keeps the rollback plan's placeholder",
+      "file": ".aw/review-requests/*-review-request.md",
+      "matches": "git revert -m 1 <merge commit>"
+    },
+    {
+      "name": "the request on the host keeps the rollback plan's placeholder",
+      "run": "gh pr view feat/renew-loan --json body --jq .body",
+      "stdout": "git revert -m 1 <merge commit>"
+    },
+    {
+      "name": "the introduced-risk item holds whether aw-ship or a person merges",
+      "file": ".aw/review-requests/*-review-request.md",
+      "matches": "merged by `aw-ship` without a person's acceptance, left to review after the merge, if `aw-ship` merges this request; listed for the person who merges to accept, if a person does",
+      "count": 1
+    },
+    {
+      "name": "and so does the item on the host",
+      "run": "gh pr view feat/renew-loan --json body --jq .body",
+      "stdout": "merged by `aw-ship` without a person's acceptance, left to review after the merge, if `aw-ship` merges this request; listed for the person who merges to accept, if a person does"
+    },
+    {
+      "judge": "With no proven defect and full passing, it pushed, opened the pull request and merged it on GitHub with the adapter's merge method, never merging locally, and reported the request's URL or number. The review report is a fixture, so this case tests the ship guard alone."
+    },
+    {
+      "judge": "After the merge it left the body file as step 5 wrote it: it filled in no merge commit and rewrote no introduced-risk item. The one introduced-risk item, for the report's risk on src/loans.ts, is not ticked, and it never asked the user to accept a risk. The chat report names the risk and says it was merged without a person's acceptance"
+    }
+  ]
+}

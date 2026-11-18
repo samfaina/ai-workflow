@@ -2,7 +2,7 @@
   "id": "aw-intake-spec-contradiction",
   "title": "aw-intake, spec contradiction",
   "group": "Kept off the fast route",
-  "order": 58,
+  "order": 59,
   "source": "#111: the due-day fee of #55, a bug report that contradicts the implemented renew-loan spec",
   "from": {
     "ref": "uat/audit-fixed"

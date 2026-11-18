@@ -2,7 +2,7 @@
   "id": "aw-implement-relaunch",
   "title": "aw-implement, a relaunch after the stop",
   "group": "aw-implement",
-  "order": 42,
+  "order": 43,
   "source": "#98: running the command again continues the journal and takes the task to a review",
   "continues": "aw-implement-stop",
   "shell": [],

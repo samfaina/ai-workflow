@@ -2,7 +2,7 @@
   "id": "aw-fast-review",
   "title": "aw-review",
   "group": "Fast route, no verify skill",
-  "order": 45,
+  "order": 46,
   "source": "#55: aw-review judges the Spec axis against the criteria",
   "from": {
     "case": "aw-fast-build"

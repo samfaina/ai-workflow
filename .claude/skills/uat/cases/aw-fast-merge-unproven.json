@@ -2,7 +2,7 @@
   "id": "aw-fast-merge-unproven",
   "title": "aw-ship at merge: write, a criterion not proven",
   "group": "Fast route, with a verify skill",
-  "order": 53,
+  "order": 54,
   "source": "#55: at merge: write, aw-ship merges only when each criterion is proven",
   "from": {
     "ref": "uat/review-clean-audit-fixed",

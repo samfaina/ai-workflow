@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
 
-import { repoRoot } from './fixtures.mjs';
+import { repoRoot, skillSection } from './fixtures.mjs';
 import { skillDir } from './uat-fixtures.mjs';
 
 const casesDir = join(skillDir, 'cases');
@@ -27,7 +27,7 @@ const EXPECTED = [
   'aw-intake-bug', 'aw-intake-performance', 'aw-intake-refactor', 'aw-intake-investigation', 'aw-intake-feature',
   'aw-spec-approval-traps', 'aw-slices', 'aw-build-contradiction', 'aw-build-slice-1', 'aw-build-slice-2', 'aw-build-slice-3',
   'aw-verify-no-skill', 'aw-create-verify', 'aw-verify-generated', 'aw-review-route',
-  'aw-ship-guard-failed', 'aw-ship-guard-inconclusive', 'aw-ship-default', 'aw-ship-write-uncovered', 'aw-ship-checks-uncovered', 'aw-ship-write', 'aw-ship-merge-write',
+  'aw-ship-guard-failed', 'aw-ship-guard-inconclusive', 'aw-ship-default', 'aw-ship-write-uncovered', 'aw-ship-checks-uncovered', 'aw-ship-write', 'aw-ship-merge-write', 'aw-ship-merge-review-host',
   'aw-review-planted', 'aw-ship-planted', 'aw-review-clean',
   'aw-retro-run', 'aw-retro-approval',
   'aw-build-fix-standard', 'aw-build-fix-fast',
@@ -236,6 +236,85 @@ test('the fast merge judges that each introduced risk is merged without acceptan
   assert.match(judged, /merged without a person's acceptance/);
   assert.match(judged, /not ticked/);
   assert.match(judged, /chat report names each introduced risk/);
+});
+
+// At merge: write with a review host, aw-ship merges the review request on the
+// host and leaves its body as step 5 wrote it (#128, #129). The merge lands on
+// the GitHub scratch repo, on a base branch of the case's own.
+const hostMerge = byId.get('aw-ship-merge-review-host');
+const HOST_BASE = 'uat/ship-review-host';
+const HOST_REPORT = '.aw/reviews/29991231-235959-review.md';
+const hostRun = (field) => `gh pr view feat/renew-loan --json ${field} --jq .${field}`;
+const readFixture = (path) => readFileSync(join(skillDir, path), 'utf8').replaceAll('\r\n', '\n');
+
+// The words step 5 writes in each introduced-risk item for a review host at
+// merge: write, taken from the skill so that the case follows it.
+const hostRiskWording = skillSection('aw-ship', '### 5. Write the review request body', '### 6. Push and open the review request')
+  .split('\n')
+  .find((line) => line.startsWith('- **With a review host at `merge: write`:**'))
+  .match(/"([^"]+)"\.$/)[1];
+
+test('the review-host merge sits next to the local one, on its restore point', () => {
+  const local = byId.get('aw-ship-merge-write');
+  assert.equal(hostMerge.group, local.group);
+  assert.equal(hostMerge.order, local.order + 1);
+  assert.deepEqual(hostMerge.from, local.from);
+  assert.equal(hostMerge.command, '/ai-workflow:aw-ship');
+});
+
+test('the review-host merge points origin at the scratch repo, with GitHub at write and merge commits into a base of its own', () => {
+  assert.ok(hostMerge.setup.some((op) => op.remote === 'https://github.com/samfaina/aw-scratch.git'));
+  const adapter = hostMerge.setup.find((op) => op.to === 'docs/agents/vcs.md');
+  const vcs = readFixture(adapter.copy);
+  assert.ok(vcs.includes(`- **Base branch:** \`${HOST_BASE}\``), vcs);
+  assert.match(vcs, /- \*\*Review host:\*\* pull requests on GitHub/);
+  assert.ok(vcs.includes(`\`gh pr create --base ${HOST_BASE} --head <branch>`), 'the review request targets the case\'s base');
+  assert.ok(vcs.includes('| `merge` | `gh pr merge <n> --merge` | `write` |'), 'a merge commit, so the rollback plan reverts it with -m 1');
+  for (const op of ['push', 'open-review']) assert.match(vcs, new RegExp(`^\\| \`${op}\` \\|.*\\| \`write\` \\|$`, 'm'), op);
+  assert.doesNotMatch(vcs, /\| `draft` \|/);
+  assert.doesNotMatch(vcs, /\{\{/, 'no unfilled template placeholder');
+  const agents = hostMerge.setup.find((op) => op.replace === 'AGENTS.md');
+  assert.ok(agents.with.includes(HOST_BASE) && /GitHub/.test(agents.with), agents.with);
+});
+
+test('the review-host merge resets its base and drops the work branch on the host before each run, so a rerun starts clean', () => {
+  const reset = hostMerge.shell.findIndex((line) => line === `git push --force origin main:refs/heads/${HOST_BASE} HEAD:refs/heads/feat/renew-loan`);
+  const dropped = hostMerge.shell.indexOf('git push origin --delete feat/renew-loan');
+  assert.ok(reset !== -1 && dropped > reset, 'the delete never fails: the reset has just created the branch');
+  assert.match(hostMerge.source, new RegExp(`${HOST_BASE}.*rerun`), 'the case says how a rerun starts clean');
+});
+
+test('the review-host merge plants a report with no proven defect and an introduced risk, after the last commit', () => {
+  const lastCommit = hostMerge.setup.findLastIndex((op) => op.commit);
+  const reviewed = hostMerge.setup.findIndex((op) => op.to === HOST_REPORT);
+  assert.ok(reviewed > lastCommit, 'the report must name HEAD');
+  const report = readFixture(hostMerge.setup[reviewed].copy);
+  assert.match(report, /Proven defects: 0 introduced, 0 pre-existing/);
+  assert.match(report, /### Risks introduced\n\n\*\*[^*]+\*\*/);
+  assert.match(report, new RegExp(`- Diff base: ${HOST_BASE}`));
+});
+
+test('the review-host merge checks the request merged on the host, and the body keeps the placeholder and the wording for either merger', () => {
+  const checks = hostMerge.assertions;
+  // A rerun that opens no request would otherwise find the one an earlier run merged.
+  assert.ok(checks.some((a) => /headRefOid/.test(a.run ?? '') && a.run.includes("git rev-parse feat/renew-loan") && a.exit === undefined), 'the request on the host is this run\'s');
+  assert.ok(checks.some((a) => a.run === hostRun('state') && a.stdout === '^MERGED$'), 'merged on the host');
+  assert.ok(checks.some((a) => a.run === hostRun('baseRefName') && a.stdout === `^${HOST_BASE}$`), 'into the case\'s base');
+  assert.ok(checks.some((a) => a.run === 'git branch --merged main --list feat/renew-loan' && a.stdout === '^$'), 'never merged locally');
+  assert.ok(!checks.some((a) => /rollback-names-merge/.test(a.run ?? '')), 'nothing fills in the placeholder');
+
+  const report = readFixture(hostMerge.setup.find((op) => op.to === HOST_REPORT).copy);
+  const risks = report.split('### Risks introduced').slice(1).join('').match(/^\*\*/gm).length;
+  const body = checks.filter((a) => a.file === '.aw/review-requests/*-review-request.md');
+  assert.ok(body.some((a) => a.matches === 'git revert -m 1 <merge commit>'), 'the body keeps the placeholder');
+  assert.ok(body.some((a) => a.matches === hostRiskWording && a.count === risks), 'one item per introduced risk, in step 5\'s words');
+  const onHost = checks.filter((a) => a.run === hostRun('body'));
+  assert.ok(onHost.some((a) => a.stdout === 'git revert -m 1 <merge commit>'), 'the request on the host keeps the placeholder');
+  assert.ok(onHost.some((a) => a.stdout === hostRiskWording), 'the request on the host words each risk for either merger');
+
+  const judged = judgedText(hostMerge);
+  assert.match(judged, /not ticked/);
+  assert.match(judged, /never asked the user to accept a risk/);
 });
 
 test('the unproven merge plants its review report after the last commit, so that the report names HEAD', () => {

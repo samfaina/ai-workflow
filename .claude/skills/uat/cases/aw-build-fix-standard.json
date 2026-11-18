@@ -2,7 +2,7 @@
   "id": "aw-build-fix-standard",
   "title": "aw-build, fix run on the standard route",
   "group": "aw-build fix run",
-  "order": 35,
+  "order": 36,
   "source": "#94: a defect no slice covers, in a report that names HEAD, with every slice done",
   "from": {
     "case": "aw-review-route"

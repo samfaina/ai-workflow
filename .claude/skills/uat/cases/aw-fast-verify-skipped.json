@@ -2,7 +2,7 @@
   "id": "aw-fast-verify-skipped",
   "title": "aw-verify with no verify skill",
   "group": "Fast route, no verify skill",
-  "order": 44,
+  "order": 45,
   "source": "#55: aw-verify runs only when a verify skill exists",
   "from": {
     "case": "aw-fast-build"

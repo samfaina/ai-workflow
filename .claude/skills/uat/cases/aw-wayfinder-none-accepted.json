@@ -2,7 +2,7 @@
   "id": "aw-wayfinder-none-accepted",
   "title": "aw-wayfinder, no tracker, offer accepted",
   "group": "Epic route",
-  "order": 64,
+  "order": 65,
   "source": "#55: with tracker none it works on the local-markdown tracker once accepted",
   "from": {
     "ref": "908296b"

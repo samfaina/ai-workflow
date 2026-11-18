@@ -2,7 +2,7 @@
   "id": "aw-implement-clean",
   "title": "aw-implement, an approved spec to a clean review",
   "group": "aw-implement",
-  "order": 39,
+  "order": 40,
   "source": "#98: one call builds every AFK slice, verifies, reviews and ends clean",
   "from": {
     "case": "aw-slices"

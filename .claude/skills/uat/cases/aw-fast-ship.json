@@ -2,7 +2,7 @@
   "id": "aw-fast-ship",
   "title": "aw-ship at default access",
   "group": "Fast route, no verify skill",
-  "order": 46,
+  "order": 47,
   "source": "#55: the task reaches a review request with no spec created",
   "from": {
     "case": "aw-fast-review"

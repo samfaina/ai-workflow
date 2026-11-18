@@ -2,7 +2,7 @@
   "id": "aw-converge-limit",
   "title": "aw-converge, exhausts its rounds",
   "group": "aw-converge",
-  "order": 38,
+  "order": 39,
   "source": "#95: five independent defects, each under a criterion of its own, more than three rounds can fix when each fixes one; the verify skill is removed, because a criterion left without a test would stop round 1 at verify",
   "from": {
     "ref": "review/clean"
