@@ -19,10 +19,17 @@ test('the Confirm step puts the set in chat or the question\'s preview, and a to
   assert.match(confirm, /Output inside a tool call does not count\./);
 });
 
-test('the Confirm step shows each file with its path, in full as it will be written or, on a re-run, as a diff', () => {
-  assert.match(confirm, /the `## Agent skills` block \(step 4\), with the file it goes into;/);
-  assert.match(confirm, /the three adapters and the domain doc in full, as they will be written, each with its path/);
-  assert.match(confirm, /on a re-run, only the lines that change, as a diff with the file's path;/);
+test('the Confirm step shows the block change as a diff, or a new block whole, with the file it goes into', () => {
+  assert.match(confirm, /the `## Agent skills` block change \(step 4\) as a diff or, when the block is new, the whole block, with the file it goes into;/);
+});
+
+test('the Confirm step shows each adapter and the domain doc with its path, in full when new or replaced, else as a diff', () => {
+  assert.match(confirm, /the three adapters and the domain doc, each with its path:/);
+  assert.match(confirm, /in full, as it will be written, when the file is new or is replaced from another kind's template;/);
+  assert.match(confirm, /when an existing file is edited in place, only the lines that change, as a diff;/);
+});
+
+test('the Confirm step still shows the housekeeping changes', () => {
   assert.match(confirm, /the housekeeping changes from \[`HOUSEKEEPING\.md`\]\(HOUSEKEEPING\.md\)\./);
 });
 
