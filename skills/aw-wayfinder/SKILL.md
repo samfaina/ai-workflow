@@ -51,7 +51,7 @@ This is the one skill that needs a tracker: the map has to live somewhere every 
    Local markdown: one file per ticket in `<tickets-dir>`. See `<adapter path>`.
    ```
 
-4. Show the user the adapter, its path and the block change, and write them once they confirm. Read the adapter back and work on it from here, as on any configured tracker.
+4. Show the user what you will write, before you ask them to confirm: the filled adapter in full, as it will be written, with its path, and the block change as a diff or, when the block is new, the whole block, with the file it goes into. Put it in your chat text or in the confirmation question's preview: output inside a tool call does not count, nor does anything shown after the question. Then ask, and write nothing until they confirm. Read the adapter back and work on it from here, as on any configured tracker.
 5. Commit the adapter and the block, and later the ticket files and the domain docs, through the VCS adapter's `commit`. When the current branch is protected, `start-branch` a work branch first, and tell the user that the map lives on that branch: later sessions run on it until it is merged.
 
 Done when the user declined and you stopped, or the adapter and the block are written and committed.
