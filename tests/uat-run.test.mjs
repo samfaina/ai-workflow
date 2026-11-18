@@ -8,22 +8,9 @@ import { basename, dirname, isAbsolute, join } from 'node:path';
 import test from 'node:test';
 
 import { repoRoot } from './fixtures.mjs';
-import { git, makeRun, runScript } from './uat-fixtures.mjs';
+import { caseFile, git, makeRun, runScript } from './uat-fixtures.mjs';
 
 const kitRoot = repoRoot.replaceAll('\\', '/');
-
-const caseFile = (id, extra = {}) => ({
-  id,
-  title: id,
-  group: 'g',
-  from: { ref: 'uat/start' },
-  command: `/${id}`,
-  shell: [],
-  answers: [],
-  turns: [],
-  assertions: [],
-  ...extra,
-});
 
 test('next restores a point into a clone whose origin is a local repo holding only that commit', (t) => {
   const run = makeRun(t, [caseFile('c1')]);

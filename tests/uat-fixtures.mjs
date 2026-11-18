@@ -116,6 +116,20 @@ export function git(dir, ...args) {
 // A throwaway source repo: main with a tag, a branch forked from it, a commit
 // on main after the fork, a remote-tracking ref, and uncommitted work. Then a
 // run initialised over it with the given UAT case files.
+// A throwaway UAT case that starts from the source repo's `uat/start` tag.
+export const caseFile = (id, extra = {}) => ({
+  id,
+  title: id,
+  group: 'g',
+  from: { ref: 'uat/start' },
+  command: `/${id}`,
+  shell: [],
+  answers: [],
+  turns: [],
+  assertions: [],
+  ...extra,
+});
+
 export function makeRun(t, cases, { allCases = false } = {}) {
   const root = tempDir(t);
   const source = join(root, 'source');

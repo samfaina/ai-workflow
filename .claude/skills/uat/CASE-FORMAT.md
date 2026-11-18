@@ -31,4 +31,4 @@ A case at `write` access uses `fixtures/vcs-local-write.md` instead of a review 
 - `{ "run": command, "exit": 0, "stdout": regex }` runs in the working copy. `{{KIT}}` becomes this repo's root.
 - `{ "file": path, "matches": regex, "count": n }` or `{ "file": path, "exists": false }`. `count` is optional and requires exactly that many matches. A `*` in the last segment takes the last file in name order.
 - `{ "file": path, "frontmatter": { "status": "draft" } }`.
-- `{ "judge": criterion }` is graded by the conductor against the transcript, and reported apart.
+- `{ "judge": criterion }` is graded by the conductor, by the rules in [GRADING.md](GRADING.md).
