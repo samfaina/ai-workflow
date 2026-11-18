@@ -139,7 +139,7 @@ In either mode, first settle **The tracker**, read the glossary and the ADRs the
 3. **Publish the map**: `publish-ticket` it, with the Destination and Notes filled in, Tickets and Decisions so far empty, and the fog sketched into Not yet specified. Done when the map has a key, or is drafted.
 4. **Publish the tickets you can state now**, in an order that puts each blocker before the tickets it blocks, with the map's key in each `Map:` line. Then wire them in a second pass, once each one has a key: `link-tickets` each one as part of the map, and each blocked ticket as blocked by its blockers; write any cross-reference between tickets in that pass too, with real keys. Then post the first map update, listing every ticket under Tickets with its type and blockers. Done when every ticket is published, wired and listed, or drafted.
 5. **Fire the research subagents**, once the research tickets have keys. For each one, start a subagent with a fresh context window that calls the Skill tool with "aw-research". Run them in parallel, each in a git worktree of its own on a `research/<ticket-slug>` branch it creates with `start-branch`. It commits its findings with `commit`, `push`es the branch at the VCS adapter's access level, and opens no review request: the branch is never merged. When they return, record each one's resolution, as step 4 of **Work through the map** says, with a pointer to the branch and the findings file, in one map update for all of them. When the tickets are still drafts at the end of the session, fire nothing: the research tickets stay on the frontier for **Work through the map**. Done when every research ticket is resolved and recorded, or left on the frontier.
-6. **Stop.** Charting is one session's work: resolve no other ticket. Commit the domain docs, then report as **Report** says.
+6. **Stop.** Charting is one session's work: resolve no other ticket. Report as **Report** says.
 
 ### Work through the map
 
@@ -148,7 +148,7 @@ In either mode, first settle **The tracker**, read the glossary and the ADRs the
 3. **Resolve it** as its `Type:` line says. Fetch any related or closed ticket in full as you need it, and call the Skill tool for each skill the map's Notes name. If in doubt, call the Skill tool with "aw-grilling" and with "aw-domain-modeling". Done when the question has an answer: for a HITL ticket, one the user gave or chose.
 4. **Record the resolution**: `comment-ticket` the answer on the ticket as its resolution comment, `set-status` it to `done`, and move its line from Tickets to Decisions so far as `- <name, with its key or link>: <one-line gist of the answer>`. Link any asset the resolution produced, such as a prototype or research findings, from the ticket; never paste it in. Done when the ticket is `done` with its answer, or both are drafted.
 5. **Advance the frontier.** Publish and wire the tickets the answer surfaced, and add them to Tickets; graduate the fog it made specifiable, clearing each graduated patch from Not yet specified. Rule out of scope any ticket the answer shows to sit past the destination. When the answer invalidates other tickets, `comment-ticket` each one with what changed, and close those it makes moot. Post every change to the map's sections, step 4's included, in one map update. Done when the map update is posted, or drafted.
-6. **Stop**, commit the domain docs, and report. When the map has cleared, go to **Hand off** first.
+6. **Stop**, and report. When the map has cleared, go to **Hand off** first.
 
 Other sessions may work unblocked tickets in parallel, so expect the tracker to change under you: find the frontier again just before claiming.
 
@@ -163,14 +163,16 @@ The map has **cleared** when its Tickets list is empty and its Not yet specified
 
 ### Commit the domain docs
 
-`aw-domain-modeling` writes the glossary and ADRs and never commits them: this skill does, before it reports, in either mode and with any tracker. The domain docs to commit are the glossary and any ADR the domain doc points to that this session created or changed. Stage only those files, by path, and leave every other change in the working tree as it is. When the session wrote no domain docs, commit nothing and start no branch.
+`aw-domain-modeling` writes the glossary and ADRs and leaves them uncommitted; this skill commits them, with any tracker. The domain docs to commit are the glossary and any ADR the domain doc points to that this session created or changed. Stage only those files, by path, and leave every other change in the working tree as it is. A session that wrote no domain docs has nothing to commit, so it makes no commit and no branch.
 
-- **Local-markdown tracker**: they go in the commits step 5 of **The tracker** makes with the ticket files, on its work branch. There is no second branch and no second commit.
-- **Any other tracker**: commit them through the VCS adapter's `commit`, at its own access level, not the tracker's: a session whose `publish-ticket` is at `draft` still commits when `commit` is at `write`. When the current branch is protected, `start-branch` a work branch first, named by the adapter's branch naming, and tell the user which domain docs live on that branch: they reach the default branch only once it is merged. The map is in the tracker, so never say that it lives on the branch.
+Commit them through the VCS adapter's `commit`, at that operation's own access level, not the tracker's: a session whose `publish-ticket` is at `draft` still commits when `commit` is at `write`. When the current branch is protected, `start-branch` a work branch first, named by the adapter's branch naming from the map's name, such as `docs/<map-slug>`, and give the branch and the commit in the report, as **Report** says.
 
-A `start-branch` or `commit` at `draft` leaves its draft, as **Configuration** says. When `start-branch` is at `draft` on a protected branch, the work branch does not exist yet: draft the commit too, rather than commit on the protected branch, and tell the user to apply the two in order. Never `push` the branch: pushing and merging it are the user's.
+- **Local-markdown tracker**: the ticket files are committed through the same `commit`, by step 5 of **The tracker** in the session that sets the tracker up, and as its adapter says in every later one. Put the domain docs in those same commits, on that same branch, so that they take no branch or commit of their own.
+- **Any other tracker**: the map and its tickets live in the tracker, and the work branch holds only the domain docs. Name those docs, and only those, as what lives on the branch.
 
-Done when the domain docs this session wrote are committed, or drafted, or there were none.
+A `start-branch` or `commit` at `draft` leaves its draft, as **Configuration** says. When `start-branch` is at `draft` on a protected branch, the work branch does not exist yet: draft the commit as well, so that it lands on the branch once the user creates it, and tell the user to apply the two drafts in order. Leave the branch unpushed: pushing and merging it are the user's.
+
+Done when the domain docs this session wrote are committed or drafted, or it wrote none.
 
 ## Drafts
 
