@@ -27,12 +27,11 @@ test('the show step names the filled adapter in full with its path, and the bloc
 test('the show step puts it in chat or the question\'s preview, and a tool call alone does not count', () => {
   const step = showStep();
   assert.match(step, /in your chat text or in the confirmation question's preview/);
-  assert.match(step, /inside a tool call does not count/);
+  assert.match(step, /Output inside a tool call does not count\./);
 });
 
-test('the show step comes before the confirmation question, and nothing is written until the person confirms', () => {
+test('the show step comes before the confirmation question, and writes both only once the person confirms', () => {
   const step = showStep();
   assert.match(step, /before you ask them to confirm/);
-  assert.match(step, /nor does anything shown after the question/);
-  assert.match(step, /write nothing until they confirm/);
+  assert.match(step, /write nothing until they confirm, and write both once they do/);
 });
