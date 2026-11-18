@@ -81,13 +81,13 @@ Done when every section has an answer.
 
 ### 3. Confirm
 
-Show the user, together:
+Show the user what you will write, together, before you ask them to confirm:
 
-- the `## Agent skills` block (step 4), and which file it goes into;
-- the three adapters and the domain doc as they will be written, or, on a re-run, only the lines that change;
+- the `## Agent skills` block (step 4), with the file it goes into;
+- the three adapters and the domain doc in full, as they will be written, each with its path, or, on a re-run, only the lines that change, as a diff with the file's path;
 - the housekeeping changes from [`HOUSEKEEPING.md`](HOUSEKEEPING.md).
 
-Let them edit. Done when the user approves the set.
+Put it in your chat text or in the confirmation question's preview. Output inside a tool call does not count. Then ask. Let them edit. Write nothing until they confirm, and once they do, step 4 writes the approved set. Done when the user approves the set.
 
 ### 4. Write
 
