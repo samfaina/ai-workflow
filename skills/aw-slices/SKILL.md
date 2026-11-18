@@ -90,13 +90,13 @@ Show the user the plan as a numbered list. For each slice: its name, the criteri
 
 Then propose the **test seams**, starting from those the spec's Test strategy proposes: prefer the seams the repo already has, and the highest one that reaches the behaviour. For each seam, give one line on what it catches and one on what it misses, and the criteria it proves. Name each criterion to be proven by `verify:` or `manual:` evidence instead of a test, with the reason.
 
-Ask the user:
+Show the plan and the seams before you ask. Put it in your chat text or in the confirmation question's preview. Output inside a tool call does not count. Then ask the user:
 
 - whether the slices are the right size, or should be split or merged;
 - whether each blocking edge is real, and the order puts the riskiest work first;
 - whether they agree each seam, and each criterion left to `verify:` or `manual:` evidence.
 
-Iterate until the user agrees the plan and every seam. A seam the user has not agreed is not written down. When the user's changes alter which criteria a slice covers, run step 4 again. When an agreed seam would move a criterion's planned evidence in Traceability, leave the row as it is and tell the user: `/aw-build` records the evidence where it lands.
+Iterate until the user agrees the plan and every seam, and show each edit the same way before they confirm. A seam the user has not agreed is not written down. When the user's changes alter which criteria a slice covers, run step 4 again. When an agreed seam would move a criterion's planned evidence in Traceability, leave the row as it is and tell the user: `/aw-build` records the evidence where it lands.
 
 Done when the user has agreed the plan and the seams in this conversation.
 

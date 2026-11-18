@@ -2,7 +2,8 @@
 // validate-kit hold what every copy owes: its license, its rename, its pin in
 // NOTICE.md and its plugin.json line. These tests hold what is particular to
 // these copies: where each comes from, the invocation mode each keeps from
-// upstream, and that they stay optional.
+// upstream, and that they stay optional. The third, aw-wizard, became an
+// adaptation in #152; tdd-wizard-adaptations.test.mjs holds it.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -15,7 +16,6 @@ const { upstreams } = JSON.parse(read('upstreams.json'));
 const everyCopy = Object.values(upstreams).flatMap(({ skills }) => Object.keys(skills).map((name) => `aw-${name}`));
 
 const OPTIONAL_COPIES = [
-  { name: 'wizard', upstreamPath: 'skills/engineering/wizard', userInvoked: false },
   { name: 'to-questionnaire', upstreamPath: 'skills/productivity/to-questionnaire', userInvoked: true },
   { name: 'wait-what', upstreamPath: 'skills/productivity/wait-what', userInvoked: true },
 ];
