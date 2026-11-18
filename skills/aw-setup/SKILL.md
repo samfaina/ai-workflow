@@ -73,7 +73,7 @@ A GitHub or GitLab tracker needs the repo reachable: `gh repo view` or `glab rep
 - `task`: what proves one slice, usually `fast` plus the tests the slice touches, with a `<files>` placeholder for them.
 - `full`: everything CI runs.
 
-Show the proposed commands and where each came from, and let the user confirm or edit each one. A level with no command is recorded as `none`; it is reported as not run, never as passed. Template [`checks.md`](adapters/checks.md).
+Show the proposed commands and where each came from. Put it in your chat text or in the confirmation question's preview. Output inside a tool call does not count. Then ask, and let the user confirm or edit each one; show each edit the same way before they confirm. A level with no command is recorded as `none`; it is reported as not run, never as passed. Template [`checks.md`](adapters/checks.md).
 
 **D. Domain docs.** Single-context (one `GLOSSARY.md` and `docs/adr/` at the root) unless step 1 found a `GLOSSARY-MAP.md` or monorepo signals (a `pnpm-workspace.yaml`, a `workspaces` field, a populated `packages/*`); then confirm which layout. Then where the glossary and ADRs live: propose the paths step 1 found, or `GLOSSARY.md` and `docs/adr/` when there are none yet. Template [`domain.md`](adapters/domain.md); when the paths differ from the template's, write the repo's paths in its place.
 
