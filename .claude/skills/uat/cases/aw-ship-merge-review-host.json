@@ -3,7 +3,7 @@
   "title": "aw-ship at merge: write, through the review host",
   "group": "Feature route (loan renewal)",
   "order": 30,
-  "source": "#132: at merge: write with GitHub as the review host, aw-ship merges the review request on the host and leaves its body as step 5 wrote it (#128, #129). It pushes to the GitHub scratch repo and merges into uat/ship-review-host there, a base of its own: the shell force-pushes it back to the restore point's main and deletes the work branch, which closes a request an earlier run left open, so a rerun starts clean",
+  "source": "#132: at merge: write with GitHub as the review host, aw-ship merges the review request on the host and leaves its body as step 5 wrote it (#128, #129). It pushes to the GitHub scratch repo and merges into uat/ship-review-host there, a base of its own: the shell force-pushes it back to the restore point's main, then pushes the work branch and deletes it, so that the delete never fails, the run's own push is never rejected, and a request an earlier run left open is closed. A rerun starts clean that way; a request an earlier run merged stays on the host, so the first assertion checks that the request it reads is this run's",
   "from": {
     "ref": "49d218e",
     "branch": "feat/renew-loan",
@@ -17,7 +17,7 @@
     {
       "replace": "AGENTS.md",
       "pattern": "Base branch `main`, GitHub pull requests through `gh`, squash merges; `push`, `open-review` and `merge` are at `draft`\\.",
-      "with": "Base branch `uat/ship-review-host`, GitHub pull requests through `gh`, merge commits; every operation at `write`, none at `draft`."
+      "with": "Base branch `uat/ship-review-host`, GitHub pull requests through `gh`, merge commits; `push`, `open-review` and `merge` are at `write`."
     },
     {
       "commit": "Set push, open-review and merge to write, with merge commits into uat/ship-review-host"
@@ -40,6 +40,10 @@
   "turns": [],
   "assertions": [
     {
+      "name": "the request on the host is this run's, not one an earlier run merged",
+      "run": "node -e \"const run = (command) => require('child_process').execSync(command, { encoding: 'utf8' }).trim(); process.exit(run('gh pr view feat/renew-loan --json headRefOid --jq .headRefOid') === run('git rev-parse feat/renew-loan') ? 0 : 1)\""
+    },
+    {
       "name": "the review request was merged on the host",
       "run": "gh pr view feat/renew-loan --json state --jq .state",
       "stdout": "^MERGED$"
@@ -50,7 +54,7 @@
       "stdout": "^uat/ship-review-host$"
     },
     {
-      "name": "nothing merged locally",
+      "name": "nothing merged into the local main",
       "run": "git branch --merged main --list feat/renew-loan",
       "stdout": "^$"
     },

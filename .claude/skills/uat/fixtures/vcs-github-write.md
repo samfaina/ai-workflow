@@ -3,7 +3,7 @@
 Read by the aw- skills through the `## Agent skills` block. Edit by hand or re-run `/aw-setup`.
 
 - **Base branch:** `uat/ship-review-host`. It is also the diff base.
-- **Protected branches:** `uat/ship-review-host`, the base branch, and `main`.
+- **Protected branches:** `uat/ship-review-host`, which is the base branch, and `main`.
 - **Branch naming:** `<type>/<slug>`.
 - **Commit convention:** an imperative, sentence-case summary with no type prefix.
 - **Review host:** pull requests on GitHub, through the `gh` CLI.

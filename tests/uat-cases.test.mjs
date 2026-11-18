@@ -243,6 +243,7 @@ test('the fast merge judges that each introduced risk is merged without acceptan
 // the GitHub scratch repo, on a base branch of the case's own.
 const hostMerge = byId.get('aw-ship-merge-review-host');
 const HOST_BASE = 'uat/ship-review-host';
+const HOST_REPORT = '.aw/reviews/29991231-235959-review.md';
 const hostRun = (field) => `gh pr view feat/renew-loan --json ${field} --jq .${field}`;
 const readFixture = (path) => readFileSync(join(skillDir, path), 'utf8').replaceAll('\r\n', '\n');
 
@@ -285,7 +286,7 @@ test('the review-host merge resets its base and drops the work branch on the hos
 
 test('the review-host merge plants a report with no proven defect and an introduced risk, after the last commit', () => {
   const lastCommit = hostMerge.setup.findLastIndex((op) => op.commit);
-  const reviewed = hostMerge.setup.findIndex((op) => op.to === '.aw/reviews/29991231-235959-review.md');
+  const reviewed = hostMerge.setup.findIndex((op) => op.to === HOST_REPORT);
   assert.ok(reviewed > lastCommit, 'the report must name HEAD');
   const report = readFixture(hostMerge.setup[reviewed].copy);
   assert.match(report, /Proven defects: 0 introduced, 0 pre-existing/);
@@ -295,12 +296,14 @@ test('the review-host merge plants a report with no proven defect and an introdu
 
 test('the review-host merge checks the request merged on the host, and the body keeps the placeholder and the wording for either merger', () => {
   const checks = hostMerge.assertions;
+  // A rerun that opens no request would otherwise find the one an earlier run merged.
+  assert.ok(checks.some((a) => /headRefOid/.test(a.run ?? '') && a.run.includes("git rev-parse feat/renew-loan") && a.exit === undefined), 'the request on the host is this run\'s');
   assert.ok(checks.some((a) => a.run === hostRun('state') && a.stdout === '^MERGED$'), 'merged on the host');
   assert.ok(checks.some((a) => a.run === hostRun('baseRefName') && a.stdout === `^${HOST_BASE}$`), 'into the case\'s base');
   assert.ok(checks.some((a) => a.run === 'git branch --merged main --list feat/renew-loan' && a.stdout === '^$'), 'never merged locally');
   assert.ok(!checks.some((a) => /rollback-names-merge/.test(a.run ?? '')), 'nothing fills in the placeholder');
 
-  const report = readFixture(hostMerge.setup.find((op) => op.to === '.aw/reviews/29991231-235959-review.md').copy);
+  const report = readFixture(hostMerge.setup.find((op) => op.to === HOST_REPORT).copy);
   const risks = report.split('### Risks introduced').slice(1).join('').match(/^\*\*/gm).length;
   const body = checks.filter((a) => a.file === '.aw/review-requests/*-review-request.md');
   assert.ok(body.some((a) => a.matches === 'git revert -m 1 <merge commit>'), 'the body keeps the placeholder');
