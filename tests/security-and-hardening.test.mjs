@@ -6,31 +6,19 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { repoRoot } from './fixtures.mjs';
+import { repoRoot, textSection } from './fixtures.mjs';
 
 const skillDir = join(repoRoot, 'skills/aw-security-and-hardening');
 const skill = readFileSync(join(skillDir, 'SKILL.md'), 'utf8');
 
-// The body of the `## ` or `### ` section with this exact heading.
-function section(heading) {
-  const lines = skill.split('\n');
-  const start = lines.indexOf(heading);
-  assert.notEqual(start, -1, `no heading "${heading}"`);
-  const level = heading.match(/^#+/)[0].length;
-  const end = lines.findIndex(
-    (line, i) => i > start && /^#+ /.test(line) && line.match(/^#+/)[0].length <= level,
-  );
-  return lines.slice(start + 1, end === -1 ? undefined : end).join('\n');
-}
-
 test('it states that it is phase-free and the guidance aw-review hands to the Security axis', () => {
-  const body = section('## In the Kit');
+  const body = textSection(skill, '## In the Kit', { withHeading: false });
   assert.match(body, /phase-free/);
   assert.match(body, /`aw-review` hands to its Security axis/);
 });
 
 test('during a review, findings follow the Findings rules of aw-review', () => {
-  const body = section('## In the Kit');
+  const body = textSection(skill, '## In the Kit', { withHeading: false });
   assert.match(body, /`aw-review`'s Findings rules/);
   assert.match(body, /unchecked checklist item or a red flag is a risk unless a run proves a defect/);
 });
@@ -41,13 +29,13 @@ test('it counts as security what the Security axis counts', () => {
 
 test('"Ask First" is no human gate: its items go to the spec or back to intake', () => {
   assert.doesNotMatch(skill, /Requires Human Approval/);
-  const body = section('### Ask First');
+  const body = textSection(skill, '### Ask First', { withHeading: false });
   assert.match(body, /the spec's Boundaries section/);
   assert.match(body, /is not fast-route work and goes back to `\/aw-intake`/);
 });
 
 test('the "Ask First" items stay', () => {
-  const body = section('### Ask First');
+  const body = textSection(skill, '### Ask First', { withHeading: false });
   for (const item of [
     'Adding new authentication flows or changing auth logic',
     'Storing new categories of sensitive data (PII, payment info)',
@@ -62,16 +50,16 @@ test('the "Ask First" items stay', () => {
 });
 
 test('its scope is any repo, not web applications', () => {
-  assert.doesNotMatch(section('## Overview'), /for web applications/);
-  assert.match(section('## Overview'), /any repo, CLIs included/);
-  assert.match(section('## Overview'), /trust boundaries, secrets, dependencies and destructive operations/);
+  assert.doesNotMatch(textSection(skill, '## Overview', { withHeading: false }), /for web applications/);
+  assert.match(textSection(skill, '## Overview', { withHeading: false }), /any repo, CLIs included/);
+  assert.match(textSection(skill, '## Overview', { withHeading: false }), /trust boundaries, secrets, dependencies and destructive operations/);
 });
 
 // Each of these lines applies only to web code, so it carries the tag the
 // overview defines. Uploads and rate limiting also protect services that are not
 // web code, so they stay untagged.
 test('web-only lines are tagged, and the core ones are not', () => {
-  assert.match(section('## Overview'), /tagged \*\*\(web\)\*\* apply when the change touches web code/);
+  assert.match(textSection(skill, '## Overview', { withHeading: false }), /tagged \*\*\(web\)\*\* apply when the change touches web code/);
   const assertTagged = (text) => assert.ok(
     skill.split('\n').some((line) => line.includes(text) && line.includes('**(web)**')),
     `no line with "${text}" is tagged`,
@@ -101,7 +89,7 @@ test('web-only lines are tagged, and the core ones are not', () => {
 });
 
 test('the review checklist is scoped to the boundaries, since its reference is worded for the web', () => {
-  const body = section('## Review Checklist');
+  const body = textSection(skill, '## Review Checklist', { withHeading: false });
   assert.match(body, /`references\/security-checklist\.md`/);
   assert.match(body, /worded for web applications/);
   assert.match(body, /trust boundaries, secrets, dependencies, personal data and destructive operations/);
@@ -113,7 +101,7 @@ test('it asks for no manual browser check', () => {
 
 test('the dependency audit is a run or a check level, tied to no release and adding no phase or hook', () => {
   assert.doesNotMatch(skill, /every release/);
-  const body = section('### Dependencies and supply chain');
+  const body = textSection(skill, '### Dependencies and supply chain', { withHeading: false });
   assert.match(body, /a run on `aw-review`'s Security axis/);
   assert.match(body, /a check level the repo configures/);
   assert.match(body, /adds no phase and no hook \(ADR 0009\)/);
@@ -121,7 +109,7 @@ test('the dependency audit is a run or a check level, tied to no release and add
 
 test('the post-implementation list is a self-check, not a gate of its own', () => {
   assert.doesNotMatch(skill, /^## Verification$/m);
-  assert.match(section('## Self-Check').trim(), /^After implementing security-relevant code/);
+  assert.match(textSection(skill, '## Self-Check', { withHeading: false }).trim(), /^After implementing security-relevant code/);
   assert.doesNotMatch(skill, /sign-off/);
 });
 
@@ -187,7 +175,7 @@ test('the threat model, hardening controls, rationalizations and red flags keep 
     '## Common Rationalizations',
     '## Red Flags',
   ]) {
-    assert.ok(section(heading).trim().length > 0, `empty section "${heading}"`);
+    assert.ok(textSection(skill, heading, { withHeading: false }).trim().length > 0, `empty section "${heading}"`);
   }
 });
 

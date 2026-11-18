@@ -6,31 +6,20 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { repoRoot, skillSection } from './fixtures.mjs';
+import { repoRoot, skillSection, textSection } from './fixtures.mjs';
 import { skillDir as uatSkillDir } from './uat-fixtures.mjs';
 
 const skillDir = join(repoRoot, 'skills/aw-create-verify');
 const skill = readFileSync(join(skillDir, 'SKILL.md'), 'utf8');
 const template = readFileSync(join(skillDir, 'VERIFY-TEMPLATE.md'), 'utf8');
 
-// The text under this exact heading, up to the next heading of the same or a
-// higher level.
-function section(text, heading) {
-  const lines = text.split('\n');
-  const start = lines.indexOf(heading);
-  assert.notEqual(start, -1, `no heading "${heading}"`);
-  const level = heading.match(/^#+/)[0].length;
-  const end = lines.findIndex((line, i) => i > start && (line.match(/^#+(?= )/)?.[0].length ?? 99) <= level);
-  return lines.slice(start + 1, end === -1 ? undefined : end).join('\n');
-}
-
 const introduction = skillSection('aw-create-verify', '# Create verify', '## Configuration');
-const findTheApp = section(skill, '### 1. Find the app');
-const writeTheSkill = section(skill, '### 3. Write the verify skill');
-const runItOnce = section(skill, '### 4. Run it once end to end');
+const findTheApp = textSection(skill, '### 1. Find the app', { withHeading: false });
+const writeTheSkill = textSection(skill, '### 3. Write the verify skill', { withHeading: false });
+const runItOnce = textSection(skill, '### 4. Run it once end to end', { withHeading: false });
 const templateIntro = skillSection('aw-create-verify/VERIFY-TEMPLATE.md', '# Verify <app>', '## Start');
-const templateStart = section(template, '## Start');
-const templateCleanUp = section(template, '## Clean up');
+const templateStart = textSection(template, '## Start', { withHeading: false });
+const templateCleanUp = textSection(template, '## Clean up', { withHeading: false });
 
 // A step's "Done when" line.
 function doneWhen(step) {
@@ -89,7 +78,7 @@ test('neither file ties stopping a process to its port', () => {
 });
 
 test('the fix for a port in use leaves the process holding it alone', () => {
-  for (const text of [operation('Diagnose'), section(template, '## Diagnose')]) {
+  for (const text of [operation('Diagnose'), textSection(template, '## Diagnose', { withHeading: false })]) {
     assert.match(text, /port in use leaves the process holding it alone/i);
     assert.match(text, /report what holds it and stop, or use another port where the app allows one/i);
   }
