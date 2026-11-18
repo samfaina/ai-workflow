@@ -8,7 +8,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 
-import { repoRoot } from './fixtures.mjs';
+import { repoRoot, textSection } from './fixtures.mjs';
 
 const read = (path) => readFileSync(join(repoRoot, path), 'utf8').replaceAll('\r\n', '\n');
 const converge = read('skills/aw-converge-steps/SKILL.md');
@@ -17,16 +17,6 @@ const buildSteps = read('skills/aw-build-steps/SKILL.md');
 const verifySteps = read('skills/aw-verify-steps/SKILL.md');
 const reviewSteps = read('skills/aw-review-steps/SKILL.md');
 
-// The text from a heading up to the next heading of its level or above.
-function section(text, heading) {
-  const lines = text.split('\n');
-  const start = lines.indexOf(heading);
-  assert.notEqual(start, -1, `no heading "${heading}"`);
-  const level = heading.match(/^#+/)[0].length;
-  const end = lines.findIndex((line, i) => i > start && new RegExp(`^#{1,${level}} `).test(line));
-  return lines.slice(start, end === -1 ? undefined : end).join('\n');
-}
-
 // The first line of the text that opens with these words.
 function line(text, start) {
   const found = text.split('\n').find((candidate) => candidate.startsWith(start));
@@ -34,15 +24,15 @@ function line(text, start) {
   return found;
 }
 
-const refusals = section(converge, '### 2. Refuse what cannot converge');
-const round = section(converge, '### 3. Run the rounds');
-const fixRunReading = section(converge, '#### The fix run');
-const verifyReading = section(converge, '#### Verify');
-const reviewReading = section(converge, '#### The review');
-const report = section(converge, '### 4. Report');
-const fixRun = section(buildSteps, '## The fix run');
+const refusals = textSection(converge, '### 2. Refuse what cannot converge');
+const round = textSection(converge, '### 3. Run the rounds');
+const fixRunReading = textSection(converge, '#### The fix run');
+const verifyReading = textSection(converge, '#### Verify');
+const reviewReading = textSection(converge, '#### The review');
+const report = textSection(converge, '### 4. Report');
+const fixRun = textSection(buildSteps, '## The fix run');
 const fixReport = fixRun.slice(fixRun.indexOf('**Report.**'));
-const verifyReport = section(verifySteps, '### 7. Report');
+const verifyReport = textSection(verifySteps, '### 7. Report');
 
 for (const [procedure, phase, text] of [
   ['aw-build-steps', 'aw-build', buildSteps],
@@ -56,7 +46,7 @@ for (const [procedure, phase, text] of [
   });
 
   test(`${procedure} opens by refusing a call that names no caller`, () => {
-    const first = section(text, '## First step: check the caller');
+    const first = textSection(text, '## First step: check the caller');
     assert.equal(text.split('\n').find((candidate) => candidate.startsWith('## ')), '## First step: check the caller');
     assert.match(first, new RegExp(`\`caller: ${phase}\`, \`caller: aw-converge\` or \`caller: aw-implement\``));
     assert.match(first, /stop, change nothing/);
@@ -75,7 +65,7 @@ test('the convergence procedure is hidden, limited to its callers, and opens by 
   const description = line(converge, 'description: ');
   assert.match(description, /calls from \/aw-converge and aw-implement only/);
   assert.match(description, /do not load it by your own choice/);
-  const first = section(converge, '## First step: check the caller');
+  const first = textSection(converge, '## First step: check the caller');
   assert.equal(converge.split('\n').find((candidate) => candidate.startsWith('## ')), '## First step: check the caller');
   assert.match(first, /`caller: aw-converge` or `caller: aw-implement`/);
   assert.match(first, /stop, change nothing/);
@@ -103,14 +93,14 @@ test('the phases of a round are still called as aw-converge, whoever started the
 
 test('the fix run and aw-verify cannot ask from a subagent: a question ends the run with a Stop line', () => {
   for (const text of [buildSteps, verifySteps]) {
-    const first = section(text, '## First step: check the caller');
+    const first = textSection(text, '## First step: check the caller');
     assert.match(first, /With `caller: aw-converge`(?: or `caller: aw-implement`)? you run in a subagent/);
     assert.match(first, /`Stop:` line/);
   }
 });
 
 test('under aw-converge the build procedure takes the spec from its arguments and runs a fix run', () => {
-  const first = section(buildSteps, '## First step: check the caller');
+  const first = textSection(buildSteps, '## First step: check the caller');
   assert.match(first, /arguments ask for a fix run/);
   assert.match(line(buildSteps, 'Take the spec the user names'), /or the arguments name/);
 });
@@ -156,7 +146,7 @@ test('a spec change the fix run found reaches the user even when the run ends cl
 });
 
 test('every procedure takes the spec or the fast route from the arguments of aw-converge', () => {
-  assert.match(section(reviewSteps, '## First step: check the caller'), /The arguments name the spec, or say the task is on the fast route/);
+  assert.match(textSection(reviewSteps, '## First step: check the caller'), /The arguments name the spec, or say the task is on the fast route/);
   const specLine = line(reviewSteps, '**Standard or epic route: the spec.**');
   assert.match(specLine, /the user names or the arguments name/);
   assert.match(line(reviewSteps, 'First find the route.'), /when the arguments say so/);
@@ -164,7 +154,7 @@ test('every procedure takes the spec or the fast route from the arguments of aw-
 
 test('under aw-converge, .aw/ is local state and not a change in the working tree', () => {
   for (const text of [buildSteps, verifySteps]) {
-    assert.match(section(text, '## First step: check the caller'), /`\.aw\/` is local state: its files are not changes in the working tree/);
+    assert.match(textSection(text, '## First step: check the caller'), /`\.aw\/` is local state: its files are not changes in the working tree/);
   }
 });
 
@@ -198,23 +188,23 @@ test('every aw-verify ending has its Next line, and those a round cannot resolve
 });
 
 test('on the fast route an inconclusive criterion with no test also needs a person', () => {
-  const fast = section(verifySteps, '## The fast route');
+  const fast = textSection(verifySteps, '## The fast route');
   assert.match(fast, /\*\*a criterion is inconclusive with no test\*\*[^\n]*`Stop: verify journey needs a person`[^\n]*`Next: \/aw-review`/);
   assert.match(fast, /\*\*a criterion failed\*\*[^\n]*`Stop: criterion failed`/);
 });
 
 test('a refusal of aw-verify and a repo with no verify skill end with Stop and Next too', () => {
   assert.match(verifyReport, /A refusal in step 1, or any other stop, ends with `Stop: <the reason>`/);
-  assert.match(section(verifySteps, '## Without a verify skill'), /`Stop: criteria need test: or manual: evidence`/);
-  assert.match(section(verifySteps, '## The fast route'), /no verify skill means no phase[^\n]*`Next: \/aw-review`/);
+  assert.match(textSection(verifySteps, '## Without a verify skill'), /`Stop: criteria need test: or manual: evidence`/);
+  assert.match(textSection(verifySteps, '## The fast route'), /no verify skill means no phase[^\n]*`Next: \/aw-review`/);
 });
 
 test('under aw-converge every reviewer brief starts from the diff, not from an earlier report', () => {
-  assert.match(section(reviewSteps, '### 5. Run the three axes in parallel'), /with `caller: aw-converge` or `caller: aw-implement`, the instruction not to read `\.aw\/reviews\/`/);
+  assert.match(textSection(reviewSteps, '### 5. Run the three axes in parallel'), /with `caller: aw-converge` or `caller: aw-implement`, the instruction not to read `\.aw\/reviews\/`/);
 });
 
 test('under aw-converge the review ends with the report and leaves what comes next to the command', () => {
-  assert.match(section(reviewSteps, '### 8. Report'), /caller is `aw-converge` or `aw-implement`, give the report's path and end here/);
+  assert.match(textSection(reviewSteps, '### 8. Report'), /caller is `aw-converge` or `aw-implement`, give the report's path and end here/);
 });
 
 test('aw-review names /aw-converge first for an introduced defect, and the manual path as the alternative', () => {
@@ -229,7 +219,7 @@ test('aw-converge is user-invoked on both harnesses', () => {
 });
 
 test('the limit is three rounds, raised per call, with no repo setting and no state', () => {
-  const limit = section(converge, '### 1. Take the limit');
+  const limit = textSection(converge, '### 1. Take the limit');
   assert.match(limit, /Three rounds/);
   assert.match(limit, /`\/aw-converge 5`/);
   assert.match(limit, /no state is kept between calls/);

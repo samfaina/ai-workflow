@@ -1,6 +1,6 @@
 // Helpers shared by the tests: writing fixture kits, running a CLI the way CI
-// runs it, asserting on its findings, and reading a section of a skill's text.
-// Not a test file itself.
+// runs it, asserting on its findings, and reading a section of a skill's file or
+// of any text. Not a test file itself.
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -57,6 +57,26 @@ export function skillSection(skillOrFile, fromHeading, toHeading) {
   const end = lines.indexOf(toHeading, start + 1);
   if (end === -1) throw new Error(`skills/${file} has no heading "${toHeading}" after "${fromHeading}"`);
   return lines.slice(start, end).join('\n') + '\n';
+}
+
+// The lines of `text` from the line `heading` up to, but not including, the
+// next heading line of the same or a higher level (fewer or as many `#`, then a
+// space), or to the end of the text. A line inside a code fence, between lines
+// that start with three backticks, never ends the section. With `withHeading:
+// false` the heading line itself is left out. Line endings are normalized to
+// `\n`. A heading is a whole line, and a missing one throws, naming it.
+export function textSection(text, heading, { withHeading = true } = {}) {
+  const lines = text.replaceAll('\r\n', '\n').split('\n');
+  const start = lines.indexOf(heading);
+  if (start === -1) throw new Error(`the text has no heading "${heading}"`);
+  const level = heading.match(/^#+/)[0].length;
+  let fenced = false;
+  const end = lines.findIndex((line, i) => {
+    if (i <= start) return false;
+    if (line.startsWith('```')) fenced = !fenced;
+    return !fenced && (line.match(/^#+(?= )/)?.[0].length ?? Infinity) <= level;
+  });
+  return lines.slice(withHeading ? start : start + 1, end === -1 ? undefined : end).join('\n');
 }
 
 // Runs a CLI with node; every non-blank stdout line is a finding.

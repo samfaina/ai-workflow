@@ -7,22 +7,13 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { repoRoot } from './fixtures.mjs';
+import { repoRoot, textSection } from './fixtures.mjs';
 
 const skillDir = join(repoRoot, 'skills/aw-observability-and-instrumentation');
 const skill = readFileSync(join(skillDir, 'SKILL.md'), 'utf8');
 
-// The body of the `## ` section with this exact heading.
-function section(text, heading) {
-  const lines = text.split('\n');
-  const start = lines.indexOf(heading);
-  assert.notEqual(start, -1, `no heading "${heading}"`);
-  const end = lines.findIndex((line, i) => i > start && /^#{1,2} /.test(line));
-  return lines.slice(start + 1, end === -1 ? undefined : end).join('\n');
-}
-
 test('it states that it is phase-free and optional: no phase requires it and it creates no gate', () => {
-  const body = section(skill, '## In the Kit');
+  const body = textSection(skill, '## In the Kit', { withHeading: false });
   assert.match(body, /phase-free and optional/);
   assert.match(body, /no phase requires it, nor does any route/i);
   assert.match(body, /no ship or merge condition depends on it having run/);
@@ -40,8 +31,13 @@ test('neither file names an upstream skill the kit does not ship, or the shared 
 });
 
 test('its own name and the security skill carry the aw- prefix in both files', () => {
-  // The credit line names the upstream skill, as it should.
-  for (const text of [skill.split('## Credits')[0], checklist]) {
+  // The credit line names the upstream skill, as it should, so the skill is
+  // read up to the line before `## Credits`.
+  const lines = skill.split('\n');
+  const credits = lines.indexOf('## Credits');
+  assert.notEqual(credits, -1, 'no heading "## Credits"');
+  const beforeCredits = `${lines.slice(0, credits).join('\n')}\n`;
+  for (const text of [beforeCredits, checklist]) {
     assert.doesNotMatch(text, /(?<!aw-)observability-and-instrumentation/);
     assert.doesNotMatch(text, /(?<!aw-)security-and-hardening/);
     assert.match(text, /`aw-security-and-hardening`/);
@@ -50,18 +46,18 @@ test('its own name and the security skill carry the aw- prefix in both files', (
 });
 
 test('debugging goes to aw-diagnosing-bugs, whose instrumentation is temporary while this telemetry stays', () => {
-  const body = section(skill, '## When to Use');
+  const body = textSection(skill, '## When to Use', { withHeading: false });
   assert.match(body, /`aw-diagnosing-bugs`/);
   assert.match(body, /`\[DEBUG-\.\.\.\]` instrumentation is temporary and gets removed/);
   assert.match(body, /the telemetry this skill adds stays/);
 });
 
 test('performance goes to a performance task through /aw-intake, whose pre-step measures the baseline', () => {
-  assert.match(section(skill, '## When to Use'), /performance task through `\/aw-intake`, whose pre-step measures the baseline/);
+  assert.match(textSection(skill, '## When to Use', { withHeading: false }), /performance task through `\/aw-intake`, whose pre-step measures the baseline/);
 });
 
 test('rollback triggers go to the rollback plan of /aw-ship, and launch-day monitoring is gone', () => {
-  assert.match(section(skill, '## When to Use'), /Rollback triggers.*`\/aw-ship`'s rollback plan/);
+  assert.match(textSection(skill, '## When to Use', { withHeading: false }), /Rollback triggers.*`\/aw-ship`'s rollback plan/);
   assert.match(checklist, /`\/aw-ship`'s rollback plan/);
   for (const text of [skill, checklist]) {
     assert.doesNotMatch(text, /launch-day/i);
@@ -75,7 +71,7 @@ test('the checklist has a self-check for repos that run in production, not a gat
     assert.doesNotMatch(text, /pre-launch/i);
   }
   assert.match(checklist, /^- \[Self-Check\]\(#self-check\)$/m);
-  const body = section(checklist, '## Self-Check');
+  const body = textSection(checklist, '## Self-Check', { withHeading: false });
   assert.match(body.trim(), /^For a repo that runs in production/);
   for (const item of [
     'Structured logs flowing to the log aggregator',
@@ -87,7 +83,7 @@ test('the checklist has a self-check for repos that run in production, not a gat
 });
 
 test('SKILL.md points at the checklist in its own references', () => {
-  assert.match(section(skill, '## Verification'), /`references\/observability-checklist\.md`/);
+  assert.match(textSection(skill, '## Verification', { withHeading: false }), /`references\/observability-checklist\.md`/);
 });
 
 const frontmatter = skill.split('---')[1];
@@ -101,13 +97,13 @@ test('it is model-invoked: no invocation flag in the frontmatter and no agents/o
 test('its triggers cover changing telemetry and an incident the existing telemetry could not explain', () => {
   assert.match(frontmatter, /adding or changing logs, metrics, traces, or alerts/);
   assert.match(frontmatter, /a production incident the existing telemetry couldn't explain/);
-  const body = section(skill, '## When to Use');
+  const body = textSection(skill, '## When to Use', { withHeading: false });
   assert.match(body, /Adding or changing logs, metrics, traces, or alerts/);
   assert.match(body, /A production incident the existing telemetry couldn't explain/);
 });
 
 test('it drops the triggers that compete with phase owners or aw-diagnosing-bugs', () => {
-  const triggers = `${frontmatter}\n${section(skill, '## When to Use')}`;
+  const triggers = `${frontmatter}\n${textSection(skill, '## When to Use', { withHeading: false })}`;
   for (const dropped of [
     /shipping any feature/i,
     /production issues are reported/i,
@@ -121,7 +117,7 @@ test('it drops the triggers that compete with phase owners or aw-diagnosing-bugs
 test('it carries the upstream license, and the sections it keeps from upstream stay', () => {
   assert.match(readFileSync(join(skillDir, 'LICENSE.upstream'), 'utf8'), /MIT License[\s\S]*Addy Osmani/);
   for (const heading of ['## Process', '## Common Rationalizations', '## Red Flags', '## Verification']) {
-    assert.ok(section(skill, heading).trim().length > 0, `empty section "${heading}"`);
+    assert.ok(textSection(skill, heading, { withHeading: false }).trim().length > 0, `empty section "${heading}"`);
   }
   for (const heading of ['### 1. Define "working" before instrumenting', '### 3. Structured logging', '### 6. Alerting', '### 7. Verify the telemetry itself']) {
     assert.ok(skill.split('\n').includes(heading), `missing "${heading}"`);
@@ -129,7 +125,7 @@ test('it carries the upstream license, and the sections it keeps from upstream s
 });
 
 test('it credits its upstream', () => {
-  assert.match(section(skill, '## Credits'), /Adapted from Addy Osmani's `observability-and-instrumentation` \(MIT\)/);
+  assert.match(textSection(skill, '## Credits', { withHeading: false }), /Adapted from Addy Osmani's `observability-and-instrumentation` \(MIT\)/);
 });
 
 const repoText = (path) => readFileSync(join(repoRoot, path), 'utf8');

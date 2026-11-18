@@ -8,26 +8,16 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 
-import { repoRoot, writeFiles } from './fixtures.mjs';
+import { repoRoot, textSection, writeFiles } from './fixtures.mjs';
 import { git, tempDir } from './uat-fixtures.mjs';
 
 const read = (path) => readFileSync(join(repoRoot, path), 'utf8').replaceAll('\r\n', '\n');
 const skill = read('skills/aw-build-steps/SKILL.md');
 const door = read('skills/aw-build/SKILL.md');
 
-// The text from a heading up to the next heading of its level or above.
-function section(heading) {
-  const lines = skill.split('\n');
-  const start = lines.indexOf(heading);
-  assert.notEqual(start, -1, `no heading "${heading}"`);
-  const level = heading.match(/^#+/)[0].length;
-  const end = lines.findIndex((line, i) => i > start && new RegExp(`^#{1,${level}} `).test(line));
-  return lines.slice(start, end === -1 ? undefined : end).join('\n');
-}
-
-const fixRun = section('## The fix run');
-const stepOne = section('### 1. Take the spec and the slice');
-const fastRoute = section('## The fast route');
+const fixRun = textSection(skill, '## The fix run');
+const stepOne = textSection(skill, '### 1. Take the spec and the slice');
+const fastRoute = textSection(skill, '## The fast route');
 
 // The paragraph that opens with these words, in the given text.
 function paragraph(text, start) {

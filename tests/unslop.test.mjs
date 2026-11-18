@@ -6,21 +6,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { repoRoot } from './fixtures.mjs';
+import { repoRoot, textSection } from './fixtures.mjs';
 
 const skillDir = join(repoRoot, 'skills/aw-unslop');
 const skill = readFileSync(join(skillDir, 'SKILL.md'), 'utf8');
 const frontmatter = skill.split('---')[1];
 const repoText = (path) => readFileSync(join(repoRoot, path), 'utf8');
-
-// The body of the `## ` section with this exact heading.
-function section(text, heading) {
-  const lines = text.split('\n');
-  const start = lines.indexOf(heading);
-  assert.notEqual(start, -1, `no heading "${heading}"`);
-  const end = lines.findIndex((line, i) => i > start && /^#{1,2} /.test(line));
-  return lines.slice(start + 1, end === -1 ? undefined : end).join('\n');
-}
 
 test('it is user-invoked: the frontmatter flag and agents/openai.yaml both say so', () => {
   assert.match(frontmatter, /^name: aw-unslop$/m);
@@ -35,7 +26,7 @@ test("it carries pstack's license", () => {
 });
 
 test("it keeps upstream's rules under their stable numbers, gaps included", () => {
-  const patterns = section(skill, '## Patterns to detect and fix');
+  const patterns = textSection(skill, '## Patterns to detect and fix', { withHeading: false });
   const numbers = [...patterns.matchAll(/^(\d+)\. \*\*/gm)].map((match) => Number(match[1]));
   assert.deepEqual(numbers, [3, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33]);
   assert.match(patterns, /^13\. \*\*Em dash overuse\.\*\*/m);
@@ -51,7 +42,7 @@ test('plugin.json lists it', () => {
 });
 
 test('it states that it is phase-free and optional, and why a person decides when it runs', () => {
-  const body = section(skill, '## In the Kit');
+  const body = textSection(skill, '## In the Kit', { withHeading: false });
   assert.match(body, /phase-free and optional/);
   assert.match(body, /no phase requires it, nor does any route/i);
   assert.match(body, /no ship or merge condition depends on it having run/);
@@ -60,13 +51,13 @@ test('it states that it is phase-free and optional, and why a person decides whe
 });
 
 test('its target is what the user names, or else the last document generated in this conversation', () => {
-  const body = section(skill, '## Target');
+  const body = textSection(skill, '## Target', { withHeading: false });
   assert.match(body, /The file or text the user names\./);
   assert.match(body, /With no argument, the last document generated in this conversation\./);
 });
 
 test('it rewrites only prose, read by a person or an agent, and leaves glossary terms, code and quotations alone', () => {
-  const body = section(skill, '## What it rewrites');
+  const body = textSection(skill, '## What it rewrites', { withHeading: false });
   assert.match(body, /^Only prose, whether a person or an agent reads it\./m);
   assert.match(body, /a term defined in the repo's `GLOSSARY\.md`, even when a rule would flag it/);
   assert.match(body, /`harness` under rule 26/);
@@ -87,12 +78,12 @@ test('everywhere the kit describes what it rewrites, prose read by an agent coun
 });
 
 test('in a text not written in English, it applies the rules that carry over', () => {
-  const body = section(skill, '## What it rewrites');
+  const body = textSection(skill, '## What it rewrites', { withHeading: false });
   assert.match(body, /In a text not written in English, apply the rules that carry over; the word lists are English\./);
 });
 
 test('its table states what stays exact in each document the rest of the kit reads literally', () => {
-  const rows = section(skill, '## What stays exact')
+  const rows = textSection(skill, '## What stays exact', { withHeading: false })
     .split('\n')
     .filter((line) => line.startsWith('|'))
     .slice(2)
@@ -109,7 +100,7 @@ test('its table states what stays exact in each document the rest of the kit rea
 });
 
 test('it refuses a copy, the three records of what happened, and a draft, each with its reason', () => {
-  const body = section(skill, '## What it refuses');
+  const body = textSection(skill, '## What it refuses', { withHeading: false });
   assert.match(body, /A copy, since `sync-upstreams check` fails on any hand edit\./);
   assert.match(body, /A review report, verify result or retro report, since each records what happened/);
   assert.match(body, /`\/aw-ship` reads the review report's `Proven defects:` line for its merge conditions/);
@@ -117,41 +108,41 @@ test('it refuses a copy, the three records of what happened, and a draft, each w
 });
 
 test('the one draft it takes is the review request body inside a drafted open-review, command left as it is', () => {
-  const body = section(skill, '## What it refuses');
+  const body = textSection(skill, '## What it refuses', { withHeading: false });
   assert.match(body, /except the review request body inside a drafted `open-review`/);
   assert.match(body, /leave the command as it is/);
 });
 
 test('on a spec not at draft, it stops and names the change process in aw-spec', () => {
-  const body = section(skill, '## On a spec');
+  const body = textSection(skill, '## On a spec', { withHeading: false });
   assert.match(body, /When its `status` is not `draft`, stop/);
   assert.match(body, /\*\*Changing a spec\*\* in `\/aw-spec`/);
   assert.ok(readFileSync(join(repoRoot, 'skills/aw-spec/SKILL.md'), 'utf8').split('\n').includes('## Changing a spec'), 'aw-spec has no such section');
 });
 
 test('after rewriting a draft spec, it runs aw-check-spec and fixes what its own edit caused', () => {
-  const body = section(skill, '## On a spec');
+  const body = textSection(skill, '## On a spec', { withHeading: false });
   assert.match(body, /After rewriting a draft, call the Skill tool with "aw-check-spec"/);
   assert.match(body, /fix what your edit caused/);
   assert.match(body, /`Result: not script-verified`/);
 });
 
 test('it warns that /aw-ship at open-review: write leaves no moment to run it on the body', () => {
-  const body = section(skill, '## On a review request body');
+  const body = textSection(skill, '## On a review request body', { withHeading: false });
   assert.match(body, /`\/aw-ship` at `open-review: write` opens the review request right after writing the body/);
   assert.match(body, /a person who wants to run this skill first keeps `open-review` at `draft`/);
 });
 
 test('with open-review drafted, it rewrites both files that hold the body, and a step sends the agent there', () => {
-  const body = section(skill, '## On a review request body');
+  const body = textSection(skill, '## On a review request body', { withHeading: false });
   assert.match(body, /the one under `\.aw\/review-requests\/` and the drafted `open-review`/);
   assert.match(body, /Rewrite both/);
-  assert.ok(section(skill, '## Steps').includes('**On a review request body**'));
+  assert.ok(textSection(skill, '## Steps', { withHeading: false }).includes('**On a review request body**'));
   assert.ok(readFileSync(join(repoRoot, 'skills/aw-ship/SKILL.md'), 'utf8').includes('write the exact command and the whole body to `.aw/drafts/<yyyymmdd-hhmmss>-open-review.md`'));
 });
 
 test('its steps send the agent through the refusals before any rewrite, and every rule is applied', () => {
-  const body = section(skill, '## Steps');
+  const body = textSection(skill, '## Steps', { withHeading: false });
   const at = (text) => {
     const index = body.indexOf(text);
     assert.notEqual(index, -1, `the steps do not mention ${text}`);
@@ -163,7 +154,7 @@ test('its steps send the agent through the refusals before any rewrite, and ever
 });
 
 test('it credits its upstream', () => {
-  assert.match(section(skill, '## Credits'), /Adapted from Lauren Tan's `unslop` in pstack \(MIT\), as listed in the kit's `NOTICE\.md`\./);
+  assert.match(textSection(skill, '## Credits', { withHeading: false }), /Adapted from Lauren Tan's `unslop` in pstack \(MIT\), as listed in the kit's `NOTICE\.md`\./);
 });
 
 test('no other skill names it, so no phase refers to it', () => {

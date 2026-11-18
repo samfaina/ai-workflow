@@ -8,7 +8,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 
-import { repoRoot } from './fixtures.mjs';
+import { repoRoot, textSection } from './fixtures.mjs';
 
 const read = (path) => readFileSync(join(repoRoot, path), 'utf8').replaceAll('\r\n', '\n');
 const implement = read('skills/aw-implement/SKILL.md');
@@ -17,22 +17,6 @@ const buildSteps = read('skills/aw-build-steps/SKILL.md');
 const verifySteps = read('skills/aw-verify-steps/SKILL.md');
 const reviewSteps = read('skills/aw-review-steps/SKILL.md');
 
-// The text from a heading up to the next heading of its level or above. A line
-// inside a code fence is never a heading.
-function section(text, heading) {
-  const lines = text.split('\n');
-  const start = lines.indexOf(heading);
-  assert.notEqual(start, -1, `no heading "${heading}"`);
-  const level = heading.match(/^#+/)[0].length;
-  let fenced = false;
-  const end = lines.findIndex((candidate, i) => {
-    if (i <= start) return false;
-    if (candidate.startsWith('```')) fenced = !fenced;
-    return !fenced && new RegExp(`^#{1,${level}} `).test(candidate);
-  });
-  return lines.slice(start, end === -1 ? undefined : end).join('\n');
-}
-
 // The first line of the text that opens with these words.
 function line(text, start) {
   const found = text.split('\n').find((candidate) => candidate.startsWith(start));
@@ -40,20 +24,20 @@ function line(text, start) {
   return found;
 }
 
-const journal = section(implement, '## The journal');
-const input = section(implement, '### 1. Take the input');
-const refusals = section(implement, '### 2. Refuse what cannot run');
-const opening = section(implement, '### 3. Open the journal and announce');
-const build = section(implement, '### 4. Build what is left');
-const verify = section(implement, '### 5. Verify');
-const review = section(implement, '### 6. The first review');
-const rounds = section(implement, '### 7. Converge');
-const report = section(implement, '### 8. Report');
-const buildFirst = section(buildSteps, '## First step: check the caller');
-const pick = section(buildSteps, '### 1. Take the spec and the slice');
-const buildReport = section(buildSteps, '### 8. Report');
-const fastRoute = section(buildSteps, '## The fast route');
-const underImplement = section(converge, '## Called by `aw-implement`');
+const journal = textSection(implement, '## The journal');
+const input = textSection(implement, '### 1. Take the input');
+const refusals = textSection(implement, '### 2. Refuse what cannot run');
+const opening = textSection(implement, '### 3. Open the journal and announce');
+const build = textSection(implement, '### 4. Build what is left');
+const verify = textSection(implement, '### 5. Verify');
+const review = textSection(implement, '### 6. The first review');
+const rounds = textSection(implement, '### 7. Converge');
+const report = textSection(implement, '### 8. Report');
+const buildFirst = textSection(buildSteps, '## First step: check the caller');
+const pick = textSection(buildSteps, '### 1. Take the spec and the slice');
+const buildReport = textSection(buildSteps, '### 8. Report');
+const fastRoute = textSection(buildSteps, '## The fast route');
+const underImplement = textSection(converge, '## Called by `aw-implement`');
 
 test('aw-implement is user-invoked on both harnesses and phase-free', () => {
   assert.match(implement, /^disable-model-invocation: true$/m);
@@ -93,9 +77,9 @@ test('the journal learns the work branch after any build, not only after a commi
 });
 
 test('an AFK seam stop makes no branch, because the seam check comes before start-branch', () => {
-  const branch = section(buildSteps, '### 2. Start the work branch');
+  const branch = textSection(buildSteps, '### 2. Start the work branch');
   assert.match(branch, /In the `afk` variant[^\n]*\*\*A seam to agree in the `afk` variant\*\*/);
-  assert.match(line(section(buildSteps, '### 4. Build test-first'), '**A seam to agree in the `afk` variant.**'), /before step 2 creates a work branch/);
+  assert.match(line(textSection(buildSteps, '### 4. Build test-first'), '**A seam to agree in the `afk` variant.**'), /before step 2 creates a work branch/);
 });
 
 test('a fast-route build for aw-implement never turns into a fix run', () => {
@@ -332,7 +316,7 @@ test('the AFK variant on a HITL slice changes nothing and names the slice', () =
 });
 
 test('an AFK seam stop changes nothing, on both routes, and agreed seams count', () => {
-  const seam = line(section(buildSteps, '### 4. Build test-first'), '**A seam to agree in the `afk` variant.**');
+  const seam = line(textSection(buildSteps, '### 4. Build test-first'), '**A seam to agree in the `afk` variant.**');
   assert.match(seam, /`Stop: seam to agree`/);
   assert.match(seam, /`Question: /);
   assert.match(seam, /change nothing and commit nothing/);
@@ -356,7 +340,7 @@ test('a slice or a fast-route build closes with the lines aw-implement reads', (
 });
 
 test('the fix run keeps its own closing lines, so aw-converge reads them as before', () => {
-  const fixRun = section(buildSteps, '## The fix run');
+  const fixRun = textSection(buildSteps, '## The fix run');
   assert.match(fixRun, /^- `Commit: <hash> <subject>`/m);
   assert.match(fixRun, /`caller: aw-converge`/);
 });
@@ -368,13 +352,13 @@ test('a slice\'s steps stay inside the part of aw-build-steps that survives comp
 });
 
 test('aw-verify-steps accepts caller: aw-implement and behaves as with aw-converge', () => {
-  assert.match(section(verifySteps, '## First step: check the caller'), /With `caller: aw-converge` or `caller: aw-implement` you run in a subagent and no user can answer you/);
+  assert.match(textSection(verifySteps, '## First step: check the caller'), /With `caller: aw-converge` or `caller: aw-implement` you run in a subagent and no user can answer you/);
 });
 
 test('aw-review-steps accepts caller: aw-implement and behaves as with aw-converge', () => {
-  assert.match(section(reviewSteps, '## First step: check the caller'), /With `caller: aw-converge` or `caller: aw-implement` you run in the main session/);
-  assert.match(section(reviewSteps, '### 5. Run the three axes in parallel'), /`caller: aw-converge` or `caller: aw-implement`/);
-  assert.match(section(reviewSteps, '### 8. Report'), /`aw-converge` or `aw-implement`/);
+  assert.match(textSection(reviewSteps, '## First step: check the caller'), /With `caller: aw-converge` or `caller: aw-implement` you run in the main session/);
+  assert.match(textSection(reviewSteps, '### 5. Run the three axes in parallel'), /`caller: aw-converge` or `caller: aw-implement`/);
+  assert.match(textSection(reviewSteps, '### 8. Report'), /`aw-converge` or `aw-implement`/);
 });
 
 test('under aw-implement the convergence procedure takes its limit, journal and seams from the arguments', () => {
