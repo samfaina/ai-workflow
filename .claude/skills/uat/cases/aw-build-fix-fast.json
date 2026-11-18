@@ -2,7 +2,7 @@
   "id": "aw-build-fix-fast",
   "title": "aw-build, fix run on the fast route",
   "group": "aw-build fix run",
-  "order": 36,
+  "order": 37,
   "source": "#94: an introduced defect on the fast route, whose commit must carry every Done when line",
   "from": {
     "ref": "review/planted"

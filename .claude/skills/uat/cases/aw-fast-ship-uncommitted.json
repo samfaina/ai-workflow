@@ -2,7 +2,7 @@
   "id": "aw-fast-ship-uncommitted",
   "title": "aw-ship with an uncommitted test",
   "group": "Fast route, no verify skill",
-  "order": 48,
+  "order": 49,
   "source": "#55: aw-ship marks a test its full run picked up from .aw/ as uncommitted and counts it as no evidence (#114, #119)",
   "from": {
     "case": "aw-fast-review"

@@ -2,7 +2,7 @@
   "id": "aw-implement-hitl",
   "title": "aw-implement, with a HITL slice",
   "group": "aw-implement",
-  "order": 40,
+  "order": 41,
   "source": "#98: a HITL slice runs in the main session and asks, with no extra command",
   "from": {
     "case": "aw-slices"

@@ -2,7 +2,7 @@
   "id": "aw-implement-stop",
   "title": "aw-implement, stops on a declined seam",
   "group": "aw-implement",
-  "order": 41,
+  "order": 42,
   "source": "#98: a fast-route build asks to agree a seam, the person declines, and the run stops having changed nothing",
   "from": {
     "ref": "review/clean"

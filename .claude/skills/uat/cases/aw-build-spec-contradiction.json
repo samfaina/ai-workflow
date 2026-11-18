@@ -2,7 +2,7 @@
   "id": "aw-build-spec-contradiction",
   "title": "aw-build, spec contradiction",
   "group": "Kept off the fast route",
-  "order": 60,
+  "order": 61,
   "source": "#111: a fast-route build whose spec contradiction shows only during the build, as in the #55 run",
   "from": {
     "ref": "uat/audit-fixed",

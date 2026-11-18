@@ -2,7 +2,7 @@
   "id": "aw-fast-build",
   "title": "aw-intake and aw-build",
   "group": "Fast route, no verify skill",
-  "order": 43,
+  "order": 44,
   "source": "#55: a free-text task from intake to a build, with no spec",
   "from": {
     "ref": "uat/setup-audit-fixed"

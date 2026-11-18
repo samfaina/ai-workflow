@@ -22,7 +22,7 @@ Write answers and turns as **intents**: what the person means, never an option's
 
 `{ "write": path, "text": ... }` · `{ "copy": path under this skill, "to": path }` · `{ "replace": path, "pattern": regex, "with": text }` · `{ "delete": path }`, a file or a whole folder, which must exist · `{ "commit": message }` · `{ "remote": url }`, which points `origin` at another URL. `write` and `copy` expand `{{SHORT}}` and `{{BRANCH}}`, so a fixture review report can cover `HEAD`: a report written before a `commit` names the commit before it.
 
-A case at `write` access uses `fixtures/vcs-local-write.md` instead of a review host, because `origin` is a local repo. The ship cases write their review report from `fixtures/` so that each one tests the ship guard alone, whatever the previous review found.
+A case at `write` access uses `fixtures/vcs-local-write.md` instead of a review host, because `origin` is a local repo. The one exception, `aw-ship-merge-review-host`, merges through GitHub: it points `origin` at the scratch repo, uses `fixtures/vcs-github-write.md`, and merges into a base branch of its own, which its `shell` resets before each run. The ship cases write their review report from `fixtures/` so that each one tests the ship guard alone, whatever the previous review found.
 
 ## Assertions
 
