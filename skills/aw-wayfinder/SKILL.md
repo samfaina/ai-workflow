@@ -52,7 +52,7 @@ This is the one skill that needs a tracker: the map has to live somewhere every 
    ```
 
 4. Show the user the adapter, its path and the block change, and write them once they confirm. Read the adapter back and work on it from here, as on any configured tracker.
-5. Commit the adapter and the block, and later the ticket files, through the VCS adapter's `commit`. When the current branch is protected, `start-branch` a work branch first, and tell the user that the map lives on that branch: later sessions run on it until it is merged.
+5. Commit the adapter and the block, and later the ticket files and the domain docs, through the VCS adapter's `commit`. When the current branch is protected, `start-branch` a work branch first, and tell the user that the map lives on that branch: later sessions run on it until it is merged.
 
 Done when the user declined and you stopped, or the adapter and the block are written and committed.
 
@@ -130,7 +130,7 @@ Never resolve more than one ticket per session, except research tickets, which s
 
 When the user names a map, by key, link or name, go to **Work through the map**. When they bring an effort, from the `/aw-intake` report in this conversation or in their own words, go to **Chart the map**. When there is no intake report, say so, suggest running `/aw-intake` first, and go on only if the user asks you to.
 
-In either mode, first settle **The tracker**, read the glossary and the ADRs the domain doc points to, and use the glossary's terms in every ticket.
+In either mode, first settle **The tracker**, read the glossary and the ADRs the domain doc points to, and use the glossary's terms in every ticket. Whatever step you stop at, commit the domain docs before you report, as **Commit the domain docs** says.
 
 ### Chart the map
 
@@ -161,6 +161,19 @@ The map has **cleared** when its Tickets list is empty and its Not yet specified
 3. **Record the hand-off**: one last map update that adds a `#### Deliverables` section with the agreed list. Leave the map open, as the effort's index, for the user to close once its deliverables ship: no deliverable's spec takes the map as its ticket, so shipping one does not close it. Done when the map update is posted, or drafted.
 4. **Name `/aw-spec` for each deliverable**, as **Report** says. Each one gets its own spec and its own spec approval, in a session of its own. This skill never runs it.
 
+### Commit the domain docs
+
+`aw-domain-modeling` writes the glossary and ADRs and leaves them uncommitted; this skill commits them, with any tracker. The domain docs to commit are the glossary and any ADR the domain doc points to that this session created or changed. Stage only those files, by path, and leave every other change in the working tree as it is. A session that wrote no domain docs has nothing to commit, so it makes no commit and no branch.
+
+Commit them through the VCS adapter's `commit`, at that operation's own access level, not the tracker's: a session whose `publish-ticket` is at `draft` still commits when `commit` is at `write`. When the current branch is protected, `start-branch` a work branch first, named by the adapter's branch naming from the map's name, such as `docs/<map-slug>`, and give the branch and the commit in the report, as **Report** says.
+
+- **Local-markdown tracker**: the ticket files are committed through the same `commit`, by step 5 of **The tracker** in the session that sets the tracker up, and as its adapter says in every later one. Put the domain docs in those same commits, on that same branch, so that they take no branch or commit of their own.
+- **Any other tracker**: the map and its tickets live in the tracker, and the work branch holds only the domain docs. Name those docs, and only those, as what lives on the branch.
+
+A `start-branch` or `commit` at `draft` leaves its draft, as **Configuration** says. When `start-branch` is at `draft` on a protected branch, the work branch does not exist yet: draft the commit as well, so that it lands on the branch once the user creates it, and tell the user to apply the two drafts in order. Leave the branch unpushed: pushing and merging it are the user's.
+
+Done when the domain docs this session wrote are committed or drafted, or it wrote none.
+
 ## Drafts
 
 When `publish-ticket` is at `draft`, publish nothing: write the map and every ticket, in publishing order, to one draft, `.aw/drafts/<yyyymmdd-hhmmss>-publish-ticket.md`, and every edge to `.aw/drafts/<yyyymmdd-hhmmss>-link-tickets.md`, naming a ticket that does not exist yet as `<key of the map>` or `<key of ticket n>`, in its `Map:` line too. Tell the user both paths, the order to apply them in, and to give you the keys once the tickets exist. When they do, in this session, post the first map update with the real keys and go on to step 5 of **Chart the map**; otherwise draft the map update too, with the same placeholders. When only `link-tickets` is at `draft`, write the edges with the real keys to one draft. A `comment-ticket` or `set-status` at `draft` leaves its own draft; a session that drafted its claim tells the user, since no other session can see it until it is applied.
@@ -172,6 +185,7 @@ Report in chat:
 - the map, by name with its key, or its draft path;
 - what this session did: the tickets published with their types and blockers, the ticket resolved and its answer in one line, the research resolved, the tickets ruled out of scope;
 - the frontier now, by name, and what is left in Not yet specified;
+- the domain docs this session committed, by path, with the work branch and the commit that hold them, and that they reach the default branch only once that branch is merged;
 - every draft written, with its path.
 
 Then name what comes next:

@@ -81,6 +81,9 @@
     },
     {
       "judge": "Posted the first map update, listing every ticket with its type and blockers, and named /aw-wayfinder for the next ticket"
+    },
+    {
+      "judge": "Committed the glossary on a work branch, not on the protected default branch, and told the person the glossary lives on that branch until it is merged, without claiming the map does"
     }
   ]
 }

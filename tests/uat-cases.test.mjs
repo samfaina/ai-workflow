@@ -210,6 +210,16 @@ test('the draft case leaves no tracker operation at write', () => {
   assert.ok(draft.setup.at(-1).commit, 'the run must start from a clean tree');
 });
 
+test('with a GitHub tracker, aw-wayfinder ends on a clean tree, the glossary committed on a work branch the person is told of', () => {
+  for (const id of ['aw-wayfinder-github-write', 'aw-wayfinder-github-draft']) {
+    const c = byId.get(id);
+    assert.equal(assertionNamed(c, 'working tree unchanged')?.stdout, '^$', id);
+    const judged = judgedText(c);
+    assert.match(judged, /Committed the glossary on a work branch, not on the protected default branch/, id);
+    assert.match(judged, /told the person the glossary lives on that branch until it is merged/, id);
+  }
+});
+
 test('every #55 case that installs dependencies from a ref starts where npm audit is clean', () => {
   const installs = cases.filter((c) => c.source.startsWith('#55') && c.from?.ref && c.shell.includes('npm ci'));
   assert.ok(installs.length > 0);
