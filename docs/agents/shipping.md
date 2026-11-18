@@ -6,7 +6,7 @@ Read by the `ship-tickets` skill (samfaina/agent-skills).
 - **Merge method:** `merge` (passed to `gh pr merge --merge`)
 - **Merge approval:** `auto` (the loop merges as soon as CI is green)
 - **Branch naming:** `--name` is `<type>/<slug>`, where `<type>` is the conventional-commit type of the PR title (`feat`, `fix`, `docs`, `chore`, …) and `<slug>` is the issue title in kebab-case. Orca adds `samfaina/` in front and turns the `/` into `-`, so the branch is `samfaina/<type>-<slug>`.
-- **After merge:** delete the remote branch with `git push origin --delete <branch>`.
+- **After merge:** nothing.
 - **CI:** `required` (PRs get checks, and the loop waits for them to pass)
 - **Workers:** `claude` (all roles)
 
