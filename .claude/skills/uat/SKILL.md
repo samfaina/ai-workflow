@@ -39,7 +39,7 @@ Run `reader.mjs watch --step <stepDir>` in the background, so you are woken when
 | `status` | What to do |
 | --- | --- |
 | `question` | Show every question as asked, with its options and your proposed answer (step 3). |
-| `turn_end` | The agent is waiting. Its text is often a question in plain prose: treat it like one, and propose the next reply from `turns`. |
+| `turn_end` | The agent is waiting. Show its text and your proposed reply (step 3). |
 | `ambiguous` | Show the `candidates` and ask which session is the step's. Then `reader.mjs pick --step <stepDir> --session <id>`. |
 | `timeout` | Say nothing is happening yet, and launch another watch. |
 
@@ -49,9 +49,9 @@ When a `turn_end` follows a turn that has `assertions` in the case, run `check -
 
 ### 3. Propose answers
 
-Answers are intents, and option labels change between runs. Match the question to an entry's `when`, then pick the option of **this run** that fulfils its `intent`. Show the reason.
+Read [ANSWERING.md](ANSWERING.md) and follow it for each question and turn end, with the case's `answers` and `turns`. Show the person each proposal with its reason, and a drift answer marked as drift.
 
-When no entry fits, the question is **drift**. Choose an answer from what the case is testing, show it marked as drift with your reason, and once the person has answered, record it: `drift --when <the question> --intent <the answer used> --reason <why>`.
+Once the person has answered a drift question, record it: `drift --when <the question> --intent <the answer used> --reason <why>`.
 
 Done when every question and turn end got a proposal.
 
@@ -61,34 +61,13 @@ The person types the answers in the case session. If they type `pregunta`, run `
 
 ### 5. Grade
 
-Run `check`, then `reader.mjs summary --step <stepDir>`. Report the two apart: deterministic assertions first, then judgement.
-
-Grade each criterion in `judge` against the summary and the working copy: pass, fail or not_proven, with evidence a reader can check (a quote, a file and line, a command's output). Reach for the session log only for a detail the summary leaves out.
-
-Sort every problem into a **skill defect** or an **environment problem** (a missing dependency, the clone's state, the network).
-
-| Verdict | When |
-| --- | --- |
-| Pass | Every assertion and criterion passed, every turn with assertions included. |
-| Fail | The skill did the wrong thing. |
-| Not proven | The path under test never ran, or the environment got in the way. |
+Run `check`, then `reader.mjs summary --step <stepDir>`. Read [GRADING.md](GRADING.md) and grade the step by it, from the assertion results, the summary, the working copy and the case's `judge` criteria.
 
 Done when every assertion and criterion has its result and evidence.
 
 ### 6. Save
 
-Write the grades to a file in the run folder, and `record --grades <file>`:
-
-```json
-{
-  "verdict": "Pass",
-  "line": "what was checked, in one sentence, for the summary",
-  "judge": [{ "criterion": "the text", "result": "pass", "evidence": "..." }],
-  "findings": [{ "kind": "skill", "text": "..." }, { "kind": "environment", "text": "..." }]
-}
-```
-
-`record` refuses a Pass with anything failing. A passed step leaves a **UAT restore point** and a copy of `.aw/`. When a step did not pass and later cases depend on its state, ask the person whether to go on from it: add `--keep-point yes` only if they say so.
+Write the grades to a file in the run folder, in the shape [GRADING.md](GRADING.md) gives, and `record --grades <file>`. A passed step leaves a **UAT restore point** and a copy of `.aw/`. When a step did not pass and later cases depend on its state, ask the person whether to go on from it: add `--keep-point yes` only if they say so.
 
 Show the verdict with its evidence per criterion, then go back to step 1.
 
