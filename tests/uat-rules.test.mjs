@@ -9,19 +9,23 @@ import { join } from 'node:path';
 import { describe, test } from 'node:test';
 
 import { textSection } from './fixtures.mjs';
-import { makeRun, skillDir } from './uat-fixtures.mjs';
+import { caseFile, makeRun, skillDir } from './uat-fixtures.mjs';
 
 const read = (name) => readFileSync(join(skillDir, name), 'utf8').replaceAll('\r\n', '\n');
 
-const skill = read('SKILL.md');
-const answering = read('ANSWERING.md');
-const grading = read('GRADING.md');
+const files = {
+  'SKILL.md': read('SKILL.md'),
+  'ANSWERING.md': read('ANSWERING.md'),
+  'GRADING.md': read('GRADING.md'),
+  'CASE-FORMAT.md': read('CASE-FORMAT.md'),
+};
+const { 'SKILL.md': skill, 'ANSWERING.md': answering, 'GRADING.md': grading } = files;
 
-// Every place `pattern` matches across the skill's Markdown files, one file
-// name per match.
-function copies(pattern) {
-  const files = { 'SKILL.md': skill, 'ANSWERING.md': answering, 'GRADING.md': grading, 'CASE-FORMAT.md': read('CASE-FORMAT.md') };
-  return Object.entries(files).flatMap(([name, text]) => (text.match(new RegExp(pattern, 'gi')) ?? []).map(() => name));
+// The /uat Markdown files `pattern` matches in, one file name per match, so a
+// rule written twice in one file shows up twice.
+function filesMatching(pattern) {
+  const all = new RegExp(pattern.source, `${pattern.flags}g`);
+  return Object.entries(files).flatMap(([name, text]) => (text.match(all) ?? []).map(() => name));
 }
 
 // The one JSON block of GRADING.md, parsed.
@@ -45,7 +49,7 @@ test('the skill body runs the commands it ran before the rules moved, in the sam
     'reader.mjs watch --step <stepDir>',
     'reader.mjs pick --step <stepDir> --session <id>',
     'check --turn <n>',
-    'drift --when <the question> --intent <the answer used> --reason <why>',
+    'drift --when <when> --intent <intent> --reason <reason>',
     'reader.mjs peek --step <stepDir>',
     'check',
     'reader.mjs summary --step <stepDir>',
@@ -54,6 +58,12 @@ test('the skill body runs the commands it ran before the rules moved, in the sam
     'clean',
   ]);
 });
+
+for (const name of ['ANSWERING.md', 'GRADING.md']) {
+  test(`${name} reads without the conductor's procedure: no person, hecho, pregunta or peek`, () => {
+    assert.doesNotMatch(files[name], /\bperson\b|hecho|pregunta|peek/i);
+  });
+}
 
 describe('ANSWERING.md', () => {
   test('step 3 links it and tells the model to read it', () => {
@@ -68,18 +78,19 @@ describe('ANSWERING.md', () => {
       /question in plain prose/,
       /\*\*drift\*\*/,
     ]) {
-      assert.deepEqual(copies(rule.source), ['ANSWERING.md'], rule.source);
+      assert.deepEqual(filesMatching(rule), ['ANSWERING.md'], rule.source);
     }
+  });
+
+  test('takes a turn end\'s reply from the first turn not sent yet, and says it needs that count', () => {
+    assert.match(answering, /how many of them have been sent so far/);
+    assert.match(answering, /the first entry of `turns` not sent yet/);
   });
 
   test('says what a drift answer is recorded with', () => {
     assert.match(answering, /`when`: the question as asked/);
     assert.match(answering, /`intent`: the answer used/);
     assert.match(answering, /`reason`: why/);
-  });
-
-  test('reads without the conductor\'s procedure: no person, hecho, pregunta or peek', () => {
-    assert.doesNotMatch(answering, /\bperson\b|hecho|pregunta|peek/i);
   });
 });
 
@@ -103,27 +114,25 @@ describe('GRADING.md', () => {
       /environment problem/,
       /deterministic assertions and judgement apart/i,
     ]) {
-      assert.deepEqual(copies(rule.source), ['GRADING.md'], rule.source);
+      assert.deepEqual(filesMatching(rule), ['GRADING.md'], rule.source);
     }
   });
 
   test('CASE-FORMAT.md sends a judge criterion to it instead of restating how it is graded', () => {
-    const judge = read('CASE-FORMAT.md').split('\n').find((line) => line.startsWith('- `{ "judge": criterion }`'));
+    const judge = files['CASE-FORMAT.md'].split('\n').find((line) => line.startsWith('- `{ "judge": criterion }`'));
     assert.match(judge, /\[GRADING\.md\]\(GRADING\.md\)/);
     assert.doesNotMatch(judge, /apart|transcript/);
   });
 
   test('holds the verdict table, and the skill body no longer does', () => {
-    const table = /^\| Verdict \| When \|$/m;
-    assert.match(grading, table);
-    assert.doesNotMatch(skill, table);
+    assert.deepEqual(filesMatching(/^\| Verdict \| When \|$/m), ['GRADING.md']);
     for (const row of ['Pass', 'Fail', 'Not proven']) {
-      assert.deepEqual(copies(`\\n\\| ${row} \\| `), ['GRADING.md'], row);
+      assert.deepEqual(filesMatching(new RegExp(`^\\| ${row} \\| `, 'm')), ['GRADING.md'], row);
     }
   });
 
   test('holds the grades JSON example, and the skill body no longer does', () => {
-    assert.doesNotMatch(skill, /```json/);
+    assert.deepEqual(filesMatching(/^```json$/m), ['GRADING.md']);
     const example = gradesExample();
     assert.deepEqual(Object.keys(example), ['verdict', 'line', 'judge', 'findings']);
     assert.deepEqual(example.findings.map((f) => f.kind), ['skill', 'environment']);
@@ -131,10 +140,7 @@ describe('GRADING.md', () => {
 
   test('the grades JSON example is what record --grades takes', (t) => {
     const example = gradesExample();
-    const run = makeRun(t, [{
-      id: 'c1', title: 'c1', group: 'g', from: { ref: 'uat/start' }, command: '/c1', shell: [], answers: [], turns: [],
-      assertions: example.judge.map((g) => ({ judge: g.criterion })),
-    }]);
+    const run = makeRun(t, [caseFile('c1', { assertions: example.judge.map((g) => ({ judge: g.criterion })) })]);
     run.cli('next');
     run.cli('check');
     const file = join(run.runDir, 'grades.json');
@@ -145,9 +151,5 @@ describe('GRADING.md', () => {
     assert.equal(status, 0, stdout);
     const saved = JSON.parse(readFileSync(join(run.runDir, 'results', 'c1.json'), 'utf8'));
     assert.deepEqual(saved.findings, { skill: ['...'], environment: ['...'] });
-  });
-
-  test('reads without the conductor\'s procedure: no person, hecho, pregunta or peek', () => {
-    assert.doesNotMatch(grading, /\bperson\b|hecho|pregunta|peek/i);
   });
 });

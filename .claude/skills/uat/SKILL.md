@@ -39,7 +39,7 @@ Run `reader.mjs watch --step <stepDir>` in the background, so you are woken when
 | `status` | What to do |
 | --- | --- |
 | `question` | Show every question as asked, with its options and your proposed answer (step 3). |
-| `turn_end` | The agent is waiting. Show its text and your proposed reply (step 3). |
+| `turn_end` | The agent is waiting. Propose the next reply (step 3). |
 | `ambiguous` | Show the `candidates` and ask which session is the step's. Then `reader.mjs pick --step <stepDir> --session <id>`. |
 | `timeout` | Say nothing is happening yet, and launch another watch. |
 
@@ -51,7 +51,7 @@ When a `turn_end` follows a turn that has `assertions` in the case, run `check -
 
 Read [ANSWERING.md](ANSWERING.md) and follow it for each question and turn end, with the case's `answers` and `turns`. Show the person each proposal with its reason, and a drift answer marked as drift.
 
-Once the person has answered a drift question, record it: `drift --when <the question> --intent <the answer used> --reason <why>`.
+Once the person has answered a drift question, record it with the three values ANSWERING.md gives: `drift --when <when> --intent <intent> --reason <reason>`.
 
 Done when every question and turn end got a proposal.
 
