@@ -16,6 +16,7 @@ const read = (path) => readFileSync(join(repoRoot, path), 'utf8');
 const { upstreams } = JSON.parse(read('upstreams.json'));
 const lock = JSON.parse(read('upstreams.lock.json')).upstreams;
 const notice = read('NOTICE.md');
+const readmeStatus = () => read('README.md').split('\n').find((line) => line.startsWith('> Status:'));
 
 const ADAPTED = [
   { name: 'tdd', upstreamPath: 'skills/engineering/tdd' },
@@ -56,15 +57,16 @@ for (const { name, upstreamPath } of ADAPTED) {
     assert.ok(rest.includes(`\`${skill}\``), `ADR 0010 does not list ${skill} as an adaptation`);
   });
 
-  test(`the README counts ${skill} among the kit skills, not the copies`, () => {
-    const status = read('README.md').split('\n').find((line) => line.startsWith('> Status:'));
-    const copied = Object.keys(upstreams.mattpocock.skills).length;
-    assert.equal(copied, 12);
-    assert.match(status, /twelve copies of Matt Pocock's skills/);
-    assert.match(status, /twenty-five kit skills/);
-    assert.ok(status.includes(`\`${skill}\`, adapted from`), `the README does not describe ${skill}`);
+  test(`the README describes ${skill} among the kit skills`, () => {
+    assert.ok(readmeStatus().includes(`\`${skill}\`, adapted from`), `the README does not describe ${skill}`);
   });
 }
+
+test('the README counts both among the kit skills, not the copies', () => {
+  assert.equal(Object.keys(upstreams.mattpocock.skills).length, 12);
+  assert.match(readmeStatus(), /twelve copies of Matt Pocock's skills/);
+  assert.match(readmeStatus(), /twenty-five kit skills/);
+});
 
 test('aw-wizard stays model-invoked, as upstream has it', () => {
   assert.doesNotMatch(read('skills/aw-wizard/SKILL.md'), /^disable-model-invocation: true$/m);
