@@ -359,3 +359,7 @@ _Avoid_: approver, sandbox
 **Assisted UAT case**:
 A UAT case that only runs with a person, because what it checks depends on what the terminal shows. The UAT driver leaves it due.
 _Avoid_: manual case, interactive case
+
+**Stop point**:
+A question in a UAT case that the step must leave unanswered, because the case checks that the agent stops there. The UAT conductor proposes `hecho` there, and the UAT driver ends the step.
+_Avoid_: human gate (a point in the kit's own workflow where a person decides), checkpoint

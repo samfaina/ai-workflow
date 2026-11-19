@@ -1,14 +1,15 @@
 // The UAT conductor's rules for proposing answers and for grading live in two
 // reference files beside the /uat skill, so a caller that never sees the
-// conductor's procedure can follow them too (#156). The behaviour is each
-// file's text, so these tests hold that text.
+// conductor's procedure can follow them too (#156), the UAT driver of an
+// unattended run included (#163). The behaviour is each file's text, so these
+// tests hold that text.
 
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, test } from 'node:test';
 
-import { repoRoot, textSection } from './fixtures.mjs';
+import { markdownFiles, repoRoot, textSection } from './fixtures.mjs';
 import { caseFile, makeRun, skillDir } from './uat-fixtures.mjs';
 
 const read = (name) => readFileSync(join(skillDir, name), 'utf8').replaceAll('\r\n', '\n');
@@ -59,16 +60,30 @@ test('the skill body runs the commands it ran before the rules moved, in the sam
   ]);
 });
 
+// The section of ANSWERING.md for each flow when no entry fits.
+const CONDUCTOR_SECTION = '### With the UAT conductor';
+const UNATTENDED_SECTION = '### In an unattended run';
+
 for (const name of ['ANSWERING.md', 'GRADING.md']) {
-  test(`${name} reads without the conductor's procedure: no person, hecho, pregunta or peek`, () => {
-    assert.doesNotMatch(files[name], /\bperson\b|hecho|pregunta|peek/i);
+  test(`${name} reads without the conductor's procedure: no hecho, pregunta or peek`, () => {
+    assert.doesNotMatch(files[name], /hecho|pregunta|peek/i);
   });
 }
+
+test('a person appears only in the section of ANSWERING.md for a run with the UAT conductor', () => {
+  assert.doesNotMatch(grading, /\bperson\b/i);
+  assert.doesNotMatch(answering.replace(textSection(answering, CONDUCTOR_SECTION), ''), /\bperson\b/i);
+});
 
 describe('ANSWERING.md', () => {
   test('step 3 links it and tells the model to read it', () => {
     const propose = textSection(skill, '### 3. Propose answers');
     assert.match(propose, /Read \[ANSWERING\.md\]\(ANSWERING\.md\)/);
+  });
+
+  test('step 3 proposes hecho at a stop point, which it leaves ANSWERING.md to define', () => {
+    const propose = textSection(skill, '### 3. Propose answers');
+    assert.match(propose, /At a stop point, propose that the person type `hecho` here instead of answering/);
   });
 
   test('holds the answering rules, and the skill body no longer does', () => {
@@ -85,6 +100,50 @@ describe('ANSWERING.md', () => {
   test('takes a turn end\'s reply from the first turn not sent yet, and says it needs that count', () => {
     assert.match(answering, /how many of them have been sent so far/);
     assert.match(answering, /the first entry of `turns` not sent yet/);
+  });
+
+  test('states the shared matching rule once, for a question asked with options or in prose', () => {
+    const shared = textSection(answering, '## Rules');
+    assert.match(shared, /Match each question, whether the agent asked it with options or in prose, to an entry's `when`/);
+    assert.deepEqual(filesMatching(/to an entry's `when`/), ['ANSWERING.md']);
+  });
+
+  test('states the stop points once among the shared rules: the step ends unanswered, even when an entry could be stretched to fit', () => {
+    const stops = textSection(answering, '### Stop points');
+    assert.match(textSection(answering, '## Rules'), /### Stop points/, 'the stop points are a shared rule');
+    assert.match(stops, /where the case's checks expect the agent to stop, such as an approval it must only ask for/i);
+    assert.match(stops, /the step ends with the question unanswered/);
+    assert.match(stops, /even when an entry such as "accept what it proposes" could be stretched to fit, and even when `turns` has entries not sent yet/);
+    for (const rule of [/expect the agent to stop/i, /stretched to fit/]) {
+      assert.deepEqual(filesMatching(rule), ['ANSWERING.md'], rule.source);
+    }
+  });
+
+  test('when no entry fits, each flow has its own short section after the shared rules', () => {
+    const noFit = textSection(answering, '## When no entry fits');
+    assert.ok(answering.indexOf('## When no entry fits') > answering.indexOf('### Stop points'));
+    assert.match(noFit, /the question is \*\*drift\*\*/);
+    assert.match(noFit, new RegExp(`^${CONDUCTOR_SECTION}$`, 'm'));
+    assert.match(noFit, new RegExp(`^${UNATTENDED_SECTION}$`, 'm'));
+  });
+
+  test('with the UAT conductor, a drift answer is proposed for the person to confirm', () => {
+    const conductor = textSection(answering, CONDUCTOR_SECTION);
+    assert.match(conductor, /the conductor proposes a drift answer for the person to confirm/i);
+    assert.doesNotMatch(conductor, /drift: true|the step ends/);
+  });
+
+  test('in an unattended run, a question with options gets a drift answer among them recorded with drift: true, and a prose question ends the step', () => {
+    const unattended = textSection(answering, UNATTENDED_SECTION);
+    assert.match(unattended, /\*\*A question asked with options:\*\* choose a drift answer among its options[^\n]*recorded with `drift: true`/);
+    assert.match(unattended, /\*\*A question in prose:\*\* the step ends[^\n]*an invented reply can take the agent past the case/);
+    assert.doesNotMatch(unattended, /\bperson\b|confirm/);
+  });
+
+  test('states each no-entry-fits case in one file only', () => {
+    for (const rule of [/drift answer for the person to confirm/, /drift answer among its options/, /invented reply/]) {
+      assert.deepEqual(filesMatching(rule), ['ANSWERING.md'], rule.source);
+    }
   });
 
   test('says what a drift answer is recorded with', () => {
@@ -139,6 +198,18 @@ describe('GRADING.md', () => {
     assert.doesNotMatch(judge, /apart|transcript/);
   });
 
+  test('states the clarity rule among its rules and names every text written for review', () => {
+    const clarity = textSection(grading, '### Clarity');
+    assert.match(textSection(grading, '## Rules'), /### Clarity/, 'the clarity rule is a grading rule');
+    for (const text of [/a case's `line`/, /each criterion's evidence/, /the review of a run/, /the batch's results comment/]) {
+      assert.match(clarity, text, text.source);
+    }
+    assert.match(clarity, /make sense to someone who does not know the kit/);
+    assert.match(clarity, /what the skill is for, what was expected and what happened/);
+    assert.match(clarity, /no internal identifier unexplained, such as an `AC-n`, a short commit or "condition 3"/);
+    assert.deepEqual(filesMatching(/does not know the kit/), ['GRADING.md']);
+  });
+
   test('holds the verdict table, and the skill body no longer does', () => {
     assert.deepEqual(filesMatching(/^\| Verdict \| When \|$/m), ['GRADING.md']);
     for (const row of ['Pass', 'Fail', 'Not proven']) {
@@ -167,6 +238,22 @@ describe('GRADING.md', () => {
     const saved = JSON.parse(readFileSync(join(run.runDir, 'results', 'c1.json'), 'utf8'));
     assert.deepEqual(saved.findings, { skill: ['...'], environment: ['...'] });
   });
+});
+
+test('the stop points, the no-entry-fits cases and the clarity rule have no copies under skills/', () => {
+  const markdown = markdownFiles('skills').map((path) => [path, readFileSync(join(repoRoot, path), 'utf8')]);
+  assert.ok(markdown.length > 0, 'the kit has Markdown files to search');
+  for (const rule of [
+    /expect the agent to stop/i,
+    /stretched to fit/,
+    /drift answer for the person to confirm/,
+    /drift answer among its options/,
+    /invented reply/,
+    /does not know the kit/,
+    /internal identifier/,
+  ]) {
+    assert.deepEqual(markdown.filter(([, text]) => rule.test(text)).map(([path]) => path), [], rule.source);
+  }
 });
 
 test("the README's release section names the release gate: due --release must list nothing before tagging", () => {

@@ -24,6 +24,10 @@ Sort every problem into a **skill defect** or an **environment problem** (a miss
 | Fail | The skill did the wrong thing. |
 | Not proven | The path under test never ran, or the environment got in the way. |
 
+### Clarity
+
+Every text written for review must make sense to someone who does not know the kit: a case's `line`, each criterion's evidence, the review of a run and the batch's results comment. Each says what the skill is for, what was expected and what happened, and leaves no internal identifier unexplained, such as an `AC-n`, a short commit or "condition 3".
+
 ## The grades file
 
 ```json

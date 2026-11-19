@@ -1,10 +1,10 @@
 // Helpers shared by the tests: writing fixture kits, running a CLI the way CI
-// runs it, asserting on its findings, and reading a section of a skill's file or
-// of any text. Not a test file itself.
+// runs it, asserting on its findings, reading a section of a skill's file or of
+// any text, and listing a folder's Markdown files. Not a test file itself.
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -77,6 +77,14 @@ export function textSection(text, heading, { withHeading = true } = {}) {
     return !fenced && (line.match(/^#+(?= )/)?.[0].length ?? Infinity) <= level;
   });
   return lines.slice(withHeading ? start : start + 1, end === -1 ? undefined : end).join('\n');
+}
+
+// Every Markdown file under `dir`, at any depth, as a path from the repo root
+// that starts with `dir`.
+export function markdownFiles(dir) {
+  return readdirSync(join(repoRoot, dir), { recursive: true })
+    .filter((entry) => entry.endsWith('.md'))
+    .map((entry) => join(dir, entry));
 }
 
 // Runs a CLI with node; every non-blank stdout line is a finding.
