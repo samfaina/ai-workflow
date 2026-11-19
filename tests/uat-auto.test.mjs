@@ -367,6 +367,12 @@ test('auto given --source starts a run of the chosen cases in a new run folder, 
   const again = start('--cases', 'a');
   assert.equal(again.status, 1);
   assert.match(JSON.parse(again.stdout).message, /already holds a run/);
+
+  const unknownDir = join(run.root, 'third');
+  const unknown = spawnSync(process.execPath, [runScript, 'auto', '--run', unknownDir, '--source', run.source, '--cases-dir', run.casesDir, '--cases', 'nosuch'], { encoding: 'utf8', env: fake.env });
+  assert.equal(unknown.status, 1);
+  assert.match(JSON.parse(unknown.stdout).message, /no case nosuch/);
+  assert.equal(existsSync(unknownDir), false);
 });
 
 test('the driver and the permission host are dependency-free Node ESM', () => {

@@ -123,7 +123,11 @@ function init(options) {
   const casesDir = resolve(options['cases-dir'] ?? join(skillDir, 'cases'));
   const { state, store } = paths(runDir);
   if (existsSync(state)) throw new Refused(`${runDir} already holds a run`);
-  const cases = options.cases ? options.cases.split(',') : allCaseIds(casesDir);
+  const known = allCaseIds(casesDir);
+  const cases = options.cases ? options.cases.split(',') : known;
+  // A mistyped id would otherwise surface only when next reaches it, as a crash.
+  const unknown = cases.filter((id) => !known.includes(id));
+  if (unknown.length > 0) throw new Refused(`no case ${unknown.join(', ')} in ${casesDir}`);
   const kitCommit = git(kitRoot, ['rev-parse', 'HEAD']);
   mkdirSync(store, { recursive: true });
   git(store, ['init', '-q', '--bare', '-b', 'main']);
