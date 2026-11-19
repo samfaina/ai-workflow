@@ -2,10 +2,11 @@
 // folder, reading synthetic session logs.
 
 import assert from 'node:assert/strict';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 
-import { BEFORE, EXIT_UNRECOGNIZED, log, lines, makeStep, question, reader, startWatch } from './uat-fixtures.mjs';
+import { BEFORE, EXIT_UNRECOGNIZED, log, lines, makeStep, question, reader, readerCli, startWatch } from './uat-fixtures.mjs';
 
 const watch = (step, ...args) => reader(step, 'watch', '--step', step.stepDir, '--timeout', '3', '--interval', '50', ...args);
 
@@ -306,4 +307,92 @@ test('peek says when the agent is working or no session exists yet', (t) => {
 
   step.writeSession('s1', lines(log.command('aw-setup')));
   assert.equal(reader(step, 'peek', '--step', step.stepDir).output.status, 'working');
+});
+
+const stepJson = (step) => readFileSync(join(step.stepDir, 'step.json'), 'utf8');
+const watched = (step) => existsSync(join(step.stepDir, 'watch.json'));
+
+test('a mistyped watch option is a usage error that names the option, the mode and its usage line, and watch does not run', (t) => {
+  const step = makeStep(t);
+  step.writeSession('s1', lines(log.ask('q1', [question('Tracker')])));
+  const before = stepJson(step);
+
+  const result = reader(step, 'watch', '--step', step.stepDir, '--timout', '1');
+
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /watch takes no option --timout/);
+  assert.ok(result.stderr.includes('node reader.mjs watch --step <dir> [--timeout <s>] [--interval <ms>]'), result.stderr);
+  assert.equal(result.stdout, '');
+  assert.equal(watched(step), false);
+  assert.equal(stepJson(step), before);
+});
+
+test('a mistyped option with no value after it is still named with the mode and its usage line', (t) => {
+  const step = makeStep(t);
+
+  const result = reader(step, 'peek', '--step', step.stepDir, '--sesion');
+
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /peek takes no option --sesion: node reader\.mjs peek --step <dir>/);
+  assert.equal(result.stdout, '');
+});
+
+test('an option that belongs to another mode is a usage error', (t) => {
+  const step = makeStep(t);
+  step.writeSession('s1', lines(log.ask('q1', [question('Tracker')])));
+  const file = join(step.projectDir, 's1.jsonl');
+
+  const peek = reader(step, 'peek', '--step', step.stepDir, '--session', 's1');
+  assert.equal(peek.status, 2);
+  assert.match(peek.stderr, /peek takes no option --session: node reader\.mjs peek --step <dir>/);
+  assert.equal(peek.stdout, '');
+
+  const watch = reader(step, 'watch', '--step', step.stepDir, '--file', file);
+  assert.equal(watch.status, 2);
+  assert.match(watch.stderr, /watch takes no option --file/);
+  assert.equal(watch.stdout, '');
+  assert.equal(watched(step), false);
+});
+
+test('pick given an option it does not take leaves step.json as it was', (t) => {
+  const step = makeStep(t);
+  const before = stepJson(step);
+
+  const result = reader(step, 'pick', '--step', step.stepDir, '--session', 's1', '--sesion', 's2');
+
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /pick takes no option --sesion/);
+  assert.equal(result.stdout, '');
+  assert.equal(stepJson(step), before);
+});
+
+test('every mode still takes each option its usage line names', (t) => {
+  const step = makeStep(t);
+  step.writeSession('s1', lines(log.command('aw-setup')));
+  const file = join(step.projectDir, 's1.jsonl');
+
+  assert.equal(reader(step, 'watch', '--step', step.stepDir, '--timeout', '0', '--interval', '10').output.status, 'timeout');
+  assert.equal(reader(step, 'peek', '--step', step.stepDir).output.status, 'working');
+  assert.equal(reader(step, 'summary', '--step', step.stepDir).output.session, 's1');
+  assert.equal(reader(step, 'summary', '--file', file).output.session, 's1');
+  assert.equal(reader(step, 'pick', '--step', step.stepDir, '--session', 's1').output.status, 'picked');
+});
+
+test('no mode or an unknown mode prints every mode with its usage line, as the script\'s header comment lists them', (t) => {
+  const step = makeStep(t);
+  const squeeze = (line) => line.trim().replace(/\s+/g, ' ');
+  const header = readFileSync(readerCli, 'utf8').split('\n').filter((line) => line.startsWith('//   node reader.mjs ')).map((line) => squeeze(line.slice(2)));
+  assert.deepEqual(header, [
+    'node reader.mjs watch --step <dir> [--timeout <s>] [--interval <ms>]',
+    'node reader.mjs peek --step <dir>',
+    'node reader.mjs summary --step <dir> | --file <session.jsonl>',
+    'node reader.mjs pick --step <dir> --session <id>',
+  ]);
+
+  for (const args of [[], ['wach', '--step', step.stepDir]]) {
+    const result = reader(step, ...args);
+    const listed = result.stderr.split('\n').filter((line) => line.trim().startsWith('node reader.mjs ')).map(squeeze);
+    assert.equal(result.status, 2);
+    assert.deepEqual(listed, header);
+  }
 });
