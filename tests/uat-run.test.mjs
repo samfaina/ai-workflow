@@ -1148,6 +1148,62 @@ test('--release belongs to due: another command given it is a usage error', (t) 
   assert.equal(run.cli('next', '--release').status, 2);
 });
 
+test('an option the command does not take is a usage error that names the option and the command, and the command does not run', (t) => {
+  const run = makeRun(t, [caseFile('a'), caseFile('b')]);
+  const result = run.cli('clean', '--case', 'a');
+
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /--case/);
+  assert.match(result.stderr, /\bclean\b/);
+  assert.equal(result.stdout, '');
+  assert.ok(existsSync(join(run.runDir, 'points.git')));
+});
+
+test('init given an option it does not take is a usage error and creates no run folder, rather than running every case', (t) => {
+  const run = makeRun(t, [caseFile('a'), caseFile('b')]);
+  const runDir = join(run.root, 'second-run');
+  const result = spawnSync(process.execPath, [runScript, 'init', '--run', runDir, '--source', run.source, '--cases-dir', run.casesDir, '--case', 'a'], { encoding: 'utf8' });
+
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /init takes no option --case/);
+  assert.equal(existsSync(runDir), false);
+});
+
+test('due takes only --cases-dir and --release: --run and an unknown option are usage errors', (t) => {
+  const run = makeRun(t, [caseFile('a')]);
+
+  const bogus = run.due('--bogus', 'x');
+  assert.equal(bogus.status, 2);
+  assert.match(bogus.stderr, /due takes no option --bogus/);
+  assert.equal(bogus.stdout, '');
+  assert.equal(run.due('--run', run.runDir).status, 2);
+});
+
+test('--source belongs to init, while UAT_SOURCE still gives init its source', (t) => {
+  const run = makeRun(t, [caseFile('a')]);
+
+  const result = run.cli('next', '--source', run.source);
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /next takes no option --source/);
+
+  const runDir = join(run.root, 'from-env');
+  const env = { ...process.env, UAT_SOURCE: run.source };
+  const init = spawnSync(process.execPath, [runScript, 'init', '--run', runDir, '--cases-dir', run.casesDir], { encoding: 'utf8', env });
+  assert.equal(init.status, 0, init.stderr);
+  assert.equal(JSON.parse(init.stdout).status, 'created');
+});
+
+test('the usage message lists each command with the options it takes, as the script\'s header comment does', () => {
+  const squeeze = (line) => line.trim().replace(/\s+/g, ' ');
+  const header = readFileSync(runScript, 'utf8').split('\n').filter((line) => line.startsWith('//   node run.mjs ')).map((line) => squeeze(line.slice(2)));
+  const result = spawnSync(process.execPath, [runScript], { encoding: 'utf8' });
+  const listed = result.stderr.split('\n').filter((line) => line.trim().startsWith('node run.mjs ')).map(squeeze);
+
+  assert.equal(result.status, 2);
+  assert.equal(header.length, 10);
+  assert.deepEqual(listed, header);
+});
+
 test('only init falls back to UAT_TARGET: another command without --run is a usage error', (t) => {
   const run = makeRun(t, [caseFile('a')]);
   const env = { ...process.env, UAT_TARGET: dirname(run.runDir) };

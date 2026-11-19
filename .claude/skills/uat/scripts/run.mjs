@@ -13,6 +13,10 @@
 //   node run.mjs clean  --run <dir>
 //   node run.mjs due    [--cases-dir <dir>] [--release]
 //
+// Each command takes only the options on its line, and any other option is a
+// usage error that names it. These lines copy the usage lines of COMMANDS,
+// which the check reads, and a test holds the two the same.
+//
 // --source defaults to UAT_SOURCE. For init only, --run defaults to
 // <UAT_TARGET>/<yyyymmdd>; every other command needs the run folder by name,
 // except due, which reads only the case files and the UAT ledger, and with
@@ -56,11 +60,15 @@ function usage(message) {
 // Options that take no value.
 const FLAGS = new Set(['release']);
 
-function parseArgs(args) {
+// The command's options, from the command line. An option the command does not
+// take is a usage error, so a typo is never dropped without a word.
+function parseArgs(command, args) {
+  const takes = optionsOf(command);
   const options = {};
   let i = 0;
   while (i < args.length) {
     const name = args[i].startsWith('--') ? args[i].slice(2) : null;
+    if (name !== null && !takes.includes(name)) usage(`${command} takes no option --${name}: ${usageLine(command)}`);
     if (FLAGS.has(name)) {
       options[name] = true;
       i += 1;
@@ -665,19 +673,32 @@ function today() {
   return `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
 }
 
-const COMMANDS = { init, next, check, record, skip, reset, drift, report, clean, due };
+// Each command and its usage line, the only place that says which options it
+// takes: parseArgs refuses any option its line does not name, and the usage
+// message shows the lines.
+const COMMANDS = {
+  init: { action: init, usage: '--run <dir> --source <repo> [--cases a,b] [--cases-dir <dir>]' },
+  next: { action: next, usage: '--run <dir>' },
+  check: { action: check, usage: '--run <dir> [--turn <n>]' },
+  record: { action: record, usage: '--run <dir> --grades <file> [--keep-point yes]' },
+  skip: { action: skip, usage: '--run <dir> --reason <text>' },
+  reset: { action: reset, usage: '--run <dir> --case <id>' },
+  drift: { action: drift, usage: '--run <dir> --when <question> --intent <answer> --reason <why>' },
+  report: { action: report, usage: '--run <dir> [--issue <n>]' },
+  clean: { action: clean, usage: '--run <dir>' },
+  due: { action: due, usage: '[--cases-dir <dir>] [--release]' },
+};
+const usageLine = (command) => `node run.mjs ${command} ${COMMANDS[command].usage}`;
+const optionsOf = (command) => [...COMMANDS[command].usage.matchAll(/--([a-z-]+)/g)].map(([, name]) => name);
+
 const [command, ...rest] = process.argv.slice(2);
-if (!Object.hasOwn(COMMANDS, command ?? '')) {
-  const withRun = Object.keys(COMMANDS).filter((name) => name !== 'due');
-  usage(`usage: run.mjs ${withRun.join('|')} --run <dir> [options], or run.mjs due [--cases-dir <dir>] [--release]`);
-}
+if (!Object.hasOwn(COMMANDS, command ?? '')) usage(`usage:\n${Object.keys(COMMANDS).map((name) => `  ${usageLine(name)}`).join('\n')}`);
 try {
-  const options = parseArgs(rest);
-  if (options.release && command !== 'due') usage('--release is an option of due only');
+  const options = parseArgs(command, rest);
   if (command === 'init' && !options.run && process.env.UAT_TARGET) options.run = join(process.env.UAT_TARGET, today());
   if (!options.run && command !== 'due') usage(command === 'init' ? '--run <dir> is required, or the UAT_TARGET environment variable' : '--run <dir> is required');
   options.source ??= process.env.UAT_SOURCE;
-  COMMANDS[command](options);
+  COMMANDS[command].action(options);
 } catch (error) {
   if (!(error instanceof Refused)) throw error;
   print({ status: 'refused', message: error.message });
