@@ -51,7 +51,7 @@ When a `turn_end` follows a turn that has `assertions` in the case, run `check -
 
 ### 3. Propose answers
 
-Read [ANSWERING.md](ANSWERING.md) and follow it for each question and turn end, with the case's `answers` and `turns`. Show the person each proposal with its reason, and a drift answer marked as drift.
+Read [ANSWERING.md](ANSWERING.md) and follow it for each question and turn end, with the case's `answers` and `turns`. Show the person each proposal with its reason, and a drift answer marked as drift. At a stop point, propose that the person type `hecho` here instead of answering, so the step ends where an unattended run ends it.
 
 Once the person has answered a drift question, record it with the three values ANSWERING.md gives: `drift --when <when> --intent <intent> --reason <reason>`.
 

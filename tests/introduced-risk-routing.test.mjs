@@ -6,11 +6,11 @@
 // word, and a change to one copy fails until the others follow.
 
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 
-import { repoRoot, skillSection } from './fixtures.mjs';
+import { markdownFiles, repoRoot, skillSection } from './fixtures.mjs';
 
 const read = (...path) => readFileSync(join(repoRoot, ...path), 'utf8').replaceAll('\r\n', '\n');
 
@@ -42,12 +42,6 @@ test("the shared sentence uses aw-ship's own words for both outcomes of an intro
     assert.ok(RISK_ROUTING.includes(words), `the routing sentence says "${words}"`);
   }
 });
-
-function markdownFiles(dir) {
-  return readdirSync(join(repoRoot, dir), { recursive: true })
-    .filter((entry) => entry.endsWith('.md'))
-    .map((entry) => join(dir, entry));
-}
 
 test('no file in the kit says introduced risks are accepted or fixed before shipping', () => {
   const files = [...markdownFiles('skills'), ...markdownFiles('docs'), 'GLOSSARY.md', 'README.md'];
