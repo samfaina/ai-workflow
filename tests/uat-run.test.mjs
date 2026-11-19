@@ -867,6 +867,112 @@ test('a pass on another kit commit still counts: a change to a kit skill alone m
   assert.deepEqual(run.due().output.due, []);
 });
 
+// Dates each case's ledger entry, as if its last run had started then.
+function datePasses(run, dates) {
+  const ledger = run.ledger();
+  for (const [id, date] of Object.entries(dates)) ledger[id] = { ...ledger[id], date };
+  writeFileSync(run.ledgerFile, JSON.stringify(ledger));
+}
+
+// Makes the folder that holds the cases a git repo, as the kit is, and adds
+// a commit dated `date`.
+function commitKit(run, date) {
+  if (!existsSync(join(run.root, '.git'))) git(run.root, 'init', '-q', '-b', 'main');
+  git(run.root, 'commit', '-q', '--allow-empty', '-m', date, { GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date });
+}
+
+// Tags a release in that repo on a commit dated `date`. An annotated tag is
+// dated `taggedAt`, by default the commit's date.
+function tagRelease(run, name, date, { annotated = false, taggedAt = date } = {}) {
+  commitKit(run, date);
+  git(run.root, 'tag', ...(annotated ? ['-a', '-m', name] : []), name, { GIT_COMMITTER_DATE: taggedAt });
+}
+
+test('due --release lists as due a case whose last pass predates the latest release tag, and plain due does not', (t) => {
+  const run = makeRun(t, [caseFile('old', { order: 1 }), caseFile('fresh', { order: 2 })]);
+  runCases(run, pass(), pass());
+  run.cli('report');
+  datePasses(run, { old: '2026-01-01T10:00:00.000Z', fresh: '2026-03-01T10:00:00.000Z' });
+  tagRelease(run, 'v1.0.0', '2026-02-01T10:00:00Z');
+
+  assert.deepEqual(run.due().output.due, []);
+  assert.deepEqual(run.due('--release').output.due, [{ case: 'old', reason: 'before-release' }]);
+});
+
+test('with no release tag, due --release lists the same cases as due', (t) => {
+  const run = makeRun(t, [caseFile('passed', { order: 1 }), caseFile('failed', { order: 2 }), caseFile('unrun', { order: 3 })]);
+  runCases(run, pass(), fail);
+  run.cli('report');
+  datePasses(run, { passed: '2026-01-01T10:00:00.000Z' });
+  commitKit(run, '2026-02-01T10:00:00Z');
+  git(run.root, 'tag', 'uat/start');
+
+  const plain = run.due().output;
+  assert.deepEqual(reasons(plain), { failed: 'not-passed', unrun: 'new' });
+  assert.deepEqual(run.due('--release').output, plain);
+});
+
+test('due --release exits non-zero while any case is due, an assisted case included, and zero when none is', (t) => {
+  const run = makeRun(t, [caseFile('plain', { order: 1 }), caseFile('assisted', { order: 2, assisted: TERMINAL })]);
+  runCases(run, pass(), pass());
+  run.cli('report');
+  tagRelease(run, 'v1.0.0', '2026-02-01T10:00:00Z');
+  datePasses(run, { plain: '2026-03-01T10:00:00.000Z', assisted: '2026-01-01T10:00:00.000Z' });
+
+  const blocked = run.due('--release');
+  assert.equal(blocked.status, 3, 'its own exit code, apart from a refusal');
+  assert.deepEqual(blocked.output.batches, []);
+  assert.deepEqual(blocked.output.assisted.map((batch) => batch.assisted), [[{ case: 'assisted', reason: TERMINAL }]]);
+  assert.equal(run.due().status, 0, 'plain due lists what is due and does not fail');
+
+  datePasses(run, { assisted: '2026-03-01T10:00:00.000Z' });
+  const clear = run.due('--release');
+  assert.equal(clear.status, 0, clear.stdout);
+  assert.deepEqual(clear.output.due, []);
+});
+
+test('the latest release is the most recently dated vX.Y.Z tag, a hotfix of an older line included, and other tags do not count', (t) => {
+  const run = makeRun(t, [caseFile('between', { order: 1 }), caseFile('after', { order: 2 })]);
+  runCases(run, pass(), pass());
+  run.cli('report');
+  tagRelease(run, 'v1.1.0', '2026-02-01T10:00:00Z');
+  tagRelease(run, 'v1.0.1', '2026-04-01T10:00:00Z');
+  tagRelease(run, 'v2.0.0-rc.1', '2026-06-01T10:00:00Z');
+  tagRelease(run, 'uat/late', '2026-07-01T10:00:00Z');
+  datePasses(run, { between: '2026-03-01T10:00:00.000Z', after: '2026-05-01T10:00:00.000Z' });
+
+  assert.deepEqual(run.due('--release').output.due, [{ case: 'between', reason: 'before-release' }]);
+});
+
+test('an annotated release tag counts from when it was tagged, not from its commit', (t) => {
+  const run = makeRun(t, [caseFile('a', { order: 1 })]);
+  runCases(run, pass());
+  run.cli('report');
+  tagRelease(run, 'v1.0.0', '2026-01-15T10:00:00Z', { annotated: true, taggedAt: '2026-03-15T10:00:00Z' });
+
+  datePasses(run, { a: '2026-02-01T10:00:00.000Z' });
+  assert.deepEqual(run.due('--release').output.due, [{ case: 'a', reason: 'before-release' }]);
+  datePasses(run, { a: '2026-04-01T10:00:00.000Z' });
+  assert.deepEqual(run.due('--release').output.due, []);
+});
+
+test('due --release refuses a cases folder outside a git repo, since it cannot read the release tags', (t) => {
+  const run = makeRun(t, [caseFile('a', { order: 1 })]);
+  runCases(run, pass());
+  run.cli('report');
+
+  const { status, output } = run.due('--release');
+  assert.equal(status, 1);
+  assert.equal(output.status, 'refused');
+  assert.match(output.message, /git for-each-ref/);
+});
+
+test('--release belongs to due: another command given it is a usage error', (t) => {
+  const run = makeRun(t, [caseFile('a')]);
+
+  assert.equal(run.cli('next', '--release').status, 2);
+});
+
 test('only init falls back to UAT_TARGET: another command without --run is a usage error', (t) => {
   const run = makeRun(t, [caseFile('a')]);
   const env = { ...process.env, UAT_TARGET: dirname(run.runDir) };

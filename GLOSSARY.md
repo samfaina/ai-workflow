@@ -337,7 +337,7 @@ The committed record of each UAT case's last run: its verdict, the case as it st
 _Avoid_: results file, run history
 
 **Due UAT case**:
-A UAT case with no passing run in the UAT ledger for what it holds now: it is new, it changed since that run, or a case it starts from is due. A change to a kit skill alone does not make a case due.
+A UAT case with no passing run in the UAT ledger for what it holds now: it is new, it changed since that run, or a case it starts from is due. A change to a kit skill alone does not make a case due. For a release, a case whose last pass is dated before the latest release tag is due too.
 _Avoid_: stale case, pending case
 
 **UAT batch**:
