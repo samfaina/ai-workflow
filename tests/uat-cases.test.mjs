@@ -113,7 +113,7 @@ test('the GitHub write of aw-wayfinder closes, in its cleanup, the issues the st
   const cleanup = byId.get('aw-wayfinder-github-write').cleanup.join('\n');
   assert.match(cleanup, /gh issue list --state open\b/);
   assert.match(cleanup, /createdAt[\s\S]*\{\{STARTED\}\}/, 'only the issues created since the step started');
-  assert.match(cleanup, /gh issue close/);
+  assert.match(cleanup, /gh issue close [^}]*; if \(\$LASTEXITCODE\) \{ exit \$LASTEXITCODE \}/, 'an issue it fails to close fails the cleanup, even when a later one closes');
   assert.doesNotMatch(cleanup, /gh issue delete/, 'the evidence stays');
 });
 

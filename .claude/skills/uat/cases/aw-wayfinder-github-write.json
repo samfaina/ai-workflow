@@ -14,7 +14,7 @@
   ],
   "shell": [],
   "cleanup": [
-    "((gh issue list --state open --limit 100 --json number,createdAt | Out-String) | ConvertFrom-Json) | Where-Object { [DateTimeOffset]$_.createdAt -ge [DateTimeOffset]'{{STARTED}}' } | ForEach-Object { gh issue close $_.number --reason 'not planned' --comment 'Closed by the UAT run that opened it, so that the next run starts from a scratch repo with no open map.' }"
+    "((gh issue list --state open --limit 100 --json number,createdAt | Out-String) | ConvertFrom-Json) | Where-Object { [DateTimeOffset]$_.createdAt -ge [DateTimeOffset]'{{STARTED}}' } | ForEach-Object { gh issue close $_.number --reason 'not planned' --comment 'Closed by the UAT run that opened it, so that the next run starts from a scratch repo with no open map.'; if ($LASTEXITCODE) { exit $LASTEXITCODE } }"
   ],
   "command": "/ai-workflow:aw-intake Queremos que los socios puedan reservar libros que están prestados, con lista de espera, y que se les avise cuando les toque. Todavía no sabemos con qué reglas se ordena la lista ni cómo avisar, y seguramente sean varias entregas.",
   "answers": [

@@ -29,6 +29,7 @@ import { fileURLToPath } from 'node:url';
 
 import { githubRepo } from './github-repo.mjs';
 import { Refused } from './refused.mjs';
+import { callsOf } from './shell-commands.mjs';
 
 const scriptsDir = dirname(fileURLToPath(import.meta.url));
 const skillDir = join(scriptsDir, '..');
@@ -141,15 +142,21 @@ function githubEnv(stepDir) {
 
 // A case's `shell` or `cleanup` lines, run in one PowerShell session in the
 // working copy, as the person runs them in a terminal: the cases write them for
-// PowerShell. Returns the environment the lines leave. A line that fails stops
-// the run, naming the case.
-function runLines(id, field, lines, { workdir, stepDir, env }) {
+// PowerShell. `where` says where they run: the working copy, the step folder
+// that keeps their script, and the environment they start from. Returns the
+// environment the lines leave. A line that fails stops the run, naming the
+// case. The token stays out of the file that carries that environment back,
+// since the step folder is readable by the grading call.
+function runLines(id, field, lines, where) {
+  const { workdir, stepDir, env } = where;
   const envFile = join(stepDir, `${field}-env.json`);
   const quote = (text) => `'${text.replaceAll("'", "''")}'`;
   const body = [
     "$ErrorActionPreference = 'Stop'",
     ...lines.flatMap((line) => ['$global:LASTEXITCODE = 0', line, 'if ($LASTEXITCODE) { exit $LASTEXITCODE }']),
-    `[IO.File]::WriteAllText(${quote(envFile)}, ([Environment]::GetEnvironmentVariables() | ConvertTo-Json -Compress))`,
+    '$uatLeft = [Environment]::GetEnvironmentVariables()',
+    "$uatLeft.Remove('GH_TOKEN')",
+    `[IO.File]::WriteAllText(${quote(envFile)}, ($uatLeft | ConvertTo-Json -Compress))`,
   ];
   const file = join(stepDir, `${field}.ps1`);
   const bom = String.fromCharCode(0xfeff); // so Windows PowerShell reads the file as UTF-8
@@ -160,15 +167,17 @@ function runLines(id, field, lines, { workdir, stepDir, env }) {
     const why = result.error ? result.error.message : `exit ${result.status}: ${tail(`${result.stdout}${result.stderr}`)}`;
     throw new Refused(`${id}: its ${field} lines failed in ${workdir}: ${why}`);
   }
-  return readJson(envFile);
+  const left = readJson(envFile);
+  if (env.GH_TOKEN) left.GH_TOKEN = env.GH_TOKEN;
+  return left;
 }
 
 // The case's shell lines, run before the session starts. What they leave in
 // the environment, such as a changed PATH, is the environment the case session
 // runs in.
-function runShell(uatCase, place) {
+function runShell(uatCase, where) {
   const lines = uatCase.shell ?? [];
-  return lines.length === 0 ? place.env : runLines(uatCase.id, 'shell', lines, place);
+  return lines.length === 0 ? where.env : runLines(uatCase.id, 'shell', lines, where);
 }
 
 // The step's start time for {{STARTED}}, in UTC to the second, a form gh's
@@ -176,18 +185,19 @@ function runShell(uatCase, place) {
 // never comes after anything the step created.
 const startedStamp = (startedAt) => new Date(startedAt).toISOString().replace(/\.\d{3}Z$/, 'Z');
 
-// The case's cleanup lines, run once the step is graded and recorded, whatever
-// its verdict, so that it leaves the scratch repo as later runs expect. A
-// cleanup that fails stops the run: the next case would start from a host left
-// dirty. The step's result stays recorded, so auto resumes at the next case.
-function runCleanup(uatCase, startedAt, place) {
+// The case's cleanup lines, so that it leaves the scratch repo as later runs
+// expect: run once the step is graded and recorded, whatever its verdict, and
+// before a step cut short starts again, for what that attempt created. A
+// cleanup that fails stops the run, since the next case would start from a
+// host left dirty. `next` says how the run goes on once it is undone by hand.
+function runCleanup(uatCase, startedAt, where, next) {
   const lines = (uatCase.cleanup ?? []).map((line) => line.replaceAll('{{STARTED}}', startedStamp(startedAt)));
   if (lines.length === 0) return;
   try {
-    runLines(uatCase.id, 'cleanup', lines, place);
+    runLines(uatCase.id, 'cleanup', lines, where);
   } catch (error) {
     if (!(error instanceof Refused)) throw error;
-    throw new Refused(`${error.message}. Its result is recorded: undo by hand what the step left, then run auto again to go on with the next case`);
+    throw new Refused(`${error.message}. Undo by hand what the step left, then run auto again: ${next}`);
   }
 }
 
@@ -360,26 +370,27 @@ function continuedSession(runDir, uatCase) {
   return session;
 }
 
-const RUNS_GH = /(^|[\s;&|(`])gh(\.exe)?(\s|$)/;
-
 // Whether a case runs gh or reaches GitHub, so that it needs the token: its
 // shell lines, cleanup lines or `run` assertions run gh or name github.com, or
 // its setup, or that of a case whose session it continues, points origin there.
 function needsGitHub(loadCase, uatCase, seen = new Set()) {
   const checks = [...(uatCase.assertions ?? []), ...(uatCase.turns ?? []).flatMap((turn) => turn.assertions ?? [])];
   const lines = [...(uatCase.shell ?? []), ...(uatCase.cleanup ?? []), ...checks.map((check) => check.run).filter(Boolean)];
-  if (lines.some((line) => RUNS_GH.test(line) || /github\.com/i.test(line))) return true;
+  const runsGh = (line) => callsOf(line).some(({ program }) => program === 'gh');
+  if (lines.some((line) => runsGh(line) || /github\.com/i.test(line))) return true;
   if ((uatCase.setup ?? []).some((op) => op.remote !== undefined && githubRepo(op.remote))) return true;
   seen.add(uatCase.id);
   return Boolean(uatCase.continues) && !seen.has(uatCase.continues) && needsGitHub(loadCase, loadCase(uatCase.continues), seen);
 }
 
+const gitOut = (dir, ...args) => spawnSync('git', ['-C', dir, ...args], { encoding: 'utf8' }).stdout?.trim() ?? '';
+
 // The scratch repo, as `owner/name`: the GitHub repo the source clone's remote
 // names, origin first. Null when it has no GitHub remote.
 function scratchRepo(source) {
-  const remotes = spawnSync('git', ['-C', source, 'remote'], { encoding: 'utf8' }).stdout?.split('\n').filter(Boolean) ?? [];
+  const remotes = gitOut(source, 'remote').split('\n').filter(Boolean);
   for (const remote of [...remotes.filter((name) => name === 'origin'), ...remotes.filter((name) => name !== 'origin')]) {
-    const repo = githubRepo(spawnSync('git', ['-C', source, 'remote', 'get-url', remote], { encoding: 'utf8' }).stdout?.trim() ?? '');
+    const repo = githubRepo(gitOut(source, 'remote', 'get-url', remote));
     if (repo) return repo;
   }
   return null;
@@ -443,7 +454,7 @@ function runStep(run, uatCase, brief) {
       return error.message;
     }
   });
-  runCleanup(uatCase, startedAt, { workdir, stepDir, env: step.env });
+  runCleanup(uatCase, startedAt, { workdir, stepDir, env: step.env }, 'the result is recorded, so it goes on with the next case');
 }
 
 // Runs the batch of the run folder, a new one when `source` is given, until
@@ -461,15 +472,16 @@ export function auto(options) {
   } else if (options.cases || options['cases-dir']) {
     throw new Refused(`${runDir} already holds a run, whose cases were chosen when it started: drop --cases and --cases-dir to resume it`);
   }
-  const started = readJson(stateFile);
+  const begun = readJson(stateFile);
   if (!process.env[TOKEN_VARIABLE]) {
-    const loadCase = (caseId) => readJson(join(started.casesDir, `${caseId}.json`));
-    const needing = started.cases.filter((caseId) => !started.results[caseId] && loadCase(caseId).assisted === undefined && needsGitHub(loadCase, loadCase(caseId)));
+    const loadCase = (caseId) => readJson(join(begun.casesDir, `${caseId}.json`));
+    const pending = begun.cases.filter((caseId) => !begun.results[caseId]);
+    const needing = pending.filter((caseId) => loadCase(caseId).assisted === undefined && needsGitHub(loadCase, loadCase(caseId)));
     if (needing.length > 0) {
       throw new Refused(`${needing.join(', ')} run gh or reach GitHub, and ${TOKEN_VARIABLE} is not set: set it to the fine-grained token limited to the scratch repo that CASE-FORMAT.md describes, and run auto again`);
     }
   }
-  const run = { runDir, judgeModel: options['judge-model'] ?? DEFAULT_JUDGE_MODEL, scratch: scratchRepo(started.source) };
+  const run = { runDir, judgeModel: options['judge-model'] ?? DEFAULT_JUDGE_MODEL, scratch: scratchRepo(begun.source) };
 
   for (;;) {
     const state = readJson(stateFile);
@@ -484,7 +496,10 @@ export function auto(options) {
     if (brief.status === 'blocked') {
       runMjs('skip', runDir, '--reason', `Blocked: it starts from ${brief.needs}, which did not pass and so left no restore point.`);
     } else if (brief.resumed) {
-      // A step cut short cannot be resumed half-way: it starts again from its restore point.
+      // A step cut short cannot be resumed half-way: it starts again from its
+      // restore point, once its cleanup has closed what that attempt created.
+      const where = { workdir: brief.workdir, stepDir: brief.stepDir, env: githubEnv(brief.stepDir) };
+      runCleanup(uatCase, brief.startedAt, where, 'it starts the step again from its restore point');
       runMjs('reset', runDir, '--case', id);
     } else {
       runStep(run, uatCase, brief);

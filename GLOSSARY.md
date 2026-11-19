@@ -353,8 +353,12 @@ The process that conducts an unattended run: it starts each case session, answer
 _Avoid_: bot, runner, conductor (the **UAT conductor** works beside a person)
 
 **Permission host**:
-What answers a case session's permission prompts in an unattended run, in place of the person who approves them in an assisted one.
+What answers a case session's permission prompts in an unattended run, in place of the person who approves them in an assisted one. It keeps GitHub writes to the scratch repo, best effort: the scratch repo's token is the guarantee.
 _Avoid_: approver, sandbox
+
+**Scratch repo**:
+The scratch app's repo on GitHub, which its clone's GitHub remote names: the one repo a UAT case may write to on GitHub in an unattended run.
+_Avoid_: test repo, sandbox repo
 
 **Assisted UAT case**:
 A UAT case that only runs with a person, because what it checks depends on what the terminal shows. The UAT driver leaves it due.

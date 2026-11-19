@@ -5,7 +5,7 @@
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { delimiter, join } from 'node:path';
 import test from 'node:test';
 
@@ -265,6 +265,8 @@ test('gh reads are allowed, and a gh write or a push or fetch aimed at a repo ot
     ['gh api repos/someone/project/issues', 'allow'],
     ['gh issue create --title "The map" --body "Type: wayfinder:map"', 'allow'],
     ['gh issue close 3 --repo o/scratch', 'allow'],
+    ['gh api --method POST repos/{owner}/{repo}/issues/2/dependencies/blocked_by -F issue_id=7', 'allow'],
+    ['gh api graphql -f query="query { viewer { login } }"', 'allow'],
     ['git push origin HEAD', 'allow'],
     ['git push ../origin.git HEAD:refs/heads/main', 'allow'],
     ['gh issue create -R someone/project --title x', 'deny'],
@@ -273,6 +275,11 @@ test('gh reads are allowed, and a gh write or a push or fetch aimed at a repo ot
     ['git push https://github.com/someone/project.git HEAD', 'deny'],
     ['git status; git fetch git@github.com:someone/project.git', 'deny'],
     ['git push https://gitlab.com/someone/project.git HEAD', 'deny'],
+    ['gh api -XPOST repos/someone/project/issues', 'deny'],
+    ['gh api graphql -f query="mutation { closeIssue(input: {}) { clientMutationId } }"', 'deny'],
+    ['gh repo delete --yes', 'deny'],
+    ['gh repo create someone/new --private', 'deny'],
+    ['git remote add other https://github.com/someone/project.git && git push other HEAD', 'deny'],
   ];
   const fake = fakeClaude(run, {
     turns: [{ tools: commands.map(([command]) => bash(command)), text: 'Done.' }],
@@ -289,7 +296,7 @@ test('gh reads are allowed, and a gh write or a push or fetch aimed at a repo ot
 });
 
 test('a case session and its shell lines get GH_TOKEN from UAT_GH_TOKEN, and git asks none of the stored credential helpers', (t) => {
-  const run = makeRun(t, [caseFile('a', { shell: ["$env:UAT_PROBE = $env:GH_TOKEN"] })]);
+  const run = makeRun(t, [caseFile('a', { shell: ['$env:UAT_PROBE = $env:GH_TOKEN.Substring(0, 7)'] })]);
   const fake = fakeClaude(run, { turns: [{ text: 'Done.' }], judgements: [{ grade: pass() }] });
   // The maintainer's own login: a stored helper and a token of their own.
   const leaked = join(run.root, 'leaked.txt');
@@ -302,7 +309,7 @@ test('a case session and its shell lines get GH_TOKEN from UAT_GH_TOKEN, and git
 
   const [session] = fake.sessions();
   assert.equal(session.env.GH_TOKEN, 'scratch-token');
-  assert.equal(session.env.UAT_PROBE, 'scratch-token', 'the shell lines ran with the token too');
+  assert.equal(session.env.UAT_PROBE, 'scratch', 'the shell lines ran with the token too');
   assert.equal(session.env.GITHUB_TOKEN, undefined);
   assert.ok(session.env.GH_CONFIG_DIR.startsWith(join(run.runDir, 'steps', 'a')), 'gh reads no stored login of the maintainer');
   const fill = (host) => spawnSync('git', ['credential', 'fill'], { input: `protocol=https\nhost=${host}\n\n`, encoding: 'utf8', env: { ...fake.env, ...session.env } });
@@ -314,6 +321,9 @@ test('a case session and its shell lines get GH_TOKEN from UAT_GH_TOKEN, and git
   assert.equal(github.status, 0, github.stderr);
   assert.match(github.stdout, /^password=scratch-token$/m);
   assert.equal(existsSync(leaked), false);
+  const stepDir = join(run.runDir, 'steps', 'a');
+  const onDisk = readdirSync(stepDir).filter((name) => statSync(join(stepDir, name)).isFile() && readText(join(stepDir, name)).includes('scratch-token'));
+  assert.deepEqual(onDisk, [], 'the token is written to no file of the step folder, which the grading call can read');
 });
 
 test('without UAT_GH_TOKEN, auto refuses to start a batch whose cases run gh or reach GitHub, naming them, before any step or call', (t) => {
@@ -460,6 +470,24 @@ test('cleanup lines run in the working copy after the step is graded, on a pass 
   const resumedRun = auto(run, fake);
   assert.equal(resumedRun.status, 0, resumedRun.report);
   assert.deepEqual(fake.sessions().map((call) => call.prompt), ['/passes', '/fails', '/breaks', '/after']);
+});
+
+test('a step cut short runs its cleanup lines, for what that attempt started, before auto restarts it from its restore point', (t) => {
+  // The log sits in the run folder, which outlives the working copy that reset deletes.
+  const run = makeRun(t, [caseFile('a', { cleanup: ["Add-Content -Path ../../../cleanup.log -Value '{{STARTED}}'"] })]);
+  const fake = fakeClaude(run, {
+    turns: [{ error: 'API Error: the session was cut short' }, { text: 'Done.' }],
+    judgements: [{ grade: pass() }],
+  });
+  const startOf = () => JSON.parse(readText(join(run.runDir, 'steps', 'a', 'step.json'))).startedAt.replace(/\.\d+Z$/, 'Z');
+
+  assert.equal(auto(run, fake).status, 1);
+  const cutShort = startOf();
+  assert.equal(existsSync(join(run.runDir, 'cleanup.log')), false, 'a step cut short is not graded, so no cleanup yet');
+
+  const resumedRun = auto(run, fake);
+  assert.equal(resumedRun.status, 0, resumedRun.report);
+  assert.deepEqual(readText(join(run.runDir, 'cleanup.log')).trim().split(/\r?\n/), [cutShort, startOf()]);
 });
 
 test('a shell line that fails stops the run before the session starts, naming the case', (t) => {

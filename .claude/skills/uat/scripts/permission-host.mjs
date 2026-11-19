@@ -23,6 +23,7 @@ import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:pat
 import { createInterface } from 'node:readline';
 
 import { githubRepo } from './github-repo.mjs';
+import { callsOf } from './shell-commands.mjs';
 
 const TOOL = 'approve';
 const DETAIL_LIMIT = 300;
@@ -58,7 +59,8 @@ const { workdir: workdirOption, log, scratch: scratchOption } = parseArgs(proces
 const workdir = realpathSync(workdirOption);
 const stepDir = dirname(workdir);
 const scratch = scratchOption ? scratchOption.toLowerCase() : null;
-const onlyScratch = scratch
+// The rule a denial of a gh or git command cites.
+const scratchRule = scratch
   ? `a case session writes to GitHub only on the scratch repo ${scratch}`
   : 'a case session writes to GitHub only on the scratch repo, and the source clone has no GitHub remote to name one';
 
@@ -76,39 +78,6 @@ function isInside(path, root = workdir, from = workdir) {
   return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel));
 }
 
-// The commands of a shell line, each as its words with quotes removed: the line
-// is split at ; & | ( ) { } ` and line ends outside quotes. Best effort, for
-// bash and PowerShell alike, so a backslash outside quotes stays as it is.
-function commandsOf(line) {
-  const commands = [[]];
-  let word = null;
-  let quote = null;
-  const endWord = () => {
-    if (word !== null) commands.at(-1).push(word);
-    word = null;
-  };
-  for (let i = 0; i < line.length; i += 1) {
-    const ch = line[i];
-    if (quote) {
-      if (ch === quote) quote = null;
-      else if (ch === '\\' && quote === '"' && line[i + 1] === '"') word += line[(i += 1)];
-      else word += ch;
-    } else if (ch === "'" || ch === '"') {
-      quote = ch;
-      word ??= '';
-    } else if (/[;&|(){}`\n]/.test(ch)) {
-      endWord();
-      if (commands.at(-1).length > 0) commands.push([]);
-    } else if (/\s/.test(ch)) {
-      endWord();
-    } else {
-      word = (word ?? '') + ch;
-    }
-  }
-  endWord();
-  return commands.filter((words) => words.length > 0);
-}
-
 function gitOut(dir, args) {
   const result = spawnSync('git', ['-C', dir, ...args], { encoding: 'utf8' });
   return result.status === 0 ? result.stdout.trim() : null;
@@ -118,39 +87,50 @@ function gitOut(dir, args) {
 const originRepo = () => githubRepo(gitOut(workdir, ['remote', 'get-url', 'origin']) ?? '');
 
 const GH_READ_COMMANDS = new Set(['search', 'status', 'browse', 'help', 'version', 'completion', '--version', '--help', '-h']);
-const GH_READ_SUBCOMMANDS = new Set(['list', 'view', 'status', 'diff', 'checks', 'clone', 'checkout', 'download', 'watch']);
+const GH_READ_SUBCOMMANDS = new Set(['list', 'view', 'status', 'diff', 'checks', 'clone', 'checkout', 'download', 'watch', 'get']);
+// Writes no case makes, whatever repo they name: on the account, a gist or
+// gh's own setup, or making, forking, renaming or doing away with a repo.
+const GH_NEVER = new Set(['auth', 'config', 'extension', 'alias', 'gist', 'ssh-key', 'gpg-key', 'codespace', 'org']);
+const GH_REPO_NEVER = new Set(['create', 'fork', 'delete', 'rename', 'archive', 'unarchive', 'edit']);
 // Flags whose value is the next word, so that it is not read as an argument.
 const GH_VALUED = new Set(['-H', '--header', '-q', '--jq', '-t', '--template', '--title', '-b', '--body', '--body-file', '--hostname', '--cache', '-p', '--preview', '-l', '--label', '-a', '--assignee', '-m', '--milestone', '-s', '--state', '-L', '--limit', '--json', '-B', '--base', '--head', '-A', '--author', '-S', '--search', '-c', '--comment', '-r', '--reason']);
-const GH_FIELDS = new Set(['-f', '-F', '--field', '--raw-field', '--input']);
+const GH_FIELDS = new Set(['-f', '-F', '--field', '--raw-field']);
+// Short flags whose value may come attached, as in -XPOST.
+const GH_ATTACHED = /^-[RXfF]./;
 
 // Why a gh call is denied, or null: a read goes anywhere, a write only to the
 // scratch repo. Its target is the repo -R, GH_REPO, a github.com URL or the API
-// path names, or else the working copy's origin.
+// path names, or else the working copy's origin. A GraphQL mutation names no
+// repo, so it is denied.
 function ghDenial(words, assigned) {
   let repo = assigned.GH_REPO ?? null;
   let method = null;
-  let fields = false;
+  const fields = [];
   const args = [];
   for (let i = 0; i < words.length; i += 1) {
-    const eq = words[i].startsWith('--') ? words[i].indexOf('=') : -1;
-    const flag = eq === -1 ? words[i] : words[i].slice(0, eq);
-    const value = () => (eq === -1 ? words[(i += 1)] : words[i].slice(eq + 1));
+    const word = words[i];
+    const split = word.startsWith('--') ? word.indexOf('=') : GH_ATTACHED.test(word) ? 2 : -1;
+    const flag = split === -1 ? word : word.slice(0, split);
+    const value = () => (split === -1 ? words[(i += 1)] : word.slice(word[split] === '=' ? split + 1 : split));
     if (flag === '-R' || flag === '--repo') repo = value();
     else if (flag === '-X' || flag === '--method') method = value();
-    else if (GH_FIELDS.has(flag)) fields = value() !== undefined;
+    else if (GH_FIELDS.has(flag)) fields.push(value() ?? '');
+    else if (flag === '--input') fields.push(`@${value() ?? ''}`);
     else if (GH_VALUED.has(flag)) value();
-    else if (!flag.startsWith('-')) args.push(words[i]);
+    else if (!flag.startsWith('-')) args.push(word);
   }
   const [group, sub] = args;
-  const api = group === 'api';
-  const read = api
-    ? ['GET', 'HEAD'].includes((method ?? (fields ? 'POST' : 'GET')).toUpperCase())
-    : GH_READ_COMMANDS.has(group) || (group === 'auth' && sub === 'status') || GH_READ_SUBCOMMANDS.has(sub);
+  const graphql = group === 'api' && sub === 'graphql';
+  let read;
+  if (graphql) read = !fields.some((field) => /\bmutation\b|^(query=)?@/.test(field));
+  else if (group === 'api') read = ['GET', 'HEAD'].includes((method ?? (fields.length > 0 ? 'POST' : 'GET')).toUpperCase());
+  else read = GH_READ_COMMANDS.has(group) || (group === 'auth' && sub === 'status') || GH_READ_SUBCOMMANDS.has(sub);
   if (read) return null;
-  const target = ghTarget(repo, args);
-  if (target !== null && target === scratch) return null;
   const what = `gh ${args.slice(0, 2).join(' ')}`;
-  return target === null ? `${what} is a write whose repo cannot be told: ${onlyScratch}` : `${what} writes to ${target}: ${onlyScratch}`;
+  if (GH_NEVER.has(group) || (group === 'repo' && GH_REPO_NEVER.has(sub))) return `${what} is not a write a case makes: ${scratchRule}`;
+  const target = graphql ? null : ghTarget(repo, args);
+  if (target !== null && target === scratch) return null;
+  return target === null ? `${what} is a write whose repo cannot be told: ${scratchRule}` : `${what} writes to ${target}: ${scratchRule}`;
 }
 
 // `owner/name`, `github.com/owner/name` or a github.com URL, as githubRepo
@@ -180,8 +160,9 @@ function defaultRemote(dir, push) {
 
 // Why a git push, fetch or pull is denied, or null: it may reach only the
 // scratch repo on GitHub, or a repo inside the step folder, such as the local
-// origin a case starts with.
-function gitDenial(words) {
+// origin a case starts with. `added` holds the remotes an earlier command of
+// the same line adds or points elsewhere, which git does not know yet.
+function gitDenial(words, added) {
   let dir = workdir;
   let i = 0;
   for (; i < words.length && words[i].startsWith('-'); i += 1) {
@@ -189,6 +170,11 @@ function gitDenial(words) {
     else if (words[i] === '-c') i += 1;
   }
   const sub = words[i];
+  if (sub === 'remote' && ['add', 'set-url'].includes(words[i + 1])) {
+    const [name, url] = words.slice(i + 2).filter((word, j, rest) => !word.startsWith('-') && !['-t', '-m'].includes(rest[j - 1]));
+    if (name && url) added.set(name, url);
+    return null;
+  }
   if (!['push', 'fetch', 'pull'].includes(sub)) return null;
   const push = sub === 'push';
   let repoOption = null;
@@ -206,9 +192,13 @@ function gitDenial(words) {
   }
   const remotes = (gitOut(dir, ['remote']) ?? '').split('\n').filter(Boolean);
   const repos = allRemotes ? remotes : multiple ? args : [args[0] ?? repoOption ?? defaultRemote(dir, push)];
-  const urls = repos.flatMap((repo) => (remotes.includes(repo) ? (gitOut(dir, ['remote', 'get-url', ...(push ? ['--push'] : []), '--all', repo]) ?? repo).split('\n') : [repo]));
-  const denied = urls.find((url) => !gitTargetAllowed(dir, url));
-  return denied === undefined ? null : `git ${sub} to ${denied} denied: ${onlyScratch}, and pushes or fetches elsewhere only from the repos of its step folder`;
+  const urlsOf = (repo) => {
+    if (added.has(repo)) return [added.get(repo)];
+    if (!remotes.includes(repo)) return [repo];
+    return (gitOut(dir, ['remote', 'get-url', ...(push ? ['--push'] : []), '--all', repo]) ?? repo).split('\n');
+  };
+  const denied = repos.flatMap(urlsOf).find((url) => !gitTargetAllowed(dir, url));
+  return denied === undefined ? null : `git ${sub} to ${denied} denied: ${scratchRule}, and pushes or fetches elsewhere only from the repos of its step folder`;
 }
 
 function gitTargetAllowed(dir, url) {
@@ -220,22 +210,12 @@ function gitTargetAllowed(dir, url) {
   return isInside(url, stepDir, dir);
 }
 
-const WRAPPERS = new Set(['command', 'exec', 'env', 'sudo', 'time', 'nohup']);
-
-// Why a shell command is denied, or null: the first of its commands that is a
-// gh write or a git push or fetch out of bounds.
+// Why a shell command is denied, or null: the first of its calls that is a gh
+// write or a git push or fetch out of bounds.
 function shellDenial(line) {
-  for (const command of commandsOf(line)) {
-    const assigned = {};
-    let at = 0;
-    for (; at < command.length; at += 1) {
-      const assignment = command[at].match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/);
-      if (assignment) assigned[assignment[1]] = assignment[2];
-      else if (!WRAPPERS.has(command[at])) break;
-    }
-    const program = (command[at] ?? '').split(/[/\\]/).pop().toLowerCase().replace(/\.(exe|cmd|bat)$/, '');
-    const words = command.slice(at + 1);
-    const denial = program === 'gh' ? ghDenial(words, assigned) : program === 'git' ? gitDenial(words) : null;
+  const added = new Map();
+  for (const { program, args, assigned } of callsOf(line)) {
+    const denial = program === 'gh' ? ghDenial(args, assigned) : program === 'git' ? gitDenial(args, added) : null;
     if (denial) return denial;
   }
   return null;
