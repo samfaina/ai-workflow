@@ -623,6 +623,7 @@ if (!Object.hasOwn(COMMANDS, command ?? '')) {
 }
 try {
   const options = parseArgs(rest);
+  if (options.release && command !== 'due') usage('--release is an option of due only');
   if (command === 'init' && !options.run && process.env.UAT_TARGET) options.run = join(process.env.UAT_TARGET, today());
   if (!options.run && command !== 'due') usage(command === 'init' ? '--run <dir> is required, or the UAT_TARGET environment variable' : '--run <dir> is required');
   options.source ??= process.env.UAT_SOURCE;

@@ -967,6 +967,12 @@ test('due --release refuses a cases folder outside a git repo, since it cannot r
   assert.match(output.message, /git for-each-ref/);
 });
 
+test('--release belongs to due: another command given it is a usage error', (t) => {
+  const run = makeRun(t, [caseFile('a')]);
+
+  assert.equal(run.cli('next', '--release').status, 2);
+});
+
 test('only init falls back to UAT_TARGET: another command without --run is a usage error', (t) => {
   const run = makeRun(t, [caseFile('a')]);
   const env = { ...process.env, UAT_TARGET: dirname(run.runDir) };
