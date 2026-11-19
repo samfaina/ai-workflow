@@ -126,9 +126,13 @@ An invalid `plugin.json` (including a missing `skills` array) fails before any w
 
 To move a pin, change `commit` and `reason` in `upstreams.json`, run `install`, and update the pin in the copy's `NOTICE.md` entry. New copies also need a `NOTICE.md` entry and a line in `plugin.json`'s `skills`.
 
+The repo's own agent instructions live in `.claude/CLAUDE.md`, not at the root: `claude plugin validate --strict` rejects a root `CLAUDE.md`, because a plugin does not load it as project context.
+
+### Releases
+
 A release is a semver tag `vX.Y.Z`, the same `version` in `.claude-plugin/plugin.json` and the marketplace entry, and a hand-written `CHANGELOG.md` entry (ADR 0015). Without the version bump, installed plugin users never see the update.
 
-The repo's own agent instructions live in `.claude/CLAUDE.md`, not at the root: `claude plugin validate --strict` rejects a root `CLAUDE.md`, because a plugin does not load it as project context.
+Before tagging, run `node .claude/skills/uat/scripts/run.mjs due --release`: it must list nothing. It lists every UAT case with no pass since the latest `vX.Y.Z` tag, assisted cases included, besides the cases plain `due` lists, and exits non-zero while it lists any (ADR 0018). It reads the tags of your clone, so fetch them first. Run the batches it lists with `/uat`, as many runs as it takes, and commit each run's ledger, until it lists nothing.
 
 ## License
 

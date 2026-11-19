@@ -10,18 +10,20 @@
 //   node run.mjs drift  --run <dir> --when <question> --intent <answer> --reason <why>
 //   node run.mjs report --run <dir> [--issue <n>]
 //   node run.mjs clean  --run <dir>
-//   node run.mjs due    [--cases-dir <dir>]
+//   node run.mjs due    [--cases-dir <dir>] [--release]
 //
 // --source defaults to UAT_SOURCE. For init only, --run defaults to
 // <UAT_TARGET>/<yyyymmdd>; every other command needs the run folder by name,
-// except due, which reads only the case files and the UAT ledger.
+// except due, which reads only the case files and the UAT ledger, and with
+// --release the release tags of the repo that holds them.
 //
 // Everything lives in the run folder, outside this repo, except what a run
 // changes in the case files (drift) and the UAT ledger, `ledger.json` beside
 // the cases folder, which report updates. The source repo is only ever read:
 // its commits are fetched once, into the run's own store.
 //
-// Exit codes: 0 done, 1 refused or failed (with a JSON message), 2 usage.
+// Exit codes: 0 done, 1 refused or failed (with a JSON message), 2 usage,
+// 3 due --release listed a case (with its usual output).
 
 import { spawnSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
@@ -35,6 +37,7 @@ const skillDir = join(dirname(fileURLToPath(import.meta.url)), '..');
 const kitRoot = join(skillDir, '..', '..', '..').replaceAll('\\', '/');
 const EXIT_REFUSED = 1;
 const EXIT_USAGE = 2;
+const EXIT_DUE = 3;
 
 const IDENTITY = { GIT_AUTHOR_NAME: 'uat', GIT_AUTHOR_EMAIL: 'uat@local', GIT_COMMITTER_NAME: 'uat', GIT_COMMITTER_EMAIL: 'uat@local' };
 
@@ -49,11 +52,22 @@ function usage(message) {
   process.exit(EXIT_USAGE);
 }
 
+// Options that take no value.
+const FLAGS = new Set(['release']);
+
 function parseArgs(args) {
   const options = {};
-  for (let i = 0; i < args.length; i += 2) {
-    if (!args[i].startsWith('--') || args[i + 1] === undefined) usage(`bad argument: ${args[i]}`);
-    options[args[i].slice(2)] = args[i + 1];
+  let i = 0;
+  while (i < args.length) {
+    const name = args[i].startsWith('--') ? args[i].slice(2) : null;
+    if (FLAGS.has(name)) {
+      options[name] = true;
+      i += 1;
+    } else {
+      if (name === null || args[i + 1] === undefined) usage(`bad argument: ${args[i]}`);
+      options[name] = args[i + 1];
+      i += 2;
+    }
   }
   return options;
 }
@@ -488,15 +502,31 @@ function report(options) {
 const startsFrom = (uatCase) => uatCase.continues ?? uatCase.from?.case;
 
 // Why the ledger holds no passing run for what the case holds now, or null.
-function ownReason(casesDir, entry, id) {
+// With a release date, a pass is also due unless it is dated on or after it.
+function ownReason(casesDir, entry, id, releaseDate) {
   if (!entry) return 'new';
   if (entry.fingerprint !== fingerprint(casesDir, id)) return 'changed';
   if (entry.verdict !== 'Pass') return 'not-passed';
+  if (releaseDate && !(new Date(entry.date) >= releaseDate)) return 'before-release';
   return null;
+}
+
+// The date of the most recently dated vX.Y.Z tag in the repo that holds the
+// cases folder, or null when it has none: an annotated tag's tagger date, a
+// lightweight tag's commit date. Dates, not commit ancestry, so a squash merge
+// does not hide a pass.
+function latestReleaseDate(casesDir) {
+  const tags = git(casesDir, ['for-each-ref', '--sort=-creatordate', '--format=%(refname:strip=2) %(creatordate:iso-strict)', 'refs/tags/v*']);
+  const latest = tags
+    .split('\n')
+    .map((line) => line.split(' '))
+    .find(([name]) => /^v\d+\.\d+\.\d+$/.test(name));
+  return latest ? new Date(latest[1]) : null;
 }
 
 function due(options) {
   const casesDir = resolve(options['cases-dir'] ?? join(skillDir, 'cases'));
+  const releaseDate = options.release ? latestReleaseDate(casesDir) : null;
   const ledger = loadLedger(casesDir);
   const cases = allCases(casesDir);
   const byId = new Map(cases.map((uatCase) => [uatCase.id, uatCase]));
@@ -506,7 +536,7 @@ function due(options) {
       reasons.set(id, null); // a chain that loops back cannot recurse forever
       const start = startsFrom(byId.get(id));
       const startIsDue = byId.has(start) && reasonOf(start) !== null;
-      reasons.set(id, ownReason(casesDir, ledger[id], id) ?? (startIsDue ? 'upstream-due' : null));
+      reasons.set(id, ownReason(casesDir, ledger[id], id, releaseDate) ?? (startIsDue ? 'upstream-due' : null));
     }
     return reasons.get(id);
   };
@@ -527,6 +557,8 @@ function due(options) {
       assisted: batch.due.map((id) => ({ case: id, reason: assistedWhy(byId.get(id)) })),
     })),
   });
+  // The release gate: tagging waits until every case has passed since the last release.
+  if (options.release && dueCases.length > 0) process.exitCode = EXIT_DUE;
 }
 
 // The case's chain back to the case that starts from a ref: itself first.
@@ -587,7 +619,7 @@ const COMMANDS = { init, next, check, record, skip, drift, report, clean, due };
 const [command, ...rest] = process.argv.slice(2);
 if (!Object.hasOwn(COMMANDS, command ?? '')) {
   const withRun = Object.keys(COMMANDS).filter((name) => name !== 'due');
-  usage(`usage: run.mjs ${withRun.join('|')} --run <dir> [options], or run.mjs due [--cases-dir <dir>]`);
+  usage(`usage: run.mjs ${withRun.join('|')} --run <dir> [options], or run.mjs due [--cases-dir <dir>] [--release]`);
 }
 try {
   const options = parseArgs(rest);

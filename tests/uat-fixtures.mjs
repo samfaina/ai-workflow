@@ -107,8 +107,10 @@ export function startWatch(step, ...args) {
   });
 }
 
+// A trailing object holds environment variables for that one call.
 export function git(dir, ...args) {
-  const result = spawnSync('git', ['-C', dir, '-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { encoding: 'utf8' });
+  const env = typeof args.at(-1) === 'object' ? args.pop() : {};
+  const result = spawnSync('git', ['-C', dir, '-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { encoding: 'utf8', env: { ...process.env, ...env } });
   if (result.status !== 0) throw new Error(`git ${args.join(' ')}: ${result.stderr}`);
   return result.stdout.trim();
 }

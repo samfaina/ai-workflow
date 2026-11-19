@@ -8,7 +8,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, test } from 'node:test';
 
-import { textSection } from './fixtures.mjs';
+import { repoRoot, textSection } from './fixtures.mjs';
 import { caseFile, makeRun, skillDir } from './uat-fixtures.mjs';
 
 const read = (name) => readFileSync(join(skillDir, name), 'utf8').replaceAll('\r\n', '\n');
@@ -167,4 +167,10 @@ describe('GRADING.md', () => {
     const saved = JSON.parse(readFileSync(join(run.runDir, 'results', 'c1.json'), 'utf8'));
     assert.deepEqual(saved.findings, { skill: ['...'], environment: ['...'] });
   });
+});
+
+test("the README's release section names the release gate: due --release must list nothing before tagging", () => {
+  const release = textSection(readFileSync(join(repoRoot, 'README.md'), 'utf8'), '### Releases');
+  assert.match(release, /semver tag `vX\.Y\.Z`/, 'the section is the one ADR 0015 describes');
+  assert.match(release, /[Bb]efore tagging, run `node \.claude\/skills\/uat\/scripts\/run\.mjs due --release`: it must list nothing\./);
 });

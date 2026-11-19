@@ -19,7 +19,9 @@ One JSON file per **UAT case** in `cases/`, named `<id>.json`. `tests/uat-cases.
 
 A case's fingerprint in the **UAT ledger** covers its file and every fixture its `setup` copies, so changing either changes it. Line endings do not count.
 
-`run.mjs due` lists every **Due UAT case** with its reason: `new`, `changed`, `upstream-due` (a case it starts from through `from.case` or `continues` is due) or `not-passed`. It groups them into **UAT batches**, each holding its due cases and the cases they start from, with a `--cases` list in `order`. Assisted cases are never in a batch: they are listed apart, grouped the same way, each with its reason. A case that starts from an assisted case goes with it, since no batch can hold the case it needs. Such a group can run again a case that a batch also runs.
+`run.mjs due` lists every **Due UAT case** with its reason: `new`, `changed`, `upstream-due` (a case it starts from through `from.case` or `continues` is due) or `not-passed`, and with `--release` also `before-release` (below). It groups them into **UAT batches**, each holding its due cases and the cases they start from, with a `--cases` list in `order`. Assisted cases are never in a batch: they are listed apart, grouped the same way, each with its reason. A case that starts from an assisted case goes with it, since no batch can hold the case it needs. Such a group can run again a case that a batch also runs.
+
+`run.mjs due --release` is the release gate. It also counts as due, with the reason `before-release`, every case whose last pass is dated before the most recently dated `vX.Y.Z` tag of the repo that holds the cases, and exits with code 3 while it lists any case, assisted cases included. With no such tag, it lists what plain `due` lists. It compares dates, not commit ancestry, so a squash merge does not hide a pass.
 
 Write answers and turns as **intents**: what the person means, never an option's label, since labels change between runs. The `reason` says what the case tests with that answer, so an agent can adapt it to a question worded differently.
 
