@@ -374,6 +374,21 @@ test('no case file commits a local path of the maintainer\'s machine', () => {
   for (const c of cases) assert.doesNotMatch(JSON.stringify(c), /[A-Z]:\\\\|\/Users\//, c.id);
 });
 
+// The committed UAT ledger holds the fields report writes and nothing else: no
+// path, no quota or cost figure.
+const LEDGER_FIELDS = ['verdict', 'fingerprint', 'kitCommit', 'date', 'issue'];
+test('the UAT ledger holds, per case, only the verdict, fingerprint, kit commit, date and issue', () => {
+  const ledger = JSON.parse(readFileSync(join(skillDir, 'ledger.json'), 'utf8'));
+  for (const [id, entry] of Object.entries(ledger)) {
+    assert.deepEqual(Object.keys(entry).filter((key) => !LEDGER_FIELDS.includes(key)), [], id);
+    assert.ok(['Pass', 'Fail', 'Not proven'].includes(entry.verdict), `${id}: verdict ${entry.verdict}`);
+    assert.match(entry.fingerprint, /^[0-9a-f]{64}$/, id);
+    assert.match(entry.kitCommit, /^[0-9a-f]{40}$/, id);
+    assert.equal(new Date(entry.date).toISOString(), entry.date, `${id}: date as report writes it`);
+    if (entry.issue !== undefined) assert.ok(Number.isInteger(entry.issue) && entry.issue > 0, `${id}: issue ${entry.issue}`);
+  }
+});
+
 test('the skill stays out of the plugin and the kit tree', () => {
   const plugin = JSON.parse(readFileSync(join(repoRoot, '.claude-plugin', 'plugin.json'), 'utf8'));
   assert.ok(!plugin.skills.some((path) => path.includes('uat')));
