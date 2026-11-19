@@ -13,7 +13,7 @@
 //   node run.mjs report --run <dir> [--issue <n>]
 //   node run.mjs clean  --run <dir>
 //   node run.mjs due    [--cases-dir <dir>] [--release]
-//   node run.mjs auto   --run <dir> [--source <repo>] [--cases a,b] [--cases-dir <dir>] [--judge-model <m>]
+//   node run.mjs auto   --run <dir> [--source <repo>] [--cases a,b] [--cases-dir <dir>] [--judge-model <m>] [--max-five-hour <pct>] [--max-weekly <pct>]
 //
 // Each command takes only the options on its line, and any other option is a
 // usage error that names it. These lines copy the usage lines of COMMANDS,
@@ -722,7 +722,7 @@ const COMMANDS = {
   report: { action: report, usage: '--run <dir> [--issue <n>]' },
   clean: { action: clean, usage: '--run <dir>' },
   due: { action: due, usage: '[--cases-dir <dir>] [--release]' },
-  auto: { action: (options) => print(auto(options)), usage: '--run <dir> [--source <repo>] [--cases a,b] [--cases-dir <dir>] [--judge-model <m>]' },
+  auto: { action: (options) => print(auto(options)), usage: '--run <dir> [--source <repo>] [--cases a,b] [--cases-dir <dir>] [--judge-model <m>] [--max-five-hour <pct>] [--max-weekly <pct>]' },
 };
 const usageLine = (command) => `node run.mjs ${command} ${COMMANDS[command].usage}`;
 const optionsOf = (command) => [...COMMANDS[command].usage.matchAll(/--([a-z-]+)/g)].map(([, name]) => name);

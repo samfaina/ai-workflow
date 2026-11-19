@@ -19,11 +19,17 @@
 // that repo alone. A batch whose cases need GitHub does not start without it.
 //
 // The driver never runs with ANTHROPIC_API_KEY set, so a run is never billed
-// to the API. A run it stops can be resumed with `auto --run <dir>`: a step
-// left without a result is reset and run again from its restore point.
+// to the API. It stays inside the plan's quota by the rate-limit readings in
+// the case sessions' own streams, before each case and each turn: the
+// five-hour window over --max-five-hour waits until it resets, and the weekly
+// window over --max-weekly stops the run, as does a turn the rate limit
+// refuses. Both thresholds are required, from the flags or UAT_MAX_FIVE_HOUR
+// and UAT_MAX_WEEKLY, since no default is committed. A run it stops can be
+// resumed with `auto --run <dir>`: a step left without a result is reset and
+// run again from its restore point.
 
 import { spawnSync } from 'node:child_process';
-import { closeSync, existsSync, openSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { closeSync, existsSync, openSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { delimiter, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -201,6 +207,99 @@ function runCleanup(uatCase, startedAt, where, next) {
   }
 }
 
+// Pacing on the plan's quota. A case session's stream carries
+// `rate_limit_event`s, whose `rate_limit_info.unifiedWindows` hold the
+// five-hour and the weekly window, each with its `utilization`, a fraction of
+// the window, and `resetsAt`, in epoch seconds. The driver keeps the latest
+// reading of the run, window by window, and paces on it before each case and
+// each turn. Each case's readings, before and after, stay in its step folder,
+// in quota.json beside the session streams they came from: no utilization
+// figure reaches the summary, the review, the ledger, a judgement call or what
+// auto prints.
+const WINDOW_LENGTH_MS = { five_hour: 5 * 3600_000, seven_day: 7 * 24 * 3600_000 };
+const QUOTA_FILE = 'quota.json';
+// The text of a turn the plan's limit refused, when no rejected reading says so.
+const RATE_LIMITED = /rate.?limit|usage limit|hit your limit/i;
+
+// The reading `previous` becomes with a turn's stream events, and whether the
+// turn was refused for the plan's rate limit. A window that gives no reset
+// time is taken to reset one window's length after it was read, the latest it
+// can, so that a run is never stopped for good.
+function readQuota(events, previous) {
+  let reading = previous;
+  let rejected = false;
+  for (const event of events.filter((e) => e.type === 'rate_limit_event')) {
+    const info = event.rate_limit_info ?? {};
+    if (info.status === 'rejected') rejected = true;
+    if (info.unifiedWindows === null || typeof info.unifiedWindows !== 'object') continue;
+    const now = Date.now();
+    const next = { ...reading, at: new Date(now).toISOString() };
+    for (const [name, length] of Object.entries(WINDOW_LENGTH_MS)) {
+      const { utilization, resetsAt } = info.unifiedWindows[name] ?? {};
+      if (typeof utilization !== 'number') continue;
+      const resets = typeof resetsAt === 'number' ? resetsAt * 1000 : now + length;
+      next[name] = { utilization, resetsAt: new Date(resets).toISOString() };
+    }
+    reading = next;
+  }
+  return { reading, rejected };
+}
+
+// The latest reading the run folder holds, so that a resumed run paces on what
+// the run it resumes last read.
+function latestReading(runDir) {
+  const steps = join(runDir, 'steps');
+  if (!existsSync(steps)) return null;
+  const readings = readdirSync(steps)
+    .map((id) => join(steps, id, QUOTA_FILE))
+    .filter((file) => existsSync(file))
+    .flatMap((file) => {
+      const { before, after } = readJson(file);
+      return [before, after].filter(Boolean);
+    });
+  return readings.reduce((latest, reading) => (latest === null || reading.at > latest.at ? reading : latest), null);
+}
+
+// Whether a window of the reading is over its threshold. A window whose reset
+// time has passed has reset, and so is not.
+function overThreshold(quota, name) {
+  const window = quota.reading?.[name];
+  if (!window || Date.parse(window.resetsAt) <= Date.now()) return false;
+  return window.utilization * 100 > quota.thresholds[name];
+}
+
+// The cell Atomics.wait blocks on, so that the driver sleeps without spinning.
+const sleepCell = new Int32Array(new SharedArrayBuffer(4));
+function sleepUntil(time) {
+  for (let left = time - Date.now(); left > 0; left = time - Date.now()) Atomics.wait(sleepCell, 0, 0, Math.min(left, 60_000));
+}
+
+// Paces the run before `what` (the next case or turn): the weekly window over
+// its threshold stops the run, so that it never eats the quota needed for
+// daily work, and the five-hour window over its own waits until it resets.
+// The messages name the reset time but no utilization figure.
+const RESET_MARGIN_MS = 1_000;
+function paceOnQuota(run, what) {
+  const { quota, runDir } = run;
+  for (;;) {
+    if (overThreshold(quota, 'seven_day')) {
+      throw new Refused(
+        `the weekly window is over the threshold --max-weekly sets, so the run stops before ${what}, to keep the quota for daily work. Run auto --run ${runDir} again once it resets at ${quota.reading.seven_day.resetsAt}, or with a higher --max-weekly: a step left without a result starts again from its restore point`,
+      );
+    }
+    if (!overThreshold(quota, 'five_hour')) return;
+    const resets = quota.reading.five_hour.resetsAt;
+    process.stderr.write(`auto: the five-hour window is over the threshold --max-five-hour sets: waiting until ${resets} before ${what}\n`);
+    sleepUntil(Date.parse(resets) + RESET_MARGIN_MS);
+  }
+}
+
+// Saves the case's readings in its step folder: the run's latest when the
+// case started, and the latest since.
+function saveQuota({ stepDir, quotaBefore, run }) {
+  writeJson(join(stepDir, QUOTA_FILE), { before: quotaBefore, after: run.quota.reading });
+}
+
 // One turn of the case session: the prompt sent, and the turn's stream saved
 // in the step folder. The session id comes from the stream's init event.
 function sessionTurn(step, prompt, sessionId) {
@@ -227,11 +326,20 @@ function sessionTurn(step, prompt, sessionId) {
         return [];
       }
     });
+  const { quota } = step.run;
+  const { reading, rejected } = readQuota(events, quota.reading);
+  quota.reading = reading;
+  saveQuota(step);
   const id = events.find((e) => e.type === 'system' && e.subtype === 'init')?.session_id ?? sessionId;
   const end = events.findLast((e) => e.type === 'result');
   if (result.status !== 0 || !end || end.is_error || !id) {
     const why = end?.is_error ? (end.result ?? end.subtype) : `exit ${result.status}: ${tail(result.stderr)}`;
-    throw new Refused(`${step.id}: the case session failed on turn ${number}: ${why}. Run auto again: it restarts the step from its restore point`);
+    // A turn the plan's rate limit refused stops the run like any other failure,
+    // and on resume the run paces on the reading the refusal carried.
+    const limited = rejected || (end?.is_error && RATE_LIMITED.test(why));
+    const failed = limited ? "hit the plan's rate limit" : 'failed';
+    const resume = limited ? 'it waits for the window to reset if its threshold says so, and restarts the step' : 'it restarts the step';
+    throw new Refused(`${step.id}: the case session ${failed} on turn ${number}: ${why}. Run auto again: ${resume} from its restore point`);
   }
   return { sessionId: id, text: end.result ?? '' };
 }
@@ -401,6 +509,8 @@ function runStep(run, uatCase, brief) {
   const { stepDir, workdir } = brief;
   const step = {
     id: uatCase.id,
+    run,
+    quotaBefore: run.quota.reading,
     uatCase,
     stepDir,
     workdir,
@@ -414,6 +524,7 @@ function runStep(run, uatCase, brief) {
   };
   const hostArgs = [hostScript, '--workdir', workdir, '--log', step.hostLog, ...(scratch ? ['--scratch', scratch] : [])];
   writeJson(step.mcpConfig, { mcpServers: { [HOST_SERVER]: { command: process.execPath, args: hostArgs } } });
+  saveQuota(step);
   step.env = runShell(uatCase, { workdir, stepDir, env: githubEnv(stepDir) });
 
   const { continues, startedAt } = readJson(join(stepDir, 'step.json'));
@@ -425,6 +536,9 @@ function runStep(run, uatCase, brief) {
       ended = 'Every `turns` and `answers` entry had been used when the agent ended its turn, so the step ended there.';
       break;
     }
+    // The next turn starts with the call that judges the reply, so the quota is
+    // paced before it.
+    paceOnQuota(run, `turn ${step.turnsRun + 1} of ${uatCase.id}`);
     const reply = judgement(step, 'reply', replyPrompt(step, text), acceptReply(step));
     if (reply.action === 'end') {
       ended = `The agent ended its turn and the step ended there, unanswered: ${reply.reason}`;
@@ -457,12 +571,37 @@ function runStep(run, uatCase, brief) {
   runCleanup(uatCase, startedAt, { workdir, stepDir, env: step.env }, 'the result is recorded, so it goes on with the next case');
 }
 
+// The quota thresholds, in percent of each window, from the flags or else the
+// environment. No default is committed, so a run without both does not start.
+const THRESHOLDS = [
+  { window: 'five_hour', option: 'max-five-hour', variable: 'UAT_MAX_FIVE_HOUR' },
+  { window: 'seven_day', option: 'max-weekly', variable: 'UAT_MAX_WEEKLY' },
+];
+function thresholdsOf(options) {
+  const passed = THRESHOLDS.map((threshold) => ({ ...threshold, given: options[threshold.option] ?? process.env[threshold.variable] ?? '' }));
+  const missing = passed.filter(({ given }) => given === '');
+  if (missing.length > 0) {
+    const ways = missing.map(({ option, variable }) => `--${option} <pct> or ${variable}`).join(', and ');
+    throw new Refused(`auto needs a quota threshold for each window, in percent of it, and commits no default: pass ${ways}`);
+  }
+  const thresholds = {};
+  for (const { window, option, variable, given } of passed) {
+    const pct = Number(given);
+    if (!/^\d+(\.\d+)?$/.test(given.trim()) || !(pct > 0 && pct <= 100)) {
+      throw new Refused(`--${option} (or ${variable}) is a percent of the window, above 0 and at most 100, not ${given}`);
+    }
+    thresholds[window] = pct;
+  }
+  return thresholds;
+}
+
 // Runs the batch of the run folder, a new one when `source` is given, until
 // next is done, then writes the report. Returns what auto prints.
 export function auto(options) {
   if (process.env.ANTHROPIC_API_KEY) {
     throw new Refused('ANTHROPIC_API_KEY is set: an unattended run spends the plan, never the API. Unset it and run auto again');
   }
+  const thresholds = thresholdsOf(options);
   const runDir = resolve(options.run);
   const stateFile = join(runDir, 'state.json');
   if (!existsSync(stateFile)) {
@@ -481,7 +620,12 @@ export function auto(options) {
       throw new Refused(`${needing.join(', ')} run gh or reach GitHub, and ${TOKEN_VARIABLE} is not set: set it to the fine-grained token limited to the scratch repo that CASE-FORMAT.md describes, and run auto again`);
     }
   }
-  const run = { runDir, judgeModel: options['judge-model'] ?? DEFAULT_JUDGE_MODEL, scratch: scratchRepo(begun.source) };
+  const run = {
+    runDir,
+    judgeModel: options['judge-model'] ?? DEFAULT_JUDGE_MODEL,
+    scratch: scratchRepo(begun.source),
+    quota: { thresholds, reading: latestReading(runDir) },
+  };
 
   for (;;) {
     const state = readJson(stateFile);
@@ -492,6 +636,7 @@ export function auto(options) {
       runMjs('skip', runDir, '--reason', `An assisted case, which only runs with a person: ${uatCase.assisted}`);
       continue;
     }
+    paceOnQuota(run, `case ${id}`);
     const brief = runMjs('next', runDir);
     if (brief.status === 'blocked') {
       runMjs('skip', runDir, '--reason', `Blocked: it starts from ${brief.needs}, which did not pass and so left no restore point.`);
