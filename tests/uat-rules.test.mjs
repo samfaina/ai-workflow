@@ -94,6 +94,21 @@ describe('ANSWERING.md', () => {
   });
 });
 
+describe('the UAT ledger', () => {
+  test('Finish names the issue to report, and has the ledger committed together with the run\'s drift', () => {
+    const finish = textSection(skill, '## Finish');
+    assert.match(finish, /`--issue <n>`/);
+    assert.match(finish, /\*\*UAT ledger\*\*, `ledger\.json`/);
+    assert.match(finish, /the ledger and the case files changed by drift[^.]*commit them together/i);
+    assert.doesNotMatch(skill, /Case files changed by drift are the only changes/);
+  });
+
+  test('Start shows the warning init gives for a kit checkout with uncommitted changes', () => {
+    const start = textSection(skill, '## Start');
+    assert.match(start, /When it prints a `warning`, show it to the person: this checkout has uncommitted changes/);
+  });
+});
+
 describe('GRADING.md', () => {
   test('step 5 links it and tells the model to read it', () => {
     const grade = textSection(skill, '### 5. Grade');

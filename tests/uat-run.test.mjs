@@ -8,7 +8,7 @@ import { basename, dirname, isAbsolute, join } from 'node:path';
 import test from 'node:test';
 
 import { repoRoot } from './fixtures.mjs';
-import { caseFile, git, makeRun, runScript } from './uat-fixtures.mjs';
+import { caseFile, git, makeKit, makeRun, runScript } from './uat-fixtures.mjs';
 
 const kitRoot = repoRoot.replaceAll('\\', '/');
 
@@ -480,6 +480,119 @@ test('the summary has one line per case in the shape of the #49 comment, grouped
   assert.equal(readFileSync(join(run.runDir, 'summary.md'), 'utf8'), stdout);
 });
 
+const fail = { verdict: 'Fail', line: 'two proven defects', judge: [], findings: [{ kind: 'skill', text: 'x' }] };
+
+// Runs the next cases of the run, one per grades given: next, check, then
+// record with those grades. Returns each step's working copy.
+function runCases(run, ...grades) {
+  return grades.map((g) => {
+    const { workdir } = run.cli('next').output;
+    run.cli('check');
+    const recorded = record(run, g);
+    assert.equal(recorded.status, 0, recorded.stdout);
+    return workdir;
+  });
+}
+
+test('report writes a ledger entry for every case with a result, and the issue that reports it', (t) => {
+  const run = makeRun(t, [caseFile('a'), caseFile('b'), caseFile('c')]);
+  runCases(run, pass(), fail);
+
+  const { status, stdout } = run.cli('report', '--issue', '42');
+
+  assert.equal(status, 0, stdout);
+  const ledger = run.ledger();
+  const { kitCommit, createdAt } = run.state();
+  assert.deepEqual(Object.keys(ledger), ['a', 'b']);
+  for (const [id, verdict] of [['a', 'Pass'], ['b', 'Fail']]) {
+    const { fingerprint, ...rest } = ledger[id];
+    assert.match(fingerprint, /^[0-9a-f]{64}$/);
+    assert.deepEqual(rest, { verdict, kitCommit, date: createdAt, issue: 42 });
+  }
+});
+
+test('without --issue a ledger entry names no issue', (t) => {
+  const run = makeRun(t, [caseFile('a')]);
+  runCases(run, pass());
+
+  run.cli('report');
+
+  assert.equal('issue' in run.ledger().a, false);
+});
+
+test('report keeps the entry of a case outside the run, and of a case this run skipped', (t) => {
+  const run = makeRun(t, [caseFile('a'), caseFile('b')]);
+  const earlier = (verdict) => ({ verdict, fingerprint: 'f'.repeat(64), kitCommit: '0'.repeat(40), date: '2026-01-01T00:00:00.000Z', issue: 7 });
+  const before = { b: earlier('Pass'), outside: earlier('Fail') };
+  writeFileSync(run.ledgerFile, JSON.stringify(before));
+  runCases(run, pass());
+  run.cli('next');
+  run.cli('skip', '--reason', 'no time');
+
+  run.cli('report');
+
+  const ledger = run.ledger();
+  assert.deepEqual(Object.keys(ledger), ['a', 'b', 'outside']);
+  assert.equal(ledger.a.verdict, 'Pass');
+  assert.deepEqual(ledger.b, before.b);
+  assert.deepEqual(ledger.outside, before.outside);
+});
+
+test('the fingerprint changes with the case file or a fixture it copies, and not with line endings alone', (t) => {
+  const withFixture = caseFile('a', { setup: [{ copy: 'fixtures/review.md', to: 'review.md' }] });
+  const run = makeRun(t, [withFixture], { fixtures: { 'fixtures/review.md': 'Proven defects: 0\n', 'fixtures/other.md': 'other\n' } });
+  const [workdir] = runCases(run, pass());
+  const fingerprintAfter = (change) => {
+    change();
+    run.cli('report');
+    return run.ledger().a.fingerprint;
+  };
+  const caseText = readFileSync(join(run.casesDir, 'a.json'), 'utf8');
+  const crlf = (text) => text.replace(/\n/g, '\r\n');
+
+  const first = fingerprintAfter(() => {});
+  assert.equal(readFileSync(join(workdir, 'review.md'), 'utf8'), 'Proven defects: 0\n', 'the step copied the fixture');
+  assert.equal(fingerprintAfter(() => writeFileSync(join(run.casesDir, 'a.json'), crlf(caseText))), first);
+  assert.equal(fingerprintAfter(() => run.writeFixture('fixtures/review.md', crlf('Proven defects: 0\n'))), first);
+  assert.equal(fingerprintAfter(() => run.writeFixture('fixtures/other.md', 'changed\n')), first, 'a fixture the case does not copy');
+
+  const fixtureChanged = fingerprintAfter(() => run.writeFixture('fixtures/review.md', 'Proven defects: 1\n'));
+  assert.notEqual(fixtureChanged, first);
+  const caseChanged = fingerprintAfter(() => run.writeCase({ ...withFixture, title: 'renamed' }));
+  assert.notEqual(caseChanged, fixtureChanged);
+});
+
+test('the fingerprint report writes holds the drift the run added, and no path', (t) => {
+  const original = caseFile('a');
+  const drifted = makeRun(t, [original]);
+  drifted.cli('next');
+  drifted.cli('drift', '--when', 'Asks which base branch', '--intent', 'keep local main', '--reason', 'first setup');
+  drifted.cli('check');
+  record(drifted, pass());
+  drifted.cli('report');
+  const asDrifted = makeRun(t, [drifted.readCase('a')]);
+  runCases(asDrifted, pass());
+  asDrifted.cli('report');
+  const undrifted = makeRun(t, [original]);
+  runCases(undrifted, pass());
+  undrifted.cli('report');
+
+  const fingerprint = drifted.ledger().a.fingerprint;
+  assert.equal(drifted.readCase('a').answers.at(-1).drift, true);
+  assert.equal(asDrifted.ledger().a.fingerprint, fingerprint, 'the same case content gives the same fingerprint, in another folder');
+  assert.notEqual(undrifted.ledger().a.fingerprint, fingerprint);
+  const text = readFileSync(drifted.ledgerFile, 'utf8');
+  for (const path of [basename(drifted.root), kitRoot, repoRoot]) assert.equal(text.includes(path), false, path);
+});
+
+test('report refuses an issue that is not a number', (t) => {
+  const run = makeRun(t, [caseFile('a')]);
+  runCases(run, pass());
+
+  assert.equal(run.cli('report', '--issue', '#42').status, 2);
+  assert.equal(existsSync(run.ledgerFile), false);
+});
+
 test('without --cases a run takes every case file, in the order they declare', (t) => {
   const run = makeRun(t, [caseFile('zeta', { order: 1 }), caseFile('alpha', { order: 2 })], { allCases: true });
 
@@ -579,6 +692,33 @@ test('init without --run creates the run in UAT_TARGET, in a folder named after 
   assert.equal(dirname(runDir), target);
   assert.match(basename(runDir), /^\d{8}$/);
   assert.ok(existsSync(join(runDir, 'state.json')));
+});
+
+test('init records the commit of the kit checkout the run tests', (t) => {
+  const run = makeRun(t, [caseFile('a')]);
+
+  assert.equal(run.state().kitCommit, git(repoRoot, 'rev-parse', 'HEAD'));
+});
+
+test('init warns when the kit checkout has uncommitted changes, and still creates the run', (t) => {
+  const kit = makeKit(t);
+  writeFileSync(kit.script, `${readFileSync(kit.script, 'utf8')}// changed by hand\n`);
+
+  const run = makeRun(t, [caseFile('a')], { script: kit.script });
+
+  assert.equal(run.init.status, 'created');
+  assert.match(run.init.warning, /uncommitted changes/);
+  assert.match(run.init.warning, new RegExp(kit.commit));
+  assert.equal(run.state().kitCommit, kit.commit);
+});
+
+test('init over a committed kit checkout gives no warning', (t) => {
+  const kit = makeKit(t);
+
+  const run = makeRun(t, [caseFile('a')], { script: kit.script });
+
+  assert.equal(run.init.warning, undefined);
+  assert.equal(run.state().kitCommit, kit.commit);
 });
 
 test('only init falls back to UAT_TARGET: another command without --run is a usage error', (t) => {

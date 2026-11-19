@@ -15,7 +15,7 @@ Every command below is `node <this skill>/scripts/<script> <mode> --run <run>` f
 The argument is a run folder to resume, or the path of the scratch app's clone. The clone may also be in `UAT_SOURCE`. Its path stays out of this repo: never write it to a committed file.
 
 - **A folder holding `state.json`:** resume it. `next` returns the first step without a result, and a step already under way comes back with `resumed: true`, its working copy untouched.
-- **A clone:** ask the person where to create the run, and suggest `<UAT_TARGET>/<yyyymmdd>` when `UAT_TARGET` is set, or `~/aw-uat/<yyyymmdd>` in their home folder. It must be a new folder with a short path, outside any repo. Then `init --run <that folder> --source <clone>`; `init` without `--run` creates `<UAT_TARGET>/<yyyymmdd>` and prints it as `run`. `--cases a,b` runs a subset.
+- **A clone:** ask the person where to create the run, and suggest `<UAT_TARGET>/<yyyymmdd>` when `UAT_TARGET` is set, or `~/aw-uat/<yyyymmdd>` in their home folder. It must be a new folder with a short path, outside any repo. Then `init --run <that folder> --source <clone>`; `init` without `--run` creates `<UAT_TARGET>/<yyyymmdd>` and prints it as `run`. `--cases a,b` runs a subset. It records this checkout's commit as the one the run tests. When it prints a `warning`, show it to the person: this checkout has uncommitted changes, so the recorded commit is not exactly the code the run tests.
 - **Neither reachable:** stop and ask. The run needs this machine's clone.
 
 Done when `next` can run against a run folder.
@@ -73,7 +73,7 @@ Show the verdict with its evidence per criterion, then go back to step 1.
 
 ## Finish
 
-Run `report`. It writes `summary.md` in the run folder, one line per case. Show it to the person. Case files changed by drift are the only changes to this repo: tell them to review and commit those.
+Run `report`, adding `--issue <n>` when the person names the issue that reports this run. It writes `summary.md` in the run folder, one line per case. It also updates the **UAT ledger**, `ledger.json` beside this skill. Each case with a result gets an entry with its verdict, the commit recorded at the start, the run's date and the issue. The entry also holds a fingerprint of the case and the fixtures it copies as they are now, so the drift this run added counts as part of the case. A skipped case keeps the entry it had. Show the summary to the person. The ledger and the case files changed by drift are the only changes to this repo: tell them to review both and commit them together, in the pull request that closes the batch issue.
 
 Then offer to clean up, and run `clean` only if the person says yes. It deletes the working copies, the restore points and the case sessions' logs in `~/.claude/projects`, and keeps `summary.md`, `results/` and `state.json`. Name any case that did not pass first, since whoever investigates it will lose its working copy and log. If it reports a folder it could not delete, ask them to close the case sessions still open and run it again.
 

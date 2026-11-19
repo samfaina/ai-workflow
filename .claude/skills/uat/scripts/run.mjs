@@ -8,14 +8,16 @@
 //   node run.mjs record --run <dir> --grades <file> [--keep-point yes]
 //   node run.mjs skip   --run <dir> --reason <text>
 //   node run.mjs drift  --run <dir> --when <question> --intent <answer> --reason <why>
-//   node run.mjs report --run <dir>
+//   node run.mjs report --run <dir> [--issue <n>]
 //   node run.mjs clean  --run <dir>
 //
 // --source defaults to UAT_SOURCE. For init only, --run defaults to
 // <UAT_TARGET>/<yyyymmdd>; every other command needs the run folder by name.
 //
-// Everything lives in the run folder, outside this repo. The source repo is
-// only ever read: its commits are fetched once, into the run's own store.
+// Everything lives in the run folder, outside this repo, except what a run
+// changes in the case files (drift) and the UAT ledger, `ledger.json` beside
+// the cases folder, which report updates. The source repo is only ever read:
+// its commits are fetched once, into the run's own store.
 //
 // Exit codes: 0 done, 1 refused or failed (with a JSON message), 2 usage.
 
@@ -24,6 +26,7 @@ import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync,
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { fingerprint, fixtureFile, skillFolderOf } from './fingerprint.mjs';
 import { logFolder } from './log-folder.mjs';
 
 const skillDir = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -89,11 +92,16 @@ function init(options) {
   const { state, store } = paths(runDir);
   if (existsSync(state)) throw new Refused(`${runDir} already holds a run`);
   const cases = options.cases ? options.cases.split(',') : allCaseIds(casesDir);
+  const kitCommit = git(kitRoot, ['rev-parse', 'HEAD']);
   mkdirSync(store, { recursive: true });
   git(store, ['init', '-q', '--bare', '-b', 'main']);
   git(store, ['fetch', '-q', source, '+refs/heads/*:refs/source/heads/*', '+refs/tags/*:refs/source/tags/*']);
-  writeJson(state, { source, casesDir, cases, results: {}, points: {}, drift: {}, createdAt: new Date().toISOString() });
-  print({ status: 'created', run: runDir, cases: cases.length });
+  writeJson(state, { source, casesDir, cases, kitCommit, results: {}, points: {}, drift: {}, createdAt: new Date().toISOString() });
+  const dirty = git(kitRoot, ['status', '--porcelain']) !== '';
+  const warning = dirty
+    ? `the kit checkout has uncommitted changes: the ledger will say this run tested commit ${kitCommit}, which does not hold them`
+    : undefined;
+  print({ status: 'created', run: runDir, cases: cases.length, kitCommit, ...(warning ? { warning } : {}) });
 }
 
 function allCaseIds(casesDir) {
@@ -181,12 +189,12 @@ function writeInto(workdir, relative, text) {
   writeFileSync(target, text);
 }
 
-function applySetup(workdir, setup = []) {
+function applySetup(casesDir, workdir, setup = []) {
   for (const op of setup) {
     if (op.write !== undefined) {
       writeInto(workdir, op.write, expand(op.text, workdir));
     } else if (op.copy !== undefined) {
-      writeInto(workdir, op.to, expand(readFileSync(join(skillDir, op.copy), 'utf8'), workdir));
+      writeInto(workdir, op.to, expand(readFileSync(fixtureFile(casesDir, op.copy), 'utf8'), workdir));
     } else if (op.replace !== undefined) {
       const file = join(workdir, op.replace);
       const before = existsSync(file) ? readFileSync(file, 'utf8') : '';
@@ -247,7 +255,7 @@ function startWorkdir(runDir, state, uatCase, stepDir) {
   mkdirSync(stepDir, { recursive: true });
   try {
     const workdir = realpathSync(restore(store, point, stepDir, from.case ? aw(from.case) : null));
-    applySetup(workdir, uatCase.setup);
+    applySetup(state.casesDir, workdir, uatCase.setup);
     return { workdir, continues: false };
   } catch (error) {
     rmSync(stepDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }); // so next can retry
@@ -357,6 +365,7 @@ function check(options) {
 }
 
 const VERDICTS = ['Pass', 'Fail', 'Not proven'];
+const SKIPPED = 'Not run'; // the verdict skip records
 
 function validateGrades(grades, uatCase, assertionResults, checks) {
   if (!VERDICTS.includes(grades.verdict)) throw new Refused(`verdict must be one of ${VERDICTS.join(', ')}`);
@@ -405,7 +414,7 @@ function skip(options) {
   const state = loadState(runDir);
   const id = nextId(state);
   if (!id) throw new Refused('nothing left to skip');
-  state.results[id] = { verdict: 'Not run', line: options.reason };
+  state.results[id] = { verdict: SKIPPED, line: options.reason };
   writeJson(paths(runDir).state, state);
   print({ status: 'skipped', case: id });
 }
@@ -431,11 +440,26 @@ function reportLine(state, uatCase) {
   const count = state.drift[uatCase.id] ?? 0;
   const added = count === 0 ? '' : ` (${count} question${count === 1 ? '' : 's'} not in the case, added)`;
   const text = `${result.line}${added}`;
-  if (result.verdict === 'Pass' || result.verdict === 'Not run') return `- ${result.verdict}: ${uatCase.title}: ${text}`;
+  if (result.verdict === 'Pass' || result.verdict === SKIPPED) return `- ${result.verdict}: ${uatCase.title}: ${text}`;
   return `- **${result.verdict}: ${uatCase.title}**: ${text}`;
 }
 
+// One entry per case with a result in this run. A skipped case keeps the entry
+// an earlier run left, and so does every case outside this run.
+function writeLedger(state, issue) {
+  const file = join(skillFolderOf(state.casesDir), 'ledger.json');
+  const ledger = existsSync(file) ? readJson(file) : {};
+  for (const id of state.cases) {
+    const result = state.results[id];
+    if (!result || result.verdict === SKIPPED) continue;
+    const entry = { verdict: result.verdict, fingerprint: fingerprint(state.casesDir, id), kitCommit: state.kitCommit, date: state.createdAt };
+    ledger[id] = issue === undefined ? entry : { ...entry, issue };
+  }
+  writeJson(file, Object.fromEntries(Object.entries(ledger).sort(([a], [b]) => (a < b ? -1 : 1))));
+}
+
 function report(options) {
+  if (options.issue !== undefined && !/^[1-9]\d*$/.test(options.issue)) usage('report --issue takes the number of the issue that reports the run');
   const runDir = resolve(options.run);
   const state = loadState(runDir);
   const groups = new Map();
@@ -446,6 +470,7 @@ function report(options) {
   }
   const text = `${[...groups].map(([group, lines]) => `**${group}**\n\n${lines.join('\n')}\n`).join('\n')}`;
   writeFileSync(paths(runDir).summary, text);
+  writeLedger(state, options.issue === undefined ? undefined : Number(options.issue));
   process.stdout.write(text);
 }
 
