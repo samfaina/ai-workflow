@@ -17,7 +17,7 @@ One JSON file per **UAT case** in `cases/`, named `<id>.json`. `tests/uat-cases.
 | `assertions` | Checked by `check` at the end of the step. |
 | `assisted` | Optional. A non-empty string giving the reason the case only runs with a person, such as checks that depend on what the terminal shows. It makes the case an **Assisted UAT case**. |
 
-A case's fingerprint in the **UAT ledger** covers its file and every fixture its `setup` copies, so changing either changes it. Line endings do not count.
+A case's fingerprint in the **UAT ledger** covers what its file parses to, except `order`, and every fixture its `setup` copies, so changing any other field, or a fixture it copies, changes it. Only the parsed content counts, not the file's formatting: indentation, whitespace and line endings do not count, and neither does `order`, which inserting a case renumbers in every later one. Reordering keys or the items of an array still counts.
 
 `run.mjs due` lists every **Due UAT case** with its reason: `new`, `changed`, `upstream-due` (a case it starts from through `from.case` or `continues` is due) or `not-passed`, and with `--release` also `before-release` (below). It groups them into **UAT batches**, each holding its due cases and the cases they start from, with a `--cases` list in `order`. Assisted cases are never in a batch: they are listed apart, grouped the same way, each with its reason. A case that starts from an assisted case goes with it, since no batch can hold the case it needs. Such a group can run again a case that a batch also runs.
 

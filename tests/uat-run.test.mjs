@@ -713,7 +713,7 @@ test('report keeps the entry of a case outside the run, and of a case this run s
   assert.deepEqual(ledger.outside, before.outside);
 });
 
-test('the fingerprint changes with the case file or a fixture it copies, and not with line endings alone', (t) => {
+test('the fingerprint changes with a case field or a fixture it copies, and not with line endings alone', (t) => {
   const withFixture = caseFile('a', { setup: [{ copy: 'fixtures/review.md', to: 'review.md' }] });
   const run = makeRun(t, [withFixture], { fixtures: { 'fixtures/review.md': 'Proven defects: 0\n', 'fixtures/other.md': 'other\n' } });
   const [workdir] = runCases(run, pass());
@@ -735,6 +735,37 @@ test('the fingerprint changes with the case file or a fixture it copies, and not
   assert.notEqual(fixtureChanged, first);
   const caseChanged = fingerprintAfter(() => run.writeCase({ ...withFixture, title: 'renamed' }));
   assert.notEqual(caseChanged, fixtureChanged);
+});
+
+test('the fingerprint does not change with the case\'s order alone, since inserting a case renumbers every later one', (t) => {
+  const numbered = caseFile('a', { order: 3 });
+  const run = makeRun(t, [numbered]);
+  runCases(run, pass());
+  run.cli('report');
+  const first = run.ledger().a.fingerprint;
+
+  run.writeCase({ ...numbered, order: 4 });
+  run.cli('report');
+
+  assert.equal(run.ledger().a.fingerprint, first);
+});
+
+test('the fingerprint counts what the case file parses to, not its formatting, and keeps the order of its keys', (t) => {
+  const original = caseFile('a', { setup: [{ write: 'note.md', text: 'x\n' }] });
+  const run = makeRun(t, [original]);
+  runCases(run, pass());
+  const fingerprintAfter = (text) => {
+    writeFileSync(join(run.casesDir, 'a.json'), text);
+    run.cli('report');
+    return run.ledger().a.fingerprint;
+  };
+
+  const first = fingerprintAfter(JSON.stringify(original, null, 2) + '\n');
+  assert.equal(fingerprintAfter(JSON.stringify(original)), first, 'no indentation');
+  assert.equal(fingerprintAfter(JSON.stringify(original, null, '\t').replace(/": /g, '":   ') + '\n\n'), first, 'other whitespace');
+
+  const { title, id, ...rest } = original;
+  assert.notEqual(fingerprintAfter(JSON.stringify({ title, id, ...rest }, null, 2)), first, 'two keys swapped');
 });
 
 test('the fingerprint report writes holds the drift the run added, and no path', (t) => {
