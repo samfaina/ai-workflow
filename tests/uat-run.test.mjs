@@ -721,6 +721,152 @@ test('init over a committed kit checkout gives no warning', (t) => {
   assert.equal(run.state().kitCommit, kit.commit);
 });
 
+// The ids of `due`'s due cases with their reasons.
+const reasons = (output) => Object.fromEntries(output.due.map((d) => [d.case, d.reason]));
+
+test('due lists a case with no ledger entry as new, and not a case whose run passed', (t) => {
+  const run = makeRun(t, [caseFile('a', { order: 1 }), caseFile('b', { order: 2 })]);
+  runCases(run, pass());
+  run.cli('report');
+
+  const { status, output } = run.due();
+
+  assert.equal(status, 0, output?.message);
+  assert.deepEqual(output.due, [{ case: 'b', reason: 'new' }]);
+});
+
+test('due lists a case as changed when its file or a fixture it copies changed since its run', (t) => {
+  const copies = caseFile('copies', { order: 2, setup: [{ copy: 'fixtures/review.md', to: 'review.md' }] });
+  const edited = caseFile('edited', { order: 1 });
+  const run = makeRun(t, [edited, copies, caseFile('same', { order: 3 })], { fixtures: { 'fixtures/review.md': 'Proven defects: 0\n' } });
+  runCases(run, pass(), pass(), pass());
+  run.cli('report');
+
+  run.writeCase({ ...edited, title: 'renamed' });
+  run.writeFixture('fixtures/review.md', 'Proven defects: 1\n');
+
+  assert.deepEqual(run.due().output.due, [{ case: 'edited', reason: 'changed' }, { case: 'copies', reason: 'changed' }]);
+});
+
+test('due lists a case whose last run did not pass as not-passed, whatever the verdict', (t) => {
+  const run = makeRun(t, [caseFile('failed', { order: 1 }), caseFile('unproven', { order: 2 })]);
+  runCases(run, fail, { verdict: 'Not proven', line: 'stopped early', judge: [], findings: [{ kind: 'environment', text: 'x' }] });
+  run.cli('report');
+
+  assert.deepEqual(run.due().output.due, [{ case: 'failed', reason: 'not-passed' }, { case: 'unproven', reason: 'not-passed' }]);
+});
+
+// A route of passed cases, in its ledger: `root` starts from a ref, `point`
+// from root's restore point, `session` continues point's session, and `apart`
+// shares nothing with them.
+function passedRoute(t, extra = {}) {
+  const route = {
+    root: caseFile('root', { order: 1, ...extra.root }),
+    point: caseFile('point', { order: 2, from: { case: 'root' }, ...extra.point }),
+    session: caseFile('session', { order: 3, from: undefined, continues: 'point', ...extra.session }),
+    apart: caseFile('apart', { order: 4, ...extra.apart }),
+  };
+  const run = makeRun(t, Object.values(route));
+  runCases(run, pass(), pass(), pass(), pass());
+  run.cli('report');
+  return { run, route };
+}
+
+test('a case that starts from a due case is due as upstream-due, through from.case and through continues', (t) => {
+  const { run, route } = passedRoute(t);
+
+  run.writeCase({ ...route.root, title: 'renamed' });
+
+  assert.deepEqual(reasons(run.due().output), { root: 'changed', point: 'upstream-due', session: 'upstream-due' });
+});
+
+test('a case keeps its own reason when the case it starts from is due too', (t) => {
+  const { run, route } = passedRoute(t);
+
+  run.writeCase({ ...route.root, title: 'renamed' });
+  run.writeCase({ ...route.session, title: 'renamed' });
+
+  assert.deepEqual(reasons(run.due().output), { root: 'changed', point: 'upstream-due', session: 'changed' });
+});
+
+test('a batch holds the cases its due cases start from, and cases with no chain between them land in separate batches', (t) => {
+  const { run, route } = passedRoute(t);
+
+  run.writeCase({ ...route.session, title: 'renamed' });
+  run.writeCase({ ...route.apart, title: 'renamed' });
+
+  assert.deepEqual(run.due().output.batches, [
+    { cases: ['root', 'point', 'session'], due: ['session'], paste: '--cases root,point,session' },
+    { cases: ['apart'], due: ['apart'], paste: '--cases apart' },
+  ]);
+});
+
+test('due cases that start from the same case share its batch, in order', (t) => {
+  const run = makeRun(t, [
+    caseFile('root', { order: 1 }),
+    caseFile('late', { order: 3, from: { case: 'root' } }),
+    caseFile('early', { order: 2, from: { case: 'root' } }),
+  ]);
+  runCases(run, pass());
+  run.cli('report');
+
+  assert.deepEqual(run.due().output.batches, [{ cases: ['root', 'early', 'late'], due: ['early', 'late'], paste: '--cases root,early,late' }]);
+});
+
+const TERMINAL = 'its checks read what the terminal shows';
+
+test('an assisted case is listed apart with its reason and the cases it starts from, never inside a batch', (t) => {
+  const { run, route } = passedRoute(t, { session: { assisted: TERMINAL } });
+
+  run.writeCase({ ...route.point, title: 'renamed' });
+
+  const { output } = run.due();
+  assert.deepEqual(reasons(output), { point: 'changed', session: 'upstream-due' });
+  assert.deepEqual(output.batches, [{ cases: ['root', 'point'], due: ['point'], paste: '--cases root,point' }]);
+  assert.deepEqual(output.assisted, [
+    { cases: ['root', 'point', 'session'], due: ['session'], paste: '--cases root,point,session', assisted: [{ case: 'session', reason: TERMINAL }] },
+  ]);
+});
+
+test('a due case that starts from an assisted case is listed apart too, since no batch can hold what it starts from', (t) => {
+  const { run, route } = passedRoute(t, { point: { assisted: TERMINAL } });
+
+  run.writeCase({ ...route.session, title: 'renamed' });
+
+  const { output } = run.due();
+  assert.deepEqual(output.batches, []);
+  assert.deepEqual(output.assisted, [
+    { cases: ['root', 'point', 'session'], due: ['session'], paste: '--cases root,point,session', assisted: [{ case: 'session', reason: `starts from point: ${TERMINAL}` }] },
+  ]);
+});
+
+test('an assisted case and the due cases that start from it are listed apart as one run, as a batch is', (t) => {
+  const { run, route } = passedRoute(t, { point: { assisted: TERMINAL } });
+
+  run.writeCase({ ...route.point, title: 'renamed' });
+
+  const { output } = run.due();
+  assert.deepEqual(output.batches, []);
+  assert.deepEqual(output.assisted, [
+    {
+      cases: ['root', 'point', 'session'],
+      due: ['point', 'session'],
+      paste: '--cases root,point,session',
+      assisted: [{ case: 'point', reason: TERMINAL }, { case: 'session', reason: `starts from point: ${TERMINAL}` }],
+    },
+  ]);
+});
+
+test('a pass on another kit commit still counts: a change to a kit skill alone makes no case due', (t) => {
+  const run = makeRun(t, [caseFile('a', { order: 1 })]);
+  runCases(run, pass());
+  run.cli('report');
+  const ledger = run.ledger();
+  writeFileSync(run.ledgerFile, JSON.stringify({ a: { ...ledger.a, kitCommit: '0'.repeat(40) } }));
+
+  assert.deepEqual(run.due().output.due, []);
+});
+
 test('only init falls back to UAT_TARGET: another command without --run is a usage error', (t) => {
   const run = makeRun(t, [caseFile('a')]);
   const env = { ...process.env, UAT_TARGET: dirname(run.runDir) };

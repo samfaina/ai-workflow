@@ -174,8 +174,8 @@ export function makeRun(t, cases, { allCases = false, script = runScript, fixtur
 
   const runDir = join(root, 'run');
   const env = { ...process.env, CLAUDE_CONFIG_DIR: join(root, 'config') };
-  const cli = (command, ...args) => {
-    const result = spawnSync(process.execPath, [script, command, '--run', runDir, ...args], { encoding: 'utf8', env });
+  const runCli = (...args) => {
+    const result = spawnSync(process.execPath, [script, ...args], { encoding: 'utf8', env });
     let output = null;
     try {
       output = JSON.parse(result.stdout);
@@ -184,6 +184,9 @@ export function makeRun(t, cases, { allCases = false, script = runScript, fixtur
     }
     return { status: result.status, output, stdout: result.stdout, stderr: result.stderr };
   };
+  const cli = (command, ...args) => runCli(command, '--run', runDir, ...args);
+  // `due` reads the cases folder and its ledger, and no run folder.
+  const due = (...args) => runCli('due', '--cases-dir', casesDir, ...args);
   const selection = allCases ? [] : ['--cases', cases.map((c) => c.id).join(',')];
   const init = cli('init', '--source', source, '--cases-dir', casesDir, ...selection);
   if (init.status !== 0) throw new Error(`init failed: ${init.stdout}${init.stderr}`);
@@ -197,6 +200,7 @@ export function makeRun(t, cases, { allCases = false, script = runScript, fixtur
     startCommit,
     branchCommit,
     cli,
+    due,
     state: () => JSON.parse(readFileSync(join(runDir, 'state.json'), 'utf8')),
     // The UAT ledger sits beside the cases folder, as it sits beside /uat's.
     ledgerFile: join(root, 'ledger.json'),
