@@ -18,6 +18,8 @@ The argument is a run folder to resume, or the path of the scratch app's clone. 
 - **A clone:** ask the person where to create the run, and suggest `<UAT_TARGET>/<yyyymmdd>` when `UAT_TARGET` is set, or `~/aw-uat/<yyyymmdd>` in their home folder. It must be a new folder with a short path, outside any repo. Then `init --run <that folder> --source <clone>`; `init` without `--run` creates `<UAT_TARGET>/<yyyymmdd>` and prints it as `run`. `--cases a,b` runs a subset. It records this checkout's commit as the one the run tests. When it prints a `warning`, show it to the person: this checkout has uncommitted changes, so the recorded commit is not exactly the code the run tests.
 - **Neither reachable:** stop and ask. The run needs this machine's clone.
 
+When the person asks what to run, run `run.mjs due`, which takes no `--run`. It lists each **Due UAT case** with its reason, the **UAT batches** with the `--cases` list that starts each one's run, and apart from them the assisted cases, grouped the same way, each with its reason. Each batch or group goes in a run folder of its own.
+
 Done when `next` can run against a run folder.
 
 ## Each step

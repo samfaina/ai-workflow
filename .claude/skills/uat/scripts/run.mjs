@@ -10,9 +10,11 @@
 //   node run.mjs drift  --run <dir> --when <question> --intent <answer> --reason <why>
 //   node run.mjs report --run <dir> [--issue <n>]
 //   node run.mjs clean  --run <dir>
+//   node run.mjs due    [--cases-dir <dir>]
 //
 // --source defaults to UAT_SOURCE. For init only, --run defaults to
-// <UAT_TARGET>/<yyyymmdd>; every other command needs the run folder by name.
+// <UAT_TARGET>/<yyyymmdd>; every other command needs the run folder by name,
+// except due, which reads only the case files and the UAT ledger.
 //
 // Everything lives in the run folder, outside this repo, except what a run
 // changes in the case files (drift) and the UAT ledger, `ledger.json` beside
@@ -104,13 +106,15 @@ function init(options) {
   print({ status: 'created', run: runDir, cases: cases.length, kitCommit, ...(warning ? { warning } : {}) });
 }
 
-function allCaseIds(casesDir) {
+// Every case file in the folder, in the order they declare.
+function allCases(casesDir) {
   return readdirSync(casesDir)
     .filter((name) => name.endsWith('.json'))
     .map((name) => readJson(join(casesDir, name)))
-    .sort((a, b) => a.order - b.order)
-    .map((uatCase) => uatCase.id);
+    .sort((a, b) => a.order - b.order);
 }
+
+const allCaseIds = (casesDir) => allCases(casesDir).map((uatCase) => uatCase.id);
 
 function resolveInStore(store, ref) {
   for (const candidate of [`refs/source/heads/${ref}`, `refs/source/tags/${ref}`, ref]) {
@@ -444,11 +448,17 @@ function reportLine(state, uatCase) {
   return `- **${result.verdict}: ${uatCase.title}**: ${text}`;
 }
 
+const ledgerFile = (casesDir) => join(skillFolderOf(casesDir), 'ledger.json');
+function loadLedger(casesDir) {
+  const file = ledgerFile(casesDir);
+  return existsSync(file) ? readJson(file) : {};
+}
+
 // One entry per case with a result in this run. A skipped case keeps the entry
 // an earlier run left, and so does every case outside this run.
 function writeLedger(state, issue) {
-  const file = join(skillFolderOf(state.casesDir), 'ledger.json');
-  const ledger = existsSync(file) ? readJson(file) : {};
+  const file = ledgerFile(state.casesDir);
+  const ledger = loadLedger(state.casesDir);
   for (const id of state.cases) {
     const result = state.results[id];
     if (!result || result.verdict === SKIPPED) continue;
@@ -472,6 +482,77 @@ function report(options) {
   writeFileSync(paths(runDir).summary, text);
   writeLedger(state, options.issue === undefined ? undefined : Number(options.issue));
   process.stdout.write(text);
+}
+
+// The id of the case whose restore point or session a case starts from, if any.
+const startsFrom = (uatCase) => uatCase.continues ?? uatCase.from?.case;
+
+// Why the ledger holds no passing run for what the case holds now, or null.
+function ownReason(casesDir, entry, id) {
+  if (!entry) return 'new';
+  if (entry.fingerprint !== fingerprint(casesDir, id)) return 'changed';
+  if (entry.verdict !== 'Pass') return 'not-passed';
+  return null;
+}
+
+function due(options) {
+  const casesDir = resolve(options['cases-dir'] ?? join(skillDir, 'cases'));
+  const ledger = loadLedger(casesDir);
+  const cases = allCases(casesDir);
+  const byId = new Map(cases.map((uatCase) => [uatCase.id, uatCase]));
+  const reasons = new Map();
+  const reasonOf = (id) => {
+    if (!reasons.has(id)) {
+      reasons.set(id, null); // a chain that loops back cannot recurse forever
+      const start = startsFrom(byId.get(id));
+      const startIsDue = byId.has(start) && reasonOf(start) !== null;
+      reasons.set(id, ownReason(casesDir, ledger[id], id) ?? (startIsDue ? 'upstream-due' : null));
+    }
+    return reasons.get(id);
+  };
+  const dueCases = cases.filter((uatCase) => reasonOf(uatCase.id) !== null);
+  const chains = new Map(dueCases.map((uatCase) => [uatCase.id, chainOf(byId, uatCase)]));
+  // A case that starts from an assisted case runs only with a person too: a
+  // batch cannot hold the case it needs the restore point or session of.
+  const assistedOn = (uatCase) => chains.get(uatCase.id).find((member) => member.assisted !== undefined);
+  const assistedWhy = (uatCase) => {
+    const assistedCase = assistedOn(uatCase);
+    return assistedCase === uatCase ? uatCase.assisted : `starts from ${assistedCase.id}: ${assistedCase.assisted}`;
+  };
+  print({
+    due: dueCases.map((uatCase) => ({ case: uatCase.id, reason: reasonOf(uatCase.id) })),
+    batches: batchesOf(chains, dueCases.filter((uatCase) => !assistedOn(uatCase))),
+    assisted: batchesOf(chains, dueCases.filter(assistedOn)).map((batch) => ({
+      ...batch,
+      assisted: batch.due.map((id) => ({ case: id, reason: assistedWhy(byId.get(id)) })),
+    })),
+  });
+}
+
+// The case's chain back to the case that starts from a ref: itself first.
+function chainOf(byId, uatCase) {
+  const chain = [uatCase];
+  for (let next = byId.get(startsFrom(uatCase)); next && !chain.includes(next); next = byId.get(startsFrom(next))) chain.push(next);
+  return chain;
+}
+
+// A case starts from at most one case, so the cases joined by from.case and
+// continues form trees, and a batch is the part of one tree that its due cases
+// need: each due case and every case on its chain, in `order`, with the
+// `--cases` list that starts its run.
+function batchesOf(chains, dueCases) {
+  const trees = new Map();
+  for (const uatCase of dueCases) {
+    const chain = chains.get(uatCase.id);
+    const root = chain.at(-1).id;
+    if (!trees.has(root)) trees.set(root, new Set());
+    for (const member of chain) trees.get(root).add(member);
+  }
+  const dueIds = new Set(dueCases.map((uatCase) => uatCase.id));
+  return [...trees.values()].map((members) => {
+    const ids = [...members].sort((a, b) => a.order - b.order).map((member) => member.id);
+    return { cases: ids, due: ids.filter((id) => dueIds.has(id)), paste: `--cases ${ids.join(',')}` };
+  });
 }
 
 // Deletes what a finished run no longer needs and keeps its record. Each log
@@ -502,13 +583,16 @@ function today() {
   return `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
 }
 
-const COMMANDS = { init, next, check, record, skip, drift, report, clean };
+const COMMANDS = { init, next, check, record, skip, drift, report, clean, due };
 const [command, ...rest] = process.argv.slice(2);
-if (!Object.hasOwn(COMMANDS, command ?? '')) usage(`usage: run.mjs ${Object.keys(COMMANDS).join('|')} --run <dir> [options]`);
+if (!Object.hasOwn(COMMANDS, command ?? '')) {
+  const withRun = Object.keys(COMMANDS).filter((name) => name !== 'due');
+  usage(`usage: run.mjs ${withRun.join('|')} --run <dir> [options], or run.mjs due [--cases-dir <dir>]`);
+}
 try {
   const options = parseArgs(rest);
   if (command === 'init' && !options.run && process.env.UAT_TARGET) options.run = join(process.env.UAT_TARGET, today());
-  if (!options.run) usage(command === 'init' ? '--run <dir> is required, or the UAT_TARGET environment variable' : '--run <dir> is required');
+  if (!options.run && command !== 'due') usage(command === 'init' ? '--run <dir> is required, or the UAT_TARGET environment variable' : '--run <dir> is required');
   options.source ??= process.env.UAT_SOURCE;
   COMMANDS[command](options);
 } catch (error) {

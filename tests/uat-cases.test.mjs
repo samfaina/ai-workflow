@@ -65,6 +65,22 @@ test('answers and turns are intents with a reason, never option labels', () => {
   }
 });
 
+// What is wrong with a case's optional `assisted` field, or null.
+const assistedProblem = (c) =>
+  !('assisted' in c) || (typeof c.assisted === 'string' && c.assisted.trim() !== '')
+    ? null
+    : `${c.id}: assisted must be a non-empty string, the reason the case runs only with a person`;
+
+test('assisted, documented in CASE-FORMAT.md, is accepted only as the reason the case runs only with a person', () => {
+  for (const bad of ['', '  ', true, null, ['reads the terminal']]) {
+    assert.equal(assistedProblem({ id: 'x', assisted: bad }) !== null, true, JSON.stringify(bad));
+  }
+  assert.equal(assistedProblem({ id: 'x', assisted: 'its checks read what the terminal shows' }), null);
+  assert.equal(assistedProblem({ id: 'x' }), null);
+  assert.deepEqual(cases.map(assistedProblem).filter(Boolean), []);
+  assert.match(readFileSync(join(skillDir, 'CASE-FORMAT.md'), 'utf8'), /^\| `assisted` \| .+ \|$/m);
+});
+
 test('each case starts from a restore point or continues an earlier session', () => {
   for (const c of cases) {
     assert.ok(Boolean(c.from) !== Boolean(c.continues), `${c.id}: needs exactly one of from and continues`);

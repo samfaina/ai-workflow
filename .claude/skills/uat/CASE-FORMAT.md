@@ -15,8 +15,11 @@ One JSON file per **UAT case** in `cases/`, named `<id>.json`. `tests/uat-cases.
 | `answers` | `{ "when", "intent", "reason" }` for each question the agent may ask. `drift: true` marks one added during a run. |
 | `turns` | `{ "intent", "reason", "assertions"? }` for each follow-up message, in order. |
 | `assertions` | Checked by `check` at the end of the step. |
+| `assisted` | Optional. A non-empty string giving the reason the case only runs with a person, such as checks that depend on what the terminal shows. It makes the case an **Assisted UAT case**. |
 
 A case's fingerprint in the **UAT ledger** covers its file and every fixture its `setup` copies, so changing either changes it. Line endings do not count.
+
+`run.mjs due` lists every **Due UAT case** with its reason: `new`, `changed`, `upstream-due` (a case it starts from through `from.case` or `continues` is due) or `not-passed`. It groups them into **UAT batches**, each holding its due cases and the cases they start from, with a `--cases` list in `order`. Assisted cases are never in a batch: they are listed apart, grouped the same way, each with its reason. A case that starts from an assisted case goes with it, since no batch can hold the case it needs. Such a group can run again a case that a batch also runs.
 
 Write answers and turns as **intents**: what the person means, never an option's label, since labels change between runs. The `reason` says what the case tests with that answer, so an agent can adapt it to a question worded differently.
 
