@@ -3,9 +3,9 @@
 // file itself. No real session log is ever committed.
 
 import { spawn, spawnSync } from 'node:child_process';
-import { appendFileSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { appendFileSync, cpSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 
 import { json, repoRoot } from './fixtures.mjs';
 
@@ -130,7 +130,18 @@ export const caseFile = (id, extra = {}) => ({
   ...extra,
 });
 
-export function makeRun(t, cases, { allCases = false } = {}) {
+// A throwaway kit checkout: a git repo holding a copy of the /uat scripts, so
+// a test can leave it with uncommitted changes. Pass its `script` to makeRun.
+export function makeKit(t) {
+  const dir = join(tempDir(t), 'kit');
+  cpSync(join(skillDir, 'scripts'), join(dir, '.claude', 'skills', 'uat', 'scripts'), { recursive: true });
+  git(dir, 'init', '-q', '-b', 'main');
+  git(dir, 'add', '-A');
+  git(dir, 'commit', '-q', '-m', 'kit');
+  return { dir, script: join(dir, '.claude', 'skills', 'uat', 'scripts', 'run.mjs'), commit: git(dir, 'rev-parse', 'HEAD') };
+}
+
+export function makeRun(t, cases, { allCases = false, script = runScript, fixtures = {} } = {}) {
   const root = tempDir(t);
   const source = join(root, 'source');
   mkdirSync(source);
@@ -150,14 +161,21 @@ export function makeRun(t, cases, { allCases = false } = {}) {
   git(source, 'switch', '-q', 'main');
   writeFileSync(join(source, 'wip.txt'), 'not committed\n');
 
+  // The cases folder's parent stands for the /uat skill: `copy` reads its
+  // fixtures from there.
   const casesDir = join(root, 'cases');
   mkdirSync(casesDir);
   for (const c of cases) writeFileSync(join(casesDir, `${c.id}.json`), json(c));
+  const writeFixture = (path, text) => {
+    mkdirSync(dirname(join(root, path)), { recursive: true });
+    writeFileSync(join(root, path), text);
+  };
+  for (const [path, text] of Object.entries(fixtures)) writeFixture(path, text);
 
   const runDir = join(root, 'run');
   const env = { ...process.env, CLAUDE_CONFIG_DIR: join(root, 'config') };
   const cli = (command, ...args) => {
-    const result = spawnSync(process.execPath, [runScript, command, '--run', runDir, ...args], { encoding: 'utf8', env });
+    const result = spawnSync(process.execPath, [script, command, '--run', runDir, ...args], { encoding: 'utf8', env });
     let output = null;
     try {
       output = JSON.parse(result.stdout);
@@ -171,12 +189,19 @@ export function makeRun(t, cases, { allCases = false } = {}) {
   if (init.status !== 0) throw new Error(`init failed: ${init.stdout}${init.stderr}`);
 
   return {
+    root,
     runDir,
     source,
     casesDir,
+    init: init.output,
     startCommit,
     branchCommit,
     cli,
+    state: () => JSON.parse(readFileSync(join(runDir, 'state.json'), 'utf8')),
+    // The UAT ledger sits beside the cases folder, as it sits beside /uat's.
+    ledgerFile: join(root, 'ledger.json'),
+    ledger: () => JSON.parse(readFileSync(join(root, 'ledger.json'), 'utf8')),
+    writeFixture,
     readCase: (id) => JSON.parse(readFileSync(join(casesDir, `${id}.json`), 'utf8')),
     writeCase: (c) => writeFileSync(join(casesDir, `${c.id}.json`), json(c)),
     sourceState: () => ({

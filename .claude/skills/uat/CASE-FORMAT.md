@@ -16,6 +16,8 @@ One JSON file per **UAT case** in `cases/`, named `<id>.json`. `tests/uat-cases.
 | `turns` | `{ "intent", "reason", "assertions"? }` for each follow-up message, in order. |
 | `assertions` | Checked by `check` at the end of the step. |
 
+A case's fingerprint in the **UAT ledger** covers its file and every fixture its `setup` copies, so changing either changes it. Line endings do not count.
+
 Write answers and turns as **intents**: what the person means, never an option's label, since labels change between runs. The `reason` says what the case tests with that answer, so an agent can adapt it to a question worded differently.
 
 ## Setup operations
