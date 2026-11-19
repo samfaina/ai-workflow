@@ -4,7 +4,7 @@
 // flows keep the same state, refusals and files:
 //
 //   next → shell lines → case session in `claude -p` → follow-up turns →
-//   check → grading → record, until next is done, then report.
+//   check → grading → record → cleanup lines, until next is done, then report.
 //
 // A case session runs in the working copy with the kit loaded from this
 // checkout, and its permission prompts go to the permission host
@@ -12,6 +12,11 @@
 // `continues` an earlier one, resumes the session by id with the same flags.
 // A turn that ends in prose gets one judgement call by ANSWERING.md, unless no
 // `turns` or `answers` entry is left, and each step one by GRADING.md.
+//
+// A case writes to GitHub only on the scratch repo, the source clone's GitHub
+// remote: the permission host filters the session's gh and git commands, and
+// the session's only credential is the token in UAT_GH_TOKEN, which reaches
+// that repo alone. A batch whose cases need GitHub does not start without it.
 //
 // The driver never runs with ANTHROPIC_API_KEY set, so a run is never billed
 // to the API. A run it stops can be resumed with `auto --run <dir>`: a step
@@ -22,6 +27,7 @@ import { closeSync, existsSync, openSync, readFileSync, statSync, writeFileSync 
 import { delimiter, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { githubRepo } from './github-repo.mjs';
 import { Refused } from './refused.mjs';
 
 const scriptsDir = dirname(fileURLToPath(import.meta.url));
@@ -98,30 +104,91 @@ function claude(args, { cwd, input, env = process.env, stdoutFile }) {
   }
 }
 
-// The case's shell lines, run in the working copy before the session starts,
-// as the person runs them in a terminal. The cases write them for PowerShell.
-// What they leave in the environment, such as a changed PATH, is the
-// environment the case session runs in.
-function runShell(uatCase, workdir, stepDir) {
-  const lines = uatCase.shell ?? [];
-  if (lines.length === 0) return process.env;
-  const envFile = join(stepDir, 'shell-env.json');
+// The driver's own variable for the fine-grained token limited to the scratch
+// repo (CASE-FORMAT.md says what it needs).
+const TOKEN_VARIABLE = 'UAT_GH_TOKEN';
+
+// The git config that keeps the maintainer's stored credentials out: an empty
+// credential.helper resets the helpers every config file names, and the one
+// helper left gives github.com the session's GH_TOKEN. SSH URLs to github.com
+// go over HTTPS, so that no SSH key of the maintainer's is used either.
+const GIT_CREDENTIALS = [
+  ['credential.helper', ''],
+  ['credential.https://github.com.helper', '!f() { test "$1" = get && test -n "$GH_TOKEN" && echo username=x-access-token && echo "password=$GH_TOKEN"; }; f'],
+  ['url.https://github.com/.insteadOf', 'git@github.com:'],
+  ['url.https://github.com/.insteadOf', 'ssh://git@github.com/'],
+  ['core.askPass', ''],
+];
+
+// The environment a step's shell lines and case session start from: GH_TOKEN
+// from the driver's variable, and none of the maintainer's own GitHub
+// credentials, no other token, no gh login and no git credential helper.
+function githubEnv(stepDir) {
+  const env = { ...process.env };
+  for (const key of ['GH_TOKEN', 'GITHUB_TOKEN', 'GH_ENTERPRISE_TOKEN', 'GITHUB_ENTERPRISE_TOKEN', TOKEN_VARIABLE, 'GIT_ASKPASS', 'SSH_ASKPASS']) delete env[key];
+  if (process.env[TOKEN_VARIABLE]) env.GH_TOKEN = process.env[TOKEN_VARIABLE];
+  env.GH_CONFIG_DIR = join(stepDir, 'gh-config');
+  env.GIT_TERMINAL_PROMPT = '0';
+  env.GCM_INTERACTIVE = 'never';
+  const first = Number(env.GIT_CONFIG_COUNT) || 0;
+  GIT_CREDENTIALS.forEach(([key, value], index) => {
+    env[`GIT_CONFIG_KEY_${first + index}`] = key;
+    env[`GIT_CONFIG_VALUE_${first + index}`] = value;
+  });
+  env.GIT_CONFIG_COUNT = String(first + GIT_CREDENTIALS.length);
+  return env;
+}
+
+// A case's `shell` or `cleanup` lines, run in one PowerShell session in the
+// working copy, as the person runs them in a terminal: the cases write them for
+// PowerShell. Returns the environment the lines leave. A line that fails stops
+// the run, naming the case.
+function runLines(id, field, lines, { workdir, stepDir, env }) {
+  const envFile = join(stepDir, `${field}-env.json`);
   const quote = (text) => `'${text.replaceAll("'", "''")}'`;
   const body = [
     "$ErrorActionPreference = 'Stop'",
     ...lines.flatMap((line) => ['$global:LASTEXITCODE = 0', line, 'if ($LASTEXITCODE) { exit $LASTEXITCODE }']),
     `[IO.File]::WriteAllText(${quote(envFile)}, ([Environment]::GetEnvironmentVariables() | ConvertTo-Json -Compress))`,
   ];
-  const file = join(stepDir, 'shell.ps1');
+  const file = join(stepDir, `${field}.ps1`);
   const bom = String.fromCharCode(0xfeff); // so Windows PowerShell reads the file as UTF-8
   writeFileSync(file, `${bom}${body.join('\n')}\n`);
   const shell = process.platform === 'win32' ? 'powershell.exe' : 'pwsh';
-  const result = spawnSync(shell, ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', file], { cwd: workdir, encoding: 'utf8' });
+  const result = spawnSync(shell, ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', file], { cwd: workdir, env, encoding: 'utf8' });
   if (result.error || result.status !== 0 || !existsSync(envFile)) {
     const why = result.error ? result.error.message : `exit ${result.status}: ${tail(`${result.stdout}${result.stderr}`)}`;
-    throw new Refused(`${uatCase.id}: its shell lines failed in ${workdir}: ${why}`);
+    throw new Refused(`${id}: its ${field} lines failed in ${workdir}: ${why}`);
   }
   return readJson(envFile);
+}
+
+// The case's shell lines, run before the session starts. What they leave in
+// the environment, such as a changed PATH, is the environment the case session
+// runs in.
+function runShell(uatCase, place) {
+  const lines = uatCase.shell ?? [];
+  return lines.length === 0 ? place.env : runLines(uatCase.id, 'shell', lines, place);
+}
+
+// The step's start time for {{STARTED}}, in UTC to the second, a form gh's
+// search and its createdAt fields both compare with: rounded down, so that it
+// never comes after anything the step created.
+const startedStamp = (startedAt) => new Date(startedAt).toISOString().replace(/\.\d{3}Z$/, 'Z');
+
+// The case's cleanup lines, run once the step is graded and recorded, whatever
+// its verdict, so that it leaves the scratch repo as later runs expect. A
+// cleanup that fails stops the run: the next case would start from a host left
+// dirty. The step's result stays recorded, so auto resumes at the next case.
+function runCleanup(uatCase, startedAt, place) {
+  const lines = (uatCase.cleanup ?? []).map((line) => line.replaceAll('{{STARTED}}', startedStamp(startedAt)));
+  if (lines.length === 0) return;
+  try {
+    runLines(uatCase.id, 'cleanup', lines, place);
+  } catch (error) {
+    if (!(error instanceof Refused)) throw error;
+    throw new Refused(`${error.message}. Its result is recorded: undo by hand what the step left, then run auto again to go on with the next case`);
+  }
 }
 
 // One turn of the case session: the prompt sent, and the turn's stream saved
@@ -256,9 +323,33 @@ function gradePrompt(step, ended, checks, summary) {
     section('Step summary (reader.mjs summary)', asJson(summary)),
     section(
       'Permission host log',
-      `Each permission prompt of the case session and the host's decision. A denial the case did not expect is an environment problem.\n\n${hostLog ? `\`\`\`\n${hostLog}\n\`\`\`` : 'No permission prompt reached the host.'}`,
+      `Each permission prompt of the case session and the host's decision, graded by the rules above.\n\n${hostLog ? `\`\`\`\n${hostLog}\n\`\`\`` : 'No permission prompt reached the host.'}`,
     ),
   ].join('\n');
+}
+
+// The permission host's denials in the step, as it logged them.
+function hostDenials(hostLog) {
+  if (!existsSync(hostLog)) return [];
+  return readFileSync(hostLog, 'utf8')
+    .split('\n')
+    .filter((line) => line.trim())
+    .map((line) => JSON.parse(line))
+    .filter((entry) => entry.decision === 'deny');
+}
+
+// By GRADING.md, a denial the case did not expect is an environment problem:
+// a step with a denial is never a Pass, and a Not proven one names it in an
+// environment finding. Why the grades are refused, or null.
+function denialRefusal(grades, denials) {
+  if (denials.length === 0) return null;
+  const listed = denials.map((entry) => `${entry.tool}${entry.detail ? ` (${entry.detail})` : ''}: ${entry.reason}`).join('; ');
+  const rule = 'a denial the case did not expect makes the step Not proven, with an environment finding that names it';
+  if (grades.verdict === 'Pass') return `the permission host denied ${listed}. A step with a denial is never a Pass: ${rule}`;
+  if (grades.verdict === 'Not proven' && !(grades.findings ?? []).some((finding) => finding.kind === 'environment')) {
+    return `the permission host denied ${listed}, and the grades hold no environment finding: ${rule}`;
+  }
+  return null;
 }
 
 // The session a `continues` case resumes: the one its earlier case picked.
@@ -269,7 +360,33 @@ function continuedSession(runDir, uatCase) {
   return session;
 }
 
-function runStep(runDir, judgeModel, uatCase, brief) {
+const RUNS_GH = /(^|[\s;&|(`])gh(\.exe)?(\s|$)/;
+
+// Whether a case runs gh or reaches GitHub, so that it needs the token: its
+// shell lines, cleanup lines or `run` assertions run gh or name github.com, or
+// its setup, or that of a case whose session it continues, points origin there.
+function needsGitHub(loadCase, uatCase, seen = new Set()) {
+  const checks = [...(uatCase.assertions ?? []), ...(uatCase.turns ?? []).flatMap((turn) => turn.assertions ?? [])];
+  const lines = [...(uatCase.shell ?? []), ...(uatCase.cleanup ?? []), ...checks.map((check) => check.run).filter(Boolean)];
+  if (lines.some((line) => RUNS_GH.test(line) || /github\.com/i.test(line))) return true;
+  if ((uatCase.setup ?? []).some((op) => op.remote !== undefined && githubRepo(op.remote))) return true;
+  seen.add(uatCase.id);
+  return Boolean(uatCase.continues) && !seen.has(uatCase.continues) && needsGitHub(loadCase, loadCase(uatCase.continues), seen);
+}
+
+// The scratch repo, as `owner/name`: the GitHub repo the source clone's remote
+// names, origin first. Null when it has no GitHub remote.
+function scratchRepo(source) {
+  const remotes = spawnSync('git', ['-C', source, 'remote'], { encoding: 'utf8' }).stdout?.split('\n').filter(Boolean) ?? [];
+  for (const remote of [...remotes.filter((name) => name === 'origin'), ...remotes.filter((name) => name !== 'origin')]) {
+    const repo = githubRepo(spawnSync('git', ['-C', source, 'remote', 'get-url', remote], { encoding: 'utf8' }).stdout?.trim() ?? '');
+    if (repo) return repo;
+  }
+  return null;
+}
+
+function runStep(run, uatCase, brief) {
+  const { runDir, judgeModel, scratch } = run;
   const { stepDir, workdir } = brief;
   const step = {
     id: uatCase.id,
@@ -284,10 +401,11 @@ function runStep(runDir, judgeModel, uatCase, brief) {
     used: new Set(),
     unusedAnswers: () => (uatCase.answers ?? []).map((_, index) => index).filter((index) => !step.used.has(index)),
   };
-  writeJson(step.mcpConfig, { mcpServers: { [HOST_SERVER]: { command: process.execPath, args: [hostScript, '--workdir', workdir, '--log', step.hostLog] } } });
-  step.env = runShell(uatCase, workdir, stepDir);
+  const hostArgs = [hostScript, '--workdir', workdir, '--log', step.hostLog, ...(scratch ? ['--scratch', scratch] : [])];
+  writeJson(step.mcpConfig, { mcpServers: { [HOST_SERVER]: { command: process.execPath, args: hostArgs } } });
+  step.env = runShell(uatCase, { workdir, stepDir, env: githubEnv(stepDir) });
 
-  const continues = readJson(join(stepDir, 'step.json')).continues;
+  const { continues, startedAt } = readJson(join(stepDir, 'step.json'));
   let { sessionId, text } = sessionTurn(step, brief.paste.command, continues ? continuedSession(runDir, uatCase) : null);
   readerMjs('pick', stepDir, '--session', sessionId);
   let ended;
@@ -312,7 +430,10 @@ function runStep(runDir, judgeModel, uatCase, brief) {
   const checks = readJson(join(stepDir, 'checks.json'));
   const summary = readerMjs('summary', stepDir);
   const gradesFile = join(stepDir, 'grades.json');
+  const denials = hostDenials(step.hostLog);
   judgement(step, 'grade', gradePrompt(step, ended, checks, summary), (grades) => {
+    const refusal = denialRefusal(grades, denials);
+    if (refusal) return refusal;
     writeJson(gradesFile, grades);
     try {
       runMjs('record', runDir, '--grades', gradesFile);
@@ -322,6 +443,7 @@ function runStep(runDir, judgeModel, uatCase, brief) {
       return error.message;
     }
   });
+  runCleanup(uatCase, startedAt, { workdir, stepDir, env: step.env });
 }
 
 // Runs the batch of the run folder, a new one when `source` is given, until
@@ -339,7 +461,15 @@ export function auto(options) {
   } else if (options.cases || options['cases-dir']) {
     throw new Refused(`${runDir} already holds a run, whose cases were chosen when it started: drop --cases and --cases-dir to resume it`);
   }
-  const judgeModel = options['judge-model'] ?? DEFAULT_JUDGE_MODEL;
+  const started = readJson(stateFile);
+  if (!process.env[TOKEN_VARIABLE]) {
+    const loadCase = (caseId) => readJson(join(started.casesDir, `${caseId}.json`));
+    const needing = started.cases.filter((caseId) => !started.results[caseId] && loadCase(caseId).assisted === undefined && needsGitHub(loadCase, loadCase(caseId)));
+    if (needing.length > 0) {
+      throw new Refused(`${needing.join(', ')} run gh or reach GitHub, and ${TOKEN_VARIABLE} is not set: set it to the fine-grained token limited to the scratch repo that CASE-FORMAT.md describes, and run auto again`);
+    }
+  }
+  const run = { runDir, judgeModel: options['judge-model'] ?? DEFAULT_JUDGE_MODEL, scratch: scratchRepo(started.source) };
 
   for (;;) {
     const state = readJson(stateFile);
@@ -357,7 +487,7 @@ export function auto(options) {
       // A step cut short cannot be resumed half-way: it starts again from its restore point.
       runMjs('reset', runDir, '--case', id);
     } else {
-      runStep(runDir, judgeModel, uatCase, brief);
+      runStep(run, uatCase, brief);
     }
   }
 

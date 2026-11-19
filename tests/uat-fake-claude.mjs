@@ -69,7 +69,10 @@ const takeNext = (queue) => {
 const options = parseArgs(process.argv.slice(2));
 const prompt = readFileSync(0, 'utf8');
 const cwd = process.cwd();
-appendFileSync(join(dirname(scriptFile), 'calls.jsonl'), `${JSON.stringify({ args: process.argv.slice(2), cwd, prompt, env: { UAT_PROBE: process.env.UAT_PROBE } })}\n`);
+// The environment variables a test may ask about: the probe the shell lines
+// set, and what reaches GitHub and git's credentials.
+const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => /^(UAT_|GH_|GITHUB_|GIT_|GCM_)/i.test(key)));
+appendFileSync(join(dirname(scriptFile), 'calls.jsonl'), `${JSON.stringify({ args: process.argv.slice(2), cwd, prompt, env })}\n`);
 const emit = (event) => process.stdout.write(`${JSON.stringify(event)}\n`);
 
 if (options['--output-format'] === 'json') {

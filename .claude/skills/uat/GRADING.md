@@ -18,6 +18,8 @@ Grade each criterion in `judge` against the summary and the working copy: pass, 
 
 Sort every problem into a **skill defect** or an **environment problem** (a missing dependency, the clone's state, the network).
 
+In an unattended run you also get the permission host's log: each permission prompt of the case session and the host's decision. A denial the case did not expect makes the step Not proven, with an environment finding that names it, since the host's limits say nothing about the skill. A step with a denial is never a Pass.
+
 | Verdict | When |
 | --- | --- |
 | Pass | Every assertion and criterion passed, every turn with assertions included. |
