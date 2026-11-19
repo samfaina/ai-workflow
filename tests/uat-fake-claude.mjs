@@ -9,7 +9,12 @@
 //   mcp__<server>__<tool>`, `--output-format stream-json` and `--verbose`, and
 //   `--resume <id>` for every turn after the first. It prints stream-json
 //   events, the `system`/`init` one holding the session id, and keeps the
-//   session log where reader.mjs reads it. Each tool call it makes is first
+//   session log where reader.mjs reads it. A turn may print a
+//   `rate_limit_event` after init, as Claude Code does for a plan's session:
+//   `rate_limit_info.unifiedWindows` holds `five_hour` and `seven_day`, each
+//   with its `utilization` as a fraction of the window and `resetsAt` in epoch
+//   seconds, and `status` is `rejected` when the turn hit the limit. Each tool
+//   call it makes is first
 //   put to the permission host, over MCP, as Claude Code does for a tool that
 //   would prompt, and runs only when the host allows it.
 // - A judgement call is `claude -p` with the prompt on stdin, `--model` and
@@ -18,14 +23,17 @@
 //
 // FAKE_CLAUDE names the script, a JSON file:
 //
-//   { "turns": [{ "tools": [{ "name", "input" }], "text" } | { "tools", "error" }],
+//   { "turns": [{ "rateLimit", "tools": [{ "name", "input" }], "text" } | { "rateLimit", "tools", "error" }],
 //     "judgements": [{ "reply": {...} } | { "grade": {...} }] }
 //
 // Each case-session call takes the next entry of `turns`, and each judgement
 // call the next entry of `judgements`, whose key must be the kind of call the
 // prompt's first line names. A turn with `error` ends in that error after its
-// tools ran. `{{CWD}}` in a tool's input becomes the session's working
-// directory. Every call is appended to calls.jsonl beside the script.
+// tools ran. A turn's `rateLimit` is `{ status?, five_hour?, seven_day? }`,
+// each window `{ utilization, resetsIn }`, `resetsIn` being the seconds from
+// now its `resetsAt` lies. `{{CWD}}` in a tool's input becomes the session's
+// working directory. Every call is appended to calls.jsonl beside the script,
+// with the time it started.
 
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
@@ -72,7 +80,7 @@ const cwd = process.cwd();
 // The environment variables a test may ask about: the probe the shell lines
 // set, and what reaches GitHub and git's credentials.
 const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => /^(UAT_|GH_|GITHUB_|GIT_|GCM_)/i.test(key)));
-appendFileSync(join(dirname(scriptFile), 'calls.jsonl'), `${JSON.stringify({ args: process.argv.slice(2), cwd, prompt, env })}\n`);
+appendFileSync(join(dirname(scriptFile), 'calls.jsonl'), `${JSON.stringify({ at: Date.now(), args: process.argv.slice(2), cwd, prompt, env })}\n`);
 const emit = (event) => process.stdout.write(`${JSON.stringify(event)}\n`);
 
 if (options['--output-format'] === 'json') {
@@ -102,6 +110,13 @@ const record = (type, message, extra = {}) => {
 
 const turn = takeNext('turns');
 emit({ type: 'system', subtype: 'init', session_id: sessionId, cwd, tools: ['Read', 'Write', 'Bash'], mcp_servers: [{ name: 'uat', status: 'connected' }] });
+if (turn.rateLimit) {
+  const { status = 'allowed', ...windows } = turn.rateLimit;
+  const unifiedWindows = Object.fromEntries(
+    Object.entries(windows).map(([name, { utilization, resetsIn }]) => [name, { utilization, resetsAt: Math.ceil(Date.now() / 1000) + resetsIn }]),
+  );
+  emit({ type: 'rate_limit_event', rate_limit_info: { status, unifiedWindows }, uuid: randomUUID(), session_id: sessionId });
+}
 const command = prompt.match(/^\/(\S+)\s*([\s\S]*)$/);
 record('user', {
   role: 'user',

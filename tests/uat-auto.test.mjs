@@ -26,6 +26,8 @@ function fakeClaude(run, script) {
   const env = { ...process.env, CLAUDE_CONFIG_DIR: join(run.root, 'config'), FAKE_CLAUDE: scriptFile };
   // No real key or token reaches a test: one that needs them sets its own.
   for (const key of ['ANTHROPIC_API_KEY', 'GH_TOKEN', 'GITHUB_TOKEN', 'UAT_GH_TOKEN']) delete env[key];
+  // Quota thresholds no scripted reading reaches, unless a test sets its own.
+  Object.assign(env, { UAT_MAX_FIVE_HOUR: '90', UAT_MAX_WEEKLY: '80' });
   const pathKey = Object.keys(env).find((key) => key.toUpperCase() === 'PATH') ?? 'PATH';
   env[pathKey] = `${bin}${delimiter}${env[pathKey] ?? ''}`;
   const callsFile = join(dir, 'calls.jsonl');
@@ -407,6 +409,185 @@ test('auto refuses to start while ANTHROPIC_API_KEY is set, before any step or c
   assert.match(result.output.message, /ANTHROPIC_API_KEY/);
   assert.deepEqual(fake.calls(), []);
   assert.equal(existsSync(join(run.runDir, 'steps')), false);
+});
+
+test('without quota thresholds, from flags or the environment, auto refuses to start, saying how to pass them, before any step or call', (t) => {
+  const run = makeRun(t, [caseFile('a')]);
+  const fake = fakeClaude(run, { turns: [{ text: 'Done.' }], judgements: [{ grade: pass() }] });
+  delete fake.env.UAT_MAX_FIVE_HOUR;
+  delete fake.env.UAT_MAX_WEEKLY;
+
+  const neither = auto(run, fake);
+  assert.equal(neither.status, 1);
+  assert.equal(neither.output.status, 'refused');
+  for (const way of ['--max-five-hour', '--max-weekly', 'UAT_MAX_FIVE_HOUR', 'UAT_MAX_WEEKLY']) assert.ok(neither.output.message.includes(way), way);
+
+  const weeklyOnly = auto(run, fake, '--max-weekly', '80');
+  assert.equal(weeklyOnly.status, 1);
+  assert.match(weeklyOnly.output.message, /--max-five-hour/);
+  assert.doesNotMatch(weeklyOnly.output.message, /--max-weekly/);
+
+  const notPercent = auto(run, fake, '--max-five-hour', 'ninety', '--max-weekly', '80');
+  assert.equal(notPercent.status, 1);
+  assert.match(notPercent.output.message, /--max-five-hour[\s\S]*ninety/);
+
+  assert.deepEqual(fake.calls(), []);
+  assert.equal(existsSync(join(run.runDir, 'steps')), false);
+
+  const fromFlags = auto(run, fake, '--max-five-hour', '90', '--max-weekly', '80');
+  assert.equal(fromFlags.status, 0, fromFlags.report);
+});
+
+// The rate-limit reading a case session's turn printed, as its stream holds it.
+const readingOf = (run, id, turn) =>
+  readLines(join(run.runDir, 'steps', id, `session-${turn}.jsonl`)).find((event) => event.type === 'rate_limit_event').rate_limit_info.unifiedWindows;
+const resetsAtMs = (window) => window.resetsAt * 1000;
+
+test('a five-hour reading over its threshold makes auto wait until the window resets, before the next turn and before the next case, then go on', (t) => {
+  const run = makeRun(t, [caseFile('a', { order: 1, turns: [{ intent: 'Go on', reason: 'the case runs to the end' }] }), caseFile('b', { order: 2 })]);
+  const fake = fakeClaude(run, {
+    turns: [
+      { rateLimit: { five_hour: { utilization: 0.95, resetsIn: 2 }, seven_day: { utilization: 0.1, resetsIn: 86400 } }, text: 'Shall I go on?' },
+      { rateLimit: { five_hour: { utilization: 0.91, resetsIn: 2 } }, text: 'Done.' },
+      { text: 'Done.' },
+    ],
+    judgements: [{ reply: { action: 'reply', entry: 'turn', message: 'Go on.', reason: 'the next turn' } }, { grade: pass() }, { grade: pass() }],
+  });
+
+  const result = auto(run, fake);
+  assert.equal(result.status, 0, result.report);
+
+  const [first, followUp, nextCase] = fake.sessions();
+  const firstReset = resetsAtMs(readingOf(run, 'a', 1).five_hour);
+  const secondReset = resetsAtMs(readingOf(run, 'a', 2).five_hour);
+  assert.ok(first.at < firstReset);
+  assert.ok(followUp.at >= firstReset, 'the follow-up turn waited for the reset');
+  assert.ok(nextCase.at >= secondReset, 'the next case waited for the reset');
+  assert.match(result.stderr, /five-hour window[\s\S]*waiting until/);
+  assert.deepEqual(run.state().results, { a: { verdict: 'Pass', line: pass().line }, b: { verdict: 'Pass', line: pass().line } });
+});
+
+test('a weekly reading over its threshold makes auto stop and exit before the next case, and the run resumes from where it stopped', (t) => {
+  const run = makeRun(t, [caseFile('a', { order: 1 }), caseFile('b', { order: 2 })]);
+  const fake = fakeClaude(run, {
+    turns: [{ rateLimit: { five_hour: { utilization: 0.2, resetsIn: 3600 }, seven_day: { utilization: 0.85, resetsIn: 86400 } }, text: 'Done.' }, { text: 'Done.' }],
+    judgements: [{ grade: pass() }, { grade: pass() }],
+  });
+
+  const stopped = auto(run, fake);
+  assert.equal(stopped.status, 1);
+  assert.equal(stopped.output.status, 'refused');
+  assert.match(stopped.output.message, /weekly window[\s\S]*--max-weekly[\s\S]*before case b[\s\S]*auto --run/);
+  assert.doesNotMatch(stopped.report, /0\.85|85 ?%|85 percent/, 'no quota figure in what auto prints');
+  assert.deepEqual(fake.sessions().map((call) => call.prompt), ['/a']);
+  assert.deepEqual(Object.keys(run.state().results), ['a']);
+
+  // Resumed while the week has not reset, it stops again, before any call.
+  const callsBefore = fake.calls().length;
+  const again = auto(run, fake);
+  assert.equal(again.status, 1);
+  assert.match(again.output.message, /weekly window/);
+  assert.equal(fake.calls().length, callsBefore);
+
+  const resumedRun = auto(run, fake, '--max-weekly', '90');
+  assert.equal(resumedRun.status, 0, resumedRun.report);
+  assert.deepEqual(fake.sessions().map((call) => call.prompt), ['/a', '/b']);
+  assert.deepEqual(Object.keys(run.state().results), ['a', 'b']);
+});
+
+test('a weekly reading over its threshold mid-step stops the run before any call for the next turn, and the resumed run starts that step again from its restore point', (t) => {
+  const run = makeRun(t, [caseFile('a', { turns: [{ intent: 'Go on', reason: 'the case runs to the end' }] })]);
+  const fake = fakeClaude(run, {
+    turns: [
+      { rateLimit: { seven_day: { utilization: 0.85, resetsIn: 86400 } }, tools: [write('{{CWD}}/first.txt', 'first\n')], text: 'Shall I go on?' },
+      { text: 'Shall I go on?' },
+      { text: 'Done.' },
+    ],
+    judgements: [{ reply: { action: 'reply', entry: 'turn', message: 'Go on.', reason: 'the next turn' } }, { grade: pass() }],
+  });
+
+  const stopped = auto(run, fake);
+  assert.equal(stopped.status, 1);
+  assert.match(stopped.output.message, /weekly window[\s\S]*before turn 2 of a/);
+  assert.deepEqual(fake.judgements(), [], 'not even the reply is judged once the week is over its threshold');
+  assert.deepEqual(run.state().results, {});
+
+  const resumedRun = auto(run, fake, '--max-weekly', '90');
+  assert.equal(resumedRun.status, 0, resumedRun.report);
+  assert.deepEqual(fake.sessions().map((call) => call.prompt), ['/a', '/a', 'Go on.']);
+  assert.equal(fake.sessions()[1].args.includes('--resume'), false, 'the step starts a new session');
+  assert.equal(existsSync(join(run.runDir, 'steps', 'a', 'repo', 'first.txt')), false, 'a fresh working copy');
+});
+
+test('a turn that ends in a rate-limit error mid-step stops the run, and the next auto waits for the window, resets that step and runs it from its restore point', (t) => {
+  const run = makeRun(t, [caseFile('a', { order: 1, turns: [{ intent: 'Go on', reason: 'the case runs to the end' }] }), caseFile('b', { order: 2 })]);
+  const goOn = { reply: { action: 'reply', entry: 'turn', message: 'Go on.', reason: 'the next turn' } };
+  const fake = fakeClaude(run, {
+    turns: [
+      { tools: [write('{{CWD}}/first.txt', 'first\n')], text: 'Shall I go on?' },
+      { rateLimit: { status: 'rejected', five_hour: { utilization: 1, resetsIn: 2 } }, tools: [write('{{CWD}}/half.txt', 'half\n')], error: 'API Error: 429' },
+      { text: 'Shall I go on?' },
+      { text: 'Done.' },
+      { text: 'Done.' },
+    ],
+    judgements: [goOn, goOn, { grade: pass() }, { grade: pass() }],
+  });
+
+  const stopped = auto(run, fake);
+  assert.equal(stopped.status, 1);
+  assert.match(stopped.output.message, /^a: the case session hit the plan's rate limit on turn 2[\s\S]*auto again[\s\S]*restore point/);
+  assert.deepEqual(run.state().results, {});
+  assert.ok(existsSync(join(run.runDir, 'steps', 'a', 'repo', 'half.txt')));
+  const reset = resetsAtMs(readingOf(run, 'a', 2).five_hour);
+
+  const resumedRun = auto(run, fake);
+  assert.equal(resumedRun.status, 0, resumedRun.report);
+  assert.deepEqual(fake.sessions().map((call) => call.prompt), ['/a', 'Go on.', '/a', 'Go on.', '/b']);
+  const restarted = fake.sessions()[2];
+  assert.equal(restarted.args.includes('--resume'), false, 'the step starts a new session');
+  assert.ok(restarted.at >= reset, 'the resumed run waited for the five-hour window first');
+  for (const name of ['first.txt', 'half.txt']) assert.equal(existsSync(join(run.runDir, 'steps', 'a', 'repo', name)), false, `${name}: a fresh working copy`);
+  assert.deepEqual(Object.keys(run.state().results), ['a', 'b']);
+});
+
+function filesUnder(dir) {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => (entry.isDirectory() ? filesUnder(join(dir, entry.name)) : [join(dir, entry.name)]));
+}
+
+test('each case\'s readings, before and after, are written in its step folder and nowhere else: not the summary, the review, the ledger, a judgement call or what auto prints', (t) => {
+  const run = makeRun(t, [caseFile('a', { order: 1, assertions: [{ judge: 'It wrote a note' }] }), caseFile('b', { order: 2 })]);
+  const grades = { verdict: 'Pass', line: 'It wrote the note.', judge: [{ criterion: 'It wrote a note', result: 'pass', evidence: 'the note is there' }], findings: [] };
+  const fake = fakeClaude(run, {
+    turns: [{ rateLimit: { five_hour: { utilization: 0.4321, resetsIn: 3600 }, seven_day: { utilization: 0.1234, resetsIn: 86400 } }, text: 'Done.' }, { text: 'Done.' }],
+    judgements: [{ grade: grades }, { grade: pass() }],
+  });
+
+  const result = auto(run, fake);
+  assert.equal(result.status, 0, result.report);
+
+  const quotaOf = (id) => JSON.parse(readText(join(run.runDir, 'steps', id, 'quota.json')));
+  const a = quotaOf('a');
+  assert.equal(a.before, null, 'nothing was read before the first case');
+  assert.equal(a.after.five_hour.utilization, 0.4321);
+  assert.equal(a.after.seven_day.utilization, 0.1234);
+  assert.equal(a.after.five_hour.resetsAt, new Date(resetsAtMs(readingOf(run, 'a', 1).five_hour)).toISOString());
+  assert.deepEqual(quotaOf('b').before, a.after, 'b starts from the reading a left');
+  assert.deepEqual(quotaOf('b').after, a.after, 'b\'s session printed no reading');
+
+  const figures = /0\.4321|43\.21|0\.1234|12\.34/;
+  const scripted = join(run.root, 'fake');
+  const holding = filesUnder(run.root).filter((file) => !file.startsWith(scripted) && figures.test(readFileSync(file, 'latin1')));
+  // A step folder's path with its trailing separator, so that `a` never matches `ab`.
+  const stepFolder = (id) => join(run.runDir, 'steps', id, '_').slice(0, -1);
+  const inStepFolder = (file) => ['a', 'b'].some((id) => file.startsWith(stepFolder(id)));
+  assert.deepEqual(
+    holding.filter((file) => !inStepFolder(file)),
+    [],
+    'only the step folders hold a figure',
+  );
+  assert.ok(holding.includes(join(run.runDir, 'steps', 'a', 'quota.json')));
+  for (const call of fake.calls()) assert.doesNotMatch(call.prompt, figures);
+  assert.doesNotMatch(result.report, figures);
 });
 
 test('a run stopped by a failed session resumes with auto, which restarts that step from its restore point', (t) => {
