@@ -1,0 +1,30 @@
+{
+  "aw-build-spec-contradiction": {
+    "verdict": "Pass",
+    "fingerprint": "2c66dd7a0a84fff154dd7adb62948e387cc2be1ffd0b5eb59d4d8132e42fcd69",
+    "kitCommit": "6cac139a84aca736fc6f8f99a96e3de7f170186f",
+    "date": "2026-11-18T21:16:39.000Z",
+    "issue": 126
+  },
+  "aw-intake-spec-contradiction": {
+    "verdict": "Pass",
+    "fingerprint": "5e6327db4cdfc7f3d620ab9bfc4d5ac19fcea48c304ba7775582be8e60ebea81",
+    "kitCommit": "6cac139a84aca736fc6f8f99a96e3de7f170186f",
+    "date": "2026-11-18T21:16:39.000Z",
+    "issue": 126
+  },
+  "aw-spec-change-contradicted": {
+    "verdict": "Pass",
+    "fingerprint": "f5195a65b1d9e7d246d5f7bedb20bf1e36ca236cd580b7eabe3cc8b04221e6a7",
+    "kitCommit": "6cac139a84aca736fc6f8f99a96e3de7f170186f",
+    "date": "2026-11-18T21:16:39.000Z",
+    "issue": 126
+  },
+  "aw-wayfinder-none-declined": {
+    "verdict": "Pass",
+    "fingerprint": "82ef62846a75b62b9b66117916907cbf3309fa3cd7c566ed6661adbe2941970a",
+    "kitCommit": "71eb0e8c77ca9a36f9690982c098b851d726051f",
+    "date": "2026-11-18T16:07:22.000Z",
+    "issue": 106
+  }
+}
