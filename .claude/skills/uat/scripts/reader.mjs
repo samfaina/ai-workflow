@@ -7,6 +7,10 @@
 //   node reader.mjs summary --step <dir> | --file <session.jsonl>
 //   node reader.mjs pick    --step <dir> --session <id>
 //
+// Each mode takes only the options on its line, and any other option is a
+// usage error that names it. These lines copy the usage lines of COMMANDS,
+// which parseArgs reads, and a test holds the two the same.
+//
 // watch exits as soon as something needs the person and prints it as JSON:
 // status is question, turn_end, ambiguous or timeout. peek prints the same for
 // the current moment, whatever watch already reported, and writes nothing.
@@ -34,11 +38,16 @@ function usage(message) {
   process.exit(EXIT_USAGE);
 }
 
-function parseArgs(args) {
+// The mode's options, from the command line. An option the mode does not take
+// is a usage error, so a typo is never dropped without a word.
+function parseArgs(mode, args) {
+  const takes = optionsOf(mode);
   const options = {};
   for (let i = 0; i < args.length; i += 2) {
-    if (!args[i].startsWith('--') || args[i + 1] === undefined) usage(`bad argument: ${args[i]}`);
-    options[args[i].slice(2)] = args[i + 1];
+    const name = args[i].startsWith('--') ? args[i].slice(2) : null;
+    if (name !== null && !takes.includes(name)) usage(`${mode} takes no option --${name}: ${usageLine(mode)}`);
+    if (name === null || args[i + 1] === undefined) usage(`bad argument: ${args[i]}`);
+    options[name] = args[i + 1];
   }
   return options;
 }
@@ -306,11 +315,22 @@ function pick(options) {
   print({ status: 'picked', session: options.session });
 }
 
-const COMMANDS = { watch, peek, summary, pick };
+// Each mode and its usage line, the only place that says which options it
+// takes: parseArgs refuses any option its line does not name, and the usage
+// message shows the lines.
+const COMMANDS = {
+  watch: { action: watch, usage: '--step <dir> [--timeout <s>] [--interval <ms>]' },
+  peek: { action: peek, usage: '--step <dir>' },
+  summary: { action: summary, usage: '--step <dir> | --file <session.jsonl>' },
+  pick: { action: pick, usage: '--step <dir> --session <id>' },
+};
+const usageLine = (mode) => `node reader.mjs ${mode} ${COMMANDS[mode].usage}`;
+const optionsOf = (mode) => [...COMMANDS[mode].usage.matchAll(/--([a-z-]+)/g)].map(([, name]) => name);
+
 const [mode, ...rest] = process.argv.slice(2);
-if (!Object.hasOwn(COMMANDS, mode ?? '')) usage('usage: reader.mjs watch|peek|summary|pick --step <dir> [options]');
+if (!Object.hasOwn(COMMANDS, mode ?? '')) usage(`usage:\n${Object.keys(COMMANDS).map((name) => `  ${usageLine(name)}`).join('\n')}`);
 try {
-  await COMMANDS[mode](parseArgs(rest));
+  await COMMANDS[mode].action(parseArgs(mode, rest));
 } catch (error) {
   if (!(error instanceof UnrecognizedLog)) throw error;
   process.stderr.write(`unrecognized session log: ${error.message}\n`);
