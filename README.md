@@ -132,7 +132,7 @@ The repo's own agent instructions live in `.claude/CLAUDE.md`, not at the root: 
 
 A release is a semver tag `vX.Y.Z`, the same `version` in `.claude-plugin/plugin.json` and the marketplace entry, and a hand-written `CHANGELOG.md` entry (ADR 0015). Without the version bump, installed plugin users never see the update.
 
-Before tagging, run `node .claude/skills/uat/scripts/run.mjs due --release`: it must list nothing. It lists every UAT case with no pass since the latest `vX.Y.Z` tag, assisted cases included, besides the cases plain `due` lists, and exits non-zero while it lists any (ADR 0018). It reads the tags of your clone, so fetch them first. Run the batches it lists with `/uat`, as many runs as it takes, and commit each run's ledger, until it lists nothing.
+Before tagging, run `node .claude/skills/uat/scripts/run.mjs due --release`: it must list nothing. It lists every UAT case with no pass since the latest `vX.Y.Z` tag, assisted cases included, besides the cases plain `due` lists, and exits non-zero while it lists any (ADR 0018). It reads the tags of your clone, so fetch them first. Run the batches it lists with `/uat`, or unattended with `run.mjs auto`, which skips assisted cases, as many runs as it takes, and commit each run's ledger, until it lists nothing.
 
 ## License
 

@@ -1231,7 +1231,7 @@ test('the usage message lists each command with the options it takes, as the scr
   const listed = result.stderr.split('\n').filter((line) => line.trim().startsWith('node run.mjs ')).map(squeeze);
 
   assert.equal(result.status, 2);
-  assert.equal(header.length, 10);
+  assert.equal(header.length, 11);
   assert.deepEqual(listed, header);
 });
 
