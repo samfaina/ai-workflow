@@ -331,3 +331,31 @@ _Avoid_: checkpoint (**Human gate** names a point where a person decides), snaps
 **UAT conductor**:
 The session running `/uat`. It prepares each UAT case, reads the case session's log to show each question as it appears and propose an answer, and grades the step when the person says it is done.
 _Avoid_: test runner, orchestrator
+
+**UAT ledger**:
+The committed record of each UAT case's last run: its verdict, the case as it stood when the run ended, and the kit commit it ran on. It is what decides which cases are due; the tracker only reports results.
+_Avoid_: results file, run history
+
+**Due UAT case**:
+A UAT case with no passing run in the UAT ledger for what it holds now: it is new, it changed since that run, or a case it starts from is due. A change to a kit skill alone does not make a case due.
+_Avoid_: stale case, pending case
+
+**UAT batch**:
+The due UAT cases joined by the restore points and sessions they share, run together in a run folder of their own. Batches are derived from what is due, never declared by hand.
+_Avoid_: suite, group (a case's `group` is only its heading in the summary)
+
+**Unattended run**:
+A UAT run of one UAT batch with nobody at the keyboard: the UAT driver plays the person, and a person reviews its grades before any pass reaches the UAT ledger.
+_Avoid_: automated run, headless run, CI run
+
+**UAT driver**:
+The process that conducts an unattended run: it starts each case session, answers from the case's intents, ends the step where a person would type `hecho`, and grades it by the same rules as the UAT conductor.
+_Avoid_: bot, runner, conductor (the **UAT conductor** works beside a person)
+
+**Permission host**:
+What answers a case session's permission prompts in an unattended run, in place of the person who approves them in an assisted one.
+_Avoid_: approver, sandbox
+
+**Assisted UAT case**:
+A UAT case that only runs with a person, because what it checks depends on what the terminal shows. The UAT driver leaves it due.
+_Avoid_: manual case, interactive case
