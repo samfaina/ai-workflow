@@ -1,28 +1,91 @@
 {
+  "aw-build-refuses-contract": {
+    "verdict": "Pass",
+    "fingerprint": "c239321eeec708488f0e42ff79710c07413faf9fc4e1eeea13d918e7253905c6",
+    "kitCommit": "036985b5c61519e8599f075f8ee2a180e4428430",
+    "date": "2026-11-10T18:16:44.000Z",
+    "issue": 105
+  },
   "aw-build-spec-contradiction": {
     "verdict": "Pass",
-    "fingerprint": "2c66dd7a0a84fff154dd7adb62948e387cc2be1ffd0b5eb59d4d8132e42fcd69",
+    "fingerprint": "0029baf5142cba13d6b4b52f7f9d368d4885db915a4040bb7d79b545ff41896d",
     "kitCommit": "6cac139a84aca736fc6f8f99a96e3de7f170186f",
     "date": "2026-11-18T21:16:39.000Z",
     "issue": 126
+  },
+  "aw-fast-review": {
+    "verdict": "Pass",
+    "fingerprint": "2b446beeb351321f687734d4a8bf15d16398649fa576f3b93377059ae0834462",
+    "kitCommit": "52b4471343f8bfb476398a12bc29001b4c025a60",
+    "date": "2026-11-15T21:13:58.000Z",
+    "issue": 103
+  },
+  "aw-fast-verified-build": {
+    "verdict": "Pass",
+    "fingerprint": "0ae118bcb830b604d4bc61d312501cec860fce6a36b15141af49818a27f93edb",
+    "kitCommit": "03ac60da6a82230f046706c78c982a71ab5f0c8a",
+    "date": "2026-11-17T12:32:05.000Z",
+    "issue": 104
+  },
+  "aw-fast-verified-review": {
+    "verdict": "Pass",
+    "fingerprint": "aff674943e60bad317e6ae5a149e21c1ba50ef7fe4e1ca916871104f177c62ad",
+    "kitCommit": "03ac60da6a82230f046706c78c982a71ab5f0c8a",
+    "date": "2026-11-17T12:32:05.000Z",
+    "issue": 104
+  },
+  "aw-fast-verified-verify": {
+    "verdict": "Pass",
+    "fingerprint": "a27addecfb35c8e31ce0433f7d421cb8ab27d408e9e632b09585b9ccb172796d",
+    "kitCommit": "03ac60da6a82230f046706c78c982a71ab5f0c8a",
+    "date": "2026-11-17T12:32:05.000Z",
+    "issue": 104
+  },
+  "aw-fast-verify-skipped": {
+    "verdict": "Pass",
+    "fingerprint": "c7f6b729b2ac0fa6a7955bf59e10aeb65a2d1df60611d4b84b859034329738da",
+    "kitCommit": "52b4471343f8bfb476398a12bc29001b4c025a60",
+    "date": "2026-11-15T21:13:58.000Z",
+    "issue": 103
+  },
+  "aw-intake-contract": {
+    "verdict": "Pass",
+    "fingerprint": "9a44726b17c1c73f445a29a6074c91b9f3211681bafb1cd2657db20438cf9fbf",
+    "kitCommit": "036985b5c61519e8599f075f8ee2a180e4428430",
+    "date": "2026-11-10T18:16:44.000Z",
+    "issue": 105
+  },
+  "aw-intake-security": {
+    "verdict": "Pass",
+    "fingerprint": "264827bcfef32c2e989f24ad677b79aeb4b097baf584df3919d82383529cadc4",
+    "kitCommit": "036985b5c61519e8599f075f8ee2a180e4428430",
+    "date": "2026-11-10T18:16:44.000Z",
+    "issue": 105
   },
   "aw-intake-spec-contradiction": {
     "verdict": "Pass",
-    "fingerprint": "5e6327db4cdfc7f3d620ab9bfc4d5ac19fcea48c304ba7775582be8e60ebea81",
+    "fingerprint": "b49b1cb2b4df003bcf7e1aa69fe380c69dbbaf823e43d0c7ae5e389c7c415bd8",
     "kitCommit": "6cac139a84aca736fc6f8f99a96e3de7f170186f",
     "date": "2026-11-18T21:16:39.000Z",
     "issue": 126
   },
+  "aw-intake-stored-data": {
+    "verdict": "Pass",
+    "fingerprint": "0b6f10010b2805c18522e52b82db17e9ff71da343c9df57101d20d131e99e1e6",
+    "kitCommit": "036985b5c61519e8599f075f8ee2a180e4428430",
+    "date": "2026-11-10T18:16:44.000Z",
+    "issue": 105
+  },
   "aw-spec-change-contradicted": {
     "verdict": "Pass",
-    "fingerprint": "f5195a65b1d9e7d246d5f7bedb20bf1e36ca236cd580b7eabe3cc8b04221e6a7",
+    "fingerprint": "b36f3afea6556e7839ae85feb2e3034de729587fd51af57d43088b3dabf0cb8c",
     "kitCommit": "6cac139a84aca736fc6f8f99a96e3de7f170186f",
     "date": "2026-11-18T21:16:39.000Z",
     "issue": 126
   },
   "aw-wayfinder-none-declined": {
     "verdict": "Pass",
-    "fingerprint": "82ef62846a75b62b9b66117916907cbf3309fa3cd7c566ed6661adbe2941970a",
+    "fingerprint": "46a39ede26a7698e55dd8be6f7d3af0ba90a1b63a1e57d4c816379fd7994c59d",
     "kitCommit": "71eb0e8c77ca9a36f9690982c098b851d726051f",
     "date": "2026-11-18T16:07:22.000Z",
     "issue": 106
