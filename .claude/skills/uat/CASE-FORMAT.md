@@ -10,12 +10,12 @@ One JSON file per **UAT case** in `cases/`, named `<id>.json`. `tests/uat-cases.
 | `from` | The restore point: `{ "case": "<id>" }` for an earlier case's, or `{ "ref": "<ref or commit of the source repo>" }`, with `branch` and `base` when it is not on `main`. Absent when `continues` is set. |
 | `continues` | The id of the earlier case whose session this one continues. It reuses that working copy and restores nothing. |
 | `setup` | Done by `next` after restoring, in order. See below. |
-| `shell` | What the person runs in a terminal before starting Claude Code. |
+| `shell` | What the person runs in a terminal before starting Claude Code, written for PowerShell. `run.mjs auto` runs the lines in one PowerShell session in the working copy, and starts the case session in the environment they leave. |
 | `command` | What the person types in Claude Code. `{{RUN}}` becomes the run folder. |
 | `answers` | `{ "when", "intent", "reason" }` for each question the agent may ask. `drift: true` marks one added during a run. |
 | `turns` | `{ "intent", "reason", "assertions"? }` for each follow-up message, in order. |
 | `assertions` | Checked by `check` at the end of the step. |
-| `assisted` | Optional. A non-empty string giving the reason the case only runs with a person, such as checks that depend on what the terminal shows. It makes the case an **Assisted UAT case**. |
+| `assisted` | Optional. A non-empty string giving the reason the case only runs with a person, such as checks that depend on what the terminal shows. It makes the case an **Assisted UAT case**, which `run.mjs auto` skips with that reason, so it stays due. |
 
 A case's fingerprint in the **UAT ledger** covers what its file parses to, except `order`, and every fixture its `setup` copies, so changing any other field, or a fixture it copies, changes it. Only the parsed content counts, not the file's formatting: indentation, whitespace and line endings do not count, and neither does `order`, which inserting a case renumbers in every later one. Reordering keys or the items of an array still counts.
 

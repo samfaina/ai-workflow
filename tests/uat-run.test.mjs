@@ -1200,6 +1200,18 @@ test('init given an option it does not take is a usage error and creates no run 
   assert.equal(existsSync(runDir), false);
 });
 
+test('init refuses a --cases list naming a case the cases folder does not hold, and creates no run folder', (t) => {
+  const run = makeRun(t, [caseFile('a'), caseFile('b')]);
+  const runDir = join(run.root, 'second-run');
+  const result = spawnSync(process.execPath, [runScript, 'init', '--run', runDir, '--source', run.source, '--cases-dir', run.casesDir, '--cases', 'a,nosuch,other'], { encoding: 'utf8' });
+
+  assert.equal(result.status, 1);
+  const output = JSON.parse(result.stdout);
+  assert.equal(output.status, 'refused');
+  assert.match(output.message, /no case nosuch, other in /);
+  assert.equal(existsSync(runDir), false);
+});
+
 test('due takes only --cases-dir and --release: --run and an unknown option are usage errors', (t) => {
   const run = makeRun(t, [caseFile('a')]);
 
@@ -1231,7 +1243,7 @@ test('the usage message lists each command with the options it takes, as the scr
   const listed = result.stderr.split('\n').filter((line) => line.trim().startsWith('node run.mjs ')).map(squeeze);
 
   assert.equal(result.status, 2);
-  assert.equal(header.length, 10);
+  assert.equal(header.length, 11);
   assert.deepEqual(listed, header);
 });
 

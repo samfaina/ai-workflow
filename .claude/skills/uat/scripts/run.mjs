@@ -1,6 +1,7 @@
 // Keeps the state of a UAT run: restores each UAT case's restore point into a
 // working copy, grades what can be graded by a script, saves the results and
-// writes the summary. The conductor (SKILL.md) does the rest.
+// writes the summary and the review. The conductor (SKILL.md), or in an
+// unattended run the driver (driver.mjs), does the rest.
 //
 //   node run.mjs init   --run <dir> --source <repo> [--cases a,b] [--cases-dir <dir>]
 //   node run.mjs next   --run <dir>
@@ -12,15 +13,20 @@
 //   node run.mjs report --run <dir> [--issue <n>]
 //   node run.mjs clean  --run <dir>
 //   node run.mjs due    [--cases-dir <dir>] [--release]
+//   node run.mjs auto   --run <dir> [--source <repo>] [--cases a,b] [--cases-dir <dir>] [--judge-model <m>]
 //
 // Each command takes only the options on its line, and any other option is a
 // usage error that names it. These lines copy the usage lines of COMMANDS,
 // which the check reads, and a test holds the two the same.
 //
-// --source defaults to UAT_SOURCE. For init only, --run defaults to
+// --source defaults to UAT_SOURCE. For init and auto only, --run defaults to
 // <UAT_TARGET>/<yyyymmdd>; every other command needs the run folder by name,
 // except due, which reads only the case files and the UAT ledger, and with
 // --release the release tags of the repo that holds them.
+//
+// auto is the UAT driver (driver.mjs): it runs one UAT batch unattended,
+// through the other commands, and resumes the run folder's state, or starts a
+// run there from --source. See driver.mjs.
 //
 // Everything lives in the run folder, outside this repo, except what a run
 // changes in the case files (drift) and the UAT ledger, `ledger.json` beside
@@ -35,8 +41,10 @@ import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync,
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { auto } from './driver.mjs';
 import { fingerprint, fixtureFile, skillFolderOf } from './fingerprint.mjs';
 import { logFolder } from './log-folder.mjs';
+import { Refused } from './refused.mjs';
 
 const skillDir = join(dirname(fileURLToPath(import.meta.url)), '..');
 const kitRoot = join(skillDir, '..', '..', '..').replaceAll('\\', '/');
@@ -45,8 +53,6 @@ const EXIT_USAGE = 2;
 const EXIT_DUE = 3;
 
 const IDENTITY = { GIT_AUTHOR_NAME: 'uat', GIT_AUTHOR_EMAIL: 'uat@local', GIT_COMMITTER_NAME: 'uat', GIT_COMMITTER_EMAIL: 'uat@local' };
-
-class Refused extends Error {}
 
 const print = (value) => process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
 const readJson = (file) => JSON.parse(readFileSync(file, 'utf8'));
@@ -101,6 +107,7 @@ const paths = (runDir) => ({
   aw: (id) => join(runDir, 'points', id, 'aw'),
   result: (id) => join(runDir, 'results', `${id}.json`),
   summary: join(runDir, 'summary.md'),
+  review: join(runDir, 'review.md'),
 });
 
 function loadState(runDir) {
@@ -116,7 +123,11 @@ function init(options) {
   const casesDir = resolve(options['cases-dir'] ?? join(skillDir, 'cases'));
   const { state, store } = paths(runDir);
   if (existsSync(state)) throw new Refused(`${runDir} already holds a run`);
-  const cases = options.cases ? options.cases.split(',') : allCaseIds(casesDir);
+  const known = allCaseIds(casesDir);
+  const cases = options.cases ? options.cases.split(',') : known;
+  // A mistyped id would otherwise surface only when next reaches it, as a crash.
+  const unknown = cases.filter((id) => !known.includes(id));
+  if (unknown.length > 0) throw new Refused(`no case ${unknown.join(', ')} in ${casesDir}`);
   const kitCommit = git(kitRoot, ['rev-parse', 'HEAD']);
   mkdirSync(store, { recursive: true });
   git(store, ['init', '-q', '--bare', '-b', 'main']);
@@ -527,6 +538,29 @@ function reportLine(state, uatCase) {
   return `- **${result.verdict}: ${uatCase.title}**: ${text}`;
 }
 
+// The review of the run, for the person who checks its grades before they
+// commit the ledger: each case's verdict and line, its assertions, every
+// criterion with its result and evidence, and the findings. It holds only what
+// record saved, so no quota or cost figure.
+function reviewOf(runDir, state) {
+  const sections = state.cases.map((id) => {
+    const uatCase = loadCase(state, id);
+    const outcome = state.results[id];
+    const file = paths(runDir).result(id);
+    const lines = [`## ${uatCase.title}`, '', `Case \`${id}\`. Verdict: **${outcome?.verdict ?? SKIPPED}**.`, '', outcome?.line ?? 'The run never reached this case.'];
+    if (!existsSync(file)) return lines.join('\n');
+    const result = readJson(file);
+    const list = (title, items) => (items.length === 0 ? [] : ['', `${title}:`, '', ...items]);
+    lines.push(
+      ...list('Assertions', result.assertions.map((a) => `- ${a.ok ? 'pass' : 'fail'}: ${a.name}${a.detail ? `: ${a.detail}` : ''}`)),
+      ...list('Criteria', result.judge.map((g) => `- ${g.result}: ${g.criterion}\n  Evidence: ${g.evidence}`)),
+      ...list('Findings', [...result.findings.skill.map((f) => `- Skill defect: ${f}`), ...result.findings.environment.map((f) => `- Environment problem: ${f}`)]),
+    );
+    return lines.join('\n');
+  });
+  return `# Review of the UAT run\n\nCheck each grade against its evidence before committing the ledger: no Pass reaches it unreviewed.\n\n${sections.join('\n\n')}\n`;
+}
+
 const ledgerFile = (casesDir) => join(skillFolderOf(casesDir), 'ledger.json');
 function loadLedger(casesDir) {
   const file = ledgerFile(casesDir);
@@ -559,6 +593,7 @@ function report(options) {
   }
   const text = `${[...groups].map(([group, lines]) => `**${group}**\n\n${lines.join('\n')}\n`).join('\n')}`;
   writeFileSync(paths(runDir).summary, text);
+  writeFileSync(paths(runDir).review, reviewOf(runDir, state));
   writeLedger(state, options.issue === undefined ? undefined : Number(options.issue));
   process.stdout.write(text);
 }
@@ -687,6 +722,7 @@ const COMMANDS = {
   report: { action: report, usage: '--run <dir> [--issue <n>]' },
   clean: { action: clean, usage: '--run <dir>' },
   due: { action: due, usage: '[--cases-dir <dir>] [--release]' },
+  auto: { action: (options) => print(auto(options)), usage: '--run <dir> [--source <repo>] [--cases a,b] [--cases-dir <dir>] [--judge-model <m>]' },
 };
 const usageLine = (command) => `node run.mjs ${command} ${COMMANDS[command].usage}`;
 const optionsOf = (command) => [...COMMANDS[command].usage.matchAll(/--([a-z-]+)/g)].map(([, name]) => name);
@@ -695,8 +731,9 @@ const [command, ...rest] = process.argv.slice(2);
 if (!Object.hasOwn(COMMANDS, command ?? '')) usage(`usage:\n${Object.keys(COMMANDS).map((name) => `  ${usageLine(name)}`).join('\n')}`);
 try {
   const options = parseArgs(command, rest);
-  if (command === 'init' && !options.run && process.env.UAT_TARGET) options.run = join(process.env.UAT_TARGET, today());
-  if (!options.run && command !== 'due') usage(command === 'init' ? '--run <dir> is required, or the UAT_TARGET environment variable' : '--run <dir> is required');
+  const startsRuns = command === 'init' || command === 'auto';
+  if (startsRuns && !options.run && process.env.UAT_TARGET) options.run = join(process.env.UAT_TARGET, today());
+  if (!options.run && command !== 'due') usage(startsRuns ? '--run <dir> is required, or the UAT_TARGET environment variable' : '--run <dir> is required');
   options.source ??= process.env.UAT_SOURCE;
   COMMANDS[command].action(options);
 } catch (error) {
