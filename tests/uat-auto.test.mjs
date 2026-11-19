@@ -5,12 +5,12 @@
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { delimiter, join } from 'node:path';
 import test from 'node:test';
 
 import { repoRoot } from './fixtures.mjs';
-import { caseFile, makeRun, runScript } from './uat-fixtures.mjs';
+import { caseFile, git, makeRun, runScript } from './uat-fixtures.mjs';
 
 const fakeScript = join(repoRoot, 'tests', 'uat-fake-claude.mjs');
 
@@ -24,7 +24,8 @@ function fakeClaude(run, script) {
   writeFileSync(join(bin, 'claude'), `#!/bin/sh\nexec "${process.execPath}" "${fakeScript}" "$@"\n`, { mode: 0o755 });
   writeFileSync(join(bin, 'claude.cmd'), `@"${process.execPath}" "${fakeScript}" %*\r\n`);
   const env = { ...process.env, CLAUDE_CONFIG_DIR: join(run.root, 'config'), FAKE_CLAUDE: scriptFile };
-  delete env.ANTHROPIC_API_KEY;
+  // No real key or token reaches a test: one that needs them sets its own.
+  for (const key of ['ANTHROPIC_API_KEY', 'GH_TOKEN', 'GITHUB_TOKEN', 'UAT_GH_TOKEN']) delete env[key];
   const pathKey = Object.keys(env).find((key) => key.toUpperCase() === 'PATH') ?? 'PATH';
   env[pathKey] = `${bin}${delimiter}${env[pathKey] ?? ''}`;
   const callsFile = join(dir, 'calls.jsonl');
@@ -245,6 +246,132 @@ test('a write outside the working copy is denied and logged in the step folder, 
   assert.equal(run.state().results.a.verdict, 'Not proven');
 });
 
+const SCRATCH = 'https://github.com/o/scratch.git';
+const bash = (command) => ({ name: 'Bash', input: { command } });
+
+// A run whose source clone's GitHub remote is the scratch repo, with the
+// driver's token set, as the maintainer runs a case that writes to GitHub.
+function githubRun(t, cases) {
+  const run = makeRun(t, cases);
+  git(run.source, 'remote', 'add', 'origin', SCRATCH);
+  return run;
+}
+
+test('gh reads are allowed, and a gh write or a push or fetch aimed at a repo other than the scratch repo is denied and logged', (t) => {
+  const run = githubRun(t, [caseFile('a', { setup: [{ remote: SCRATCH }] })]);
+  const commands = [
+    ['gh issue list --state open --json body --jq ".[].body"', 'allow'],
+    ['gh pr view 7 -R someone/project', 'allow'],
+    ['gh api repos/someone/project/issues', 'allow'],
+    ['gh issue create --title "The map" --body "Type: wayfinder:map"', 'allow'],
+    ['gh issue close 3 --repo o/scratch', 'allow'],
+    ['gh api --method POST repos/{owner}/{repo}/issues/2/dependencies/blocked_by -F issue_id=7', 'allow'],
+    ['gh api graphql -f query="query { viewer { login } }"', 'allow'],
+    ['git push origin HEAD', 'allow'],
+    ['git push ../origin.git HEAD:refs/heads/main', 'allow'],
+    ['gh issue create -R someone/project --title x', 'deny'],
+    ['cd src && gh api -X POST repos/someone/project/issues -f title=x', 'deny'],
+    ['gh api repos/someone/project/issues -f title=x', 'deny'],
+    ['git push https://github.com/someone/project.git HEAD', 'deny'],
+    ['git status; git fetch git@github.com:someone/project.git', 'deny'],
+    ['git push https://gitlab.com/someone/project.git HEAD', 'deny'],
+    ['gh api -XPOST repos/someone/project/issues', 'deny'],
+    ['gh api graphql -f query="mutation { closeIssue(input: {}) { clientMutationId } }"', 'deny'],
+    ['gh repo delete --yes', 'deny'],
+    ['gh repo create someone/new --private', 'deny'],
+    ['git remote add other https://github.com/someone/project.git && git push other HEAD', 'deny'],
+  ];
+  const fake = fakeClaude(run, {
+    turns: [{ tools: commands.map(([command]) => bash(command)), text: 'Done.' }],
+    judgements: [{ grade: { verdict: 'Not proven', line: 'The session was denied writes to another repo.', judge: [], findings: [{ kind: 'environment', text: 'Denied.' }] } }],
+  });
+  fake.env.UAT_GH_TOKEN = 'scratch-token';
+
+  const result = auto(run, fake);
+  assert.equal(result.status, 0, result.report);
+
+  const log = readLines(join(run.runDir, 'steps', 'a', 'permissions.jsonl'));
+  assert.deepEqual(log.map((entry) => [entry.detail, entry.decision]), commands);
+  for (const entry of log.filter((e) => e.decision === 'deny')) assert.match(entry.reason, /o\/scratch/, entry.detail);
+});
+
+test('a case session and its shell lines get GH_TOKEN from UAT_GH_TOKEN, and git asks none of the stored credential helpers', (t) => {
+  const run = makeRun(t, [caseFile('a', { shell: ['$env:UAT_PROBE = $env:GH_TOKEN.Substring(0, 7)'] })]);
+  const fake = fakeClaude(run, { turns: [{ text: 'Done.' }], judgements: [{ grade: pass() }] });
+  // The maintainer's own login: a stored helper and a token of their own.
+  const leaked = join(run.root, 'leaked.txt');
+  const globalConfig = join(run.root, 'global.gitconfig');
+  writeFileSync(globalConfig, `[credential]\n\thelper = "!f() { echo leaked > '${leaked.replaceAll('\\', '/')}'; echo username=me; echo password=maintainer-password; }; f"\n`);
+  Object.assign(fake.env, { GH_TOKEN: 'maintainer-token', GITHUB_TOKEN: 'maintainer-token', UAT_GH_TOKEN: 'scratch-token', GIT_CONFIG_GLOBAL: globalConfig });
+
+  const result = auto(run, fake);
+  assert.equal(result.status, 0, result.report);
+
+  const [session] = fake.sessions();
+  assert.equal(session.env.GH_TOKEN, 'scratch-token');
+  assert.equal(session.env.UAT_PROBE, 'scratch', 'the shell lines ran with the token too');
+  assert.equal(session.env.GITHUB_TOKEN, undefined);
+  assert.ok(session.env.GH_CONFIG_DIR.startsWith(join(run.runDir, 'steps', 'a')), 'gh reads no stored login of the maintainer');
+  const fill = (host) => spawnSync('git', ['credential', 'fill'], { input: `protocol=https\nhost=${host}\n\n`, encoding: 'utf8', env: { ...fake.env, ...session.env } });
+  const elsewhere = fill('example.com');
+  assert.notEqual(elsewhere.status, 0, elsewhere.stdout);
+  assert.doesNotMatch(elsewhere.stdout, /maintainer-password/);
+  assert.equal(existsSync(leaked), false, 'the stored helper never ran');
+  const github = fill('github.com');
+  assert.equal(github.status, 0, github.stderr);
+  assert.match(github.stdout, /^password=scratch-token$/m);
+  assert.equal(existsSync(leaked), false);
+  const stepDir = join(run.runDir, 'steps', 'a');
+  const onDisk = readdirSync(stepDir).filter((name) => statSync(join(stepDir, name)).isFile() && readText(join(stepDir, name)).includes('scratch-token'));
+  assert.deepEqual(onDisk, [], 'the token is written to no file of the step folder, which the grading call can read');
+});
+
+test('without UAT_GH_TOKEN, auto refuses to start a batch whose cases run gh or reach GitHub, naming them, before any step or call', (t) => {
+  const run = githubRun(t, [
+    caseFile('plain', { order: 1 }),
+    caseFile('remote', { order: 2, setup: [{ remote: SCRATCH }] }),
+    caseFile('cont', { order: 3, from: undefined, continues: 'remote' }),
+    caseFile('reads', { order: 4, assertions: [{ name: 'the map is open', run: 'gh issue list --state open', stdout: 'map' }] }),
+    caseFile('closes', { order: 5, cleanup: ['gh issue close 1'] }),
+  ]);
+  const fake = fakeClaude(run, { turns: [{ text: 'Done.' }], judgements: [{ grade: pass() }] });
+
+  const result = auto(run, fake);
+
+  assert.equal(result.status, 1);
+  assert.equal(result.output.status, 'refused');
+  assert.match(result.output.message, /UAT_GH_TOKEN/);
+  assert.match(result.output.message, /remote, cont, reads, closes/);
+  assert.doesNotMatch(result.output.message, /plain/);
+  assert.deepEqual(fake.calls(), []);
+  assert.equal(existsSync(join(run.runDir, 'steps')), false);
+});
+
+test('a step the permission host denied something in is never a Pass: the driver asks again for Not proven with an environment finding', (t) => {
+  const run = githubRun(t, [caseFile('a', { setup: [{ remote: SCRATCH }] })]);
+  const notProven = {
+    verdict: 'Not proven',
+    line: 'Asked to publish its tickets, the session was stopped from pushing to a repo other than the scratch repo, so the publishing never ran.',
+    judge: [],
+    findings: [{ kind: 'environment', text: 'The permission host denied a push to someone/project, which the case did not expect.' }],
+  };
+  const fake = fakeClaude(run, {
+    turns: [{ tools: [bash('git push https://github.com/someone/project.git HEAD')], text: 'Pushed.' }],
+    judgements: [{ grade: pass() }, { grade: notProven }],
+  });
+  fake.env.UAT_GH_TOKEN = 'scratch-token';
+
+  const result = auto(run, fake);
+  assert.equal(result.status, 0, result.report);
+
+  const [first, retry] = gradeCalls(fake);
+  assert.ok(retry.prompt.startsWith(first.prompt));
+  assert.match(retry.prompt.slice(first.prompt.length), /was refused[\s\S]*denied[\s\S]*Not proven[\s\S]*environment/);
+  const recorded = JSON.parse(readText(join(run.runDir, 'results', 'a.json')));
+  assert.equal(recorded.verdict, 'Not proven');
+  assert.deepEqual(recorded.findings.environment, [notProven.findings[0].text]);
+});
+
 test('an assisted case is skipped with its reason and stays due, and a case blocked by one that did not pass is skipped with its reason', (t) => {
   const run = makeRun(t, [
     caseFile('x', { order: 1, assisted: 'its checks read what the terminal shows' }),
@@ -312,6 +439,55 @@ test('the case\'s shell lines run in the working copy before the session, which 
   assert.equal(result.status, 0, result.report);
   assert.equal(fake.sessions()[0].env.UAT_PROBE, 'set by the shell lines');
   assert.equal(readText(join(run.runDir, 'steps', 'a', 'repo', 'shell.txt')).trim(), 'ran');
+});
+
+test('cleanup lines run in the working copy after the step is graded, on a pass and on a fail, with {{STARTED}} expanded, and one that fails stops the run', (t) => {
+  // Each line writes down when the step started and whether its result was already recorded.
+  const cleanup = (id) => [`Set-Content -Path cleanup.txt -Value ('{{STARTED}} ' + (Test-Path ../../../results/${id}.json))`];
+  const run = makeRun(t, [
+    caseFile('passes', { order: 1, cleanup: cleanup('passes') }),
+    caseFile('fails', { order: 2, cleanup: cleanup('fails') }),
+    caseFile('breaks', { order: 3, cleanup: ['exit 4'] }),
+    caseFile('after', { order: 4 }),
+  ]);
+  const fail = { verdict: 'Fail', line: 'The skill skipped the step the case checks.', judge: [], findings: [{ kind: 'skill', text: 'It skipped the step.' }] };
+  const fake = fakeClaude(run, {
+    turns: [{ text: 'Done.' }, { text: 'Done.' }, { text: 'Done.' }, { text: 'Done.' }],
+    judgements: [{ grade: pass() }, { grade: fail }, { grade: pass() }, { grade: pass() }],
+  });
+
+  const stopped = auto(run, fake);
+  assert.equal(stopped.status, 1);
+  assert.match(stopped.output.message, /^breaks: its cleanup lines failed[\s\S]*exit 4/);
+  assert.deepEqual(Object.keys(run.state().results), ['passes', 'fails', 'breaks'], 'the result is recorded before its cleanup runs');
+  assert.deepEqual(fake.sessions().map((call) => call.prompt), ['/passes', '/fails', '/breaks']);
+  for (const id of ['passes', 'fails']) {
+    const { startedAt } = JSON.parse(readText(join(run.runDir, 'steps', id, 'step.json')));
+    const started = startedAt.replace(/\.\d+Z$/, 'Z');
+    assert.equal(readText(join(run.runDir, 'steps', id, 'repo', 'cleanup.txt')).trim(), `${started} True`, id);
+  }
+
+  const resumedRun = auto(run, fake);
+  assert.equal(resumedRun.status, 0, resumedRun.report);
+  assert.deepEqual(fake.sessions().map((call) => call.prompt), ['/passes', '/fails', '/breaks', '/after']);
+});
+
+test('a step cut short runs its cleanup lines, for what that attempt started, before auto restarts it from its restore point', (t) => {
+  // The log sits in the run folder, which outlives the working copy that reset deletes.
+  const run = makeRun(t, [caseFile('a', { cleanup: ["Add-Content -Path ../../../cleanup.log -Value '{{STARTED}}'"] })]);
+  const fake = fakeClaude(run, {
+    turns: [{ error: 'API Error: the session was cut short' }, { text: 'Done.' }],
+    judgements: [{ grade: pass() }],
+  });
+  const startOf = () => JSON.parse(readText(join(run.runDir, 'steps', 'a', 'step.json'))).startedAt.replace(/\.\d+Z$/, 'Z');
+
+  assert.equal(auto(run, fake).status, 1);
+  const cutShort = startOf();
+  assert.equal(existsSync(join(run.runDir, 'cleanup.log')), false, 'a step cut short is not graded, so no cleanup yet');
+
+  const resumedRun = auto(run, fake);
+  assert.equal(resumedRun.status, 0, resumedRun.report);
+  assert.deepEqual(readText(join(run.runDir, 'cleanup.log')).trim().split(/\r?\n/), [cutShort, startOf()]);
 });
 
 test('a shell line that fails stops the run before the session starts, naming the case', (t) => {

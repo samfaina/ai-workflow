@@ -220,6 +220,14 @@ describe('GRADING.md', () => {
     assert.deepEqual(filesMatching(/does not know the kit/), ['GRADING.md']);
   });
 
+  test('grades a denial by the permission host that the case did not expect as an environment problem, and never a step with a denial as a Pass', () => {
+    const rules = textSection(grading, '## Rules');
+    assert.match(rules, /A denial the case did not expect makes the step Not proven, with an environment finding that names it/);
+    assert.match(rules, /A step with a denial is never a Pass/);
+    assert.deepEqual(filesMatching(/did not expect/), ['GRADING.md']);
+    assert.match(files['CASE-FORMAT.md'], /denial[^\n]*\[GRADING\.md\]\(GRADING\.md\)/, 'CASE-FORMAT.md sends a denial to it');
+  });
+
   test('holds the verdict table, and the skill body no longer does', () => {
     assert.deepEqual(filesMatching(/^\| Verdict \| When \|$/m), ['GRADING.md']);
     for (const row of ['Pass', 'Fail', 'Not proven']) {

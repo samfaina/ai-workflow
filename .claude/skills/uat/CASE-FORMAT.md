@@ -11,6 +11,7 @@ One JSON file per **UAT case** in `cases/`, named `<id>.json`. `tests/uat-cases.
 | `continues` | The id of the earlier case whose session this one continues. It reuses that working copy and restores nothing. |
 | `setup` | Done by `next` after restoring, in order. See below. |
 | `shell` | What the person runs in a terminal before starting Claude Code, written for PowerShell. `run.mjs auto` runs the lines in one PowerShell session in the working copy, and starts the case session in the environment they leave. |
+| `cleanup` | Optional. Shell lines like `shell`, which `run.mjs auto` runs in the working copy once the step is graded, whether it passed or not, so that the case leaves the scratch repo as later runs expect. `{{STARTED}}` becomes the step's start time, in UTC to the second (`2026-01-31T09:00:00Z`), so that a line can find what the step created. A cleanup closes what the step created and never deletes it, so the evidence stays. A cleanup that fails stops the run, with the step's result recorded. |
 | `command` | What the person types in Claude Code. `{{RUN}}` becomes the run folder. |
 | `answers` | `{ "when", "intent", "reason" }` for each question the agent may ask. `drift: true` marks one added during a run. |
 | `turns` | `{ "intent", "reason", "assertions"? }` for each follow-up message, in order. |
@@ -30,6 +31,15 @@ Write answers and turns as **intents**: what the person means, never an option's
 `{ "write": path, "text": ... }` · `{ "copy": path under this skill, "to": path }` · `{ "replace": path, "pattern": regex, "with": text }` · `{ "delete": path }`, a file or a whole folder, which must exist · `{ "commit": message }` · `{ "remote": url }`, which points `origin` at another URL. `write` and `copy` expand `{{SHORT}}` and `{{BRANCH}}`, so a fixture review report can cover `HEAD`: a report written before a `commit` names the commit before it.
 
 A case at `write` access uses `fixtures/vcs-local-write.md` instead of a review host, because `origin` is a local repo. The one exception, `aw-ship-merge-review-host`, merges through GitHub: it points `origin` at the scratch repo, uses `fixtures/vcs-github-write.md`, and merges into a base branch of its own, which its `shell` resets before each run. The ship cases write their review report from `fixtures/` so that each one tests the ship guard alone, whatever the previous review found.
+
+## GitHub in an unattended run
+
+A case can write to GitHub in an unattended run, but only on the scratch repo: the GitHub repo the source clone's remote names, `origin` first.
+
+- **The token is the guarantee.** Each step's shell lines, case session and cleanup get `GH_TOKEN` from the driver's own variable, `UAT_GH_TOKEN`, and none of the maintainer's credentials: no other token, an empty gh config, and git's credential helpers reset through the environment, so that git authenticates to github.com with that token alone, SSH URLs included. `UAT_GH_TOKEN` holds a fine-grained token whose only repository is the scratch repo, with these repository permissions: contents, issues and pull requests read and write, metadata read, and no administration. The maintainer creates it once, by hand, and keeps it out of the repo.
+- **`auto` refuses to start without it** while the batch holds a case that runs `gh` or reaches GitHub: one whose `shell` or `cleanup` lines or `run` assertions run `gh` or name github.com, or whose setup, or that of a case it continues, points `origin` there. It names those cases.
+- **The permission host filters, best effort.** It allows `gh` reads, and denies a `gh` write, or a `git push`, `fetch` or `pull`, aimed at a repo other than the scratch repo or a repo in the step folder, such as the local `origin` a case starts with. Each decision goes to `permissions.jsonl` in the step folder. It sees only what would prompt: a command that an allow rule in the settings the session loads already permits never reaches it.
+- **A denial is graded** by [GRADING.md](GRADING.md): the grading call sees the host's log, and the driver refuses grades that break its rule.
 
 ## Assertions
 

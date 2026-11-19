@@ -81,6 +81,42 @@ test('assisted, documented in CASE-FORMAT.md, is accepted only as the reason the
   assert.match(readFileSync(join(skillDir, 'CASE-FORMAT.md'), 'utf8'), /^\| `assisted` \| .+ \|$/m);
 });
 
+// What is wrong with a case's optional `cleanup` field, or null.
+const cleanupProblem = (c) =>
+  !('cleanup' in c) || (Array.isArray(c.cleanup) && c.cleanup.length > 0 && c.cleanup.every((line) => typeof line === 'string' && line.trim() !== ''))
+    ? null
+    : `${c.id}: cleanup must be a non-empty list of shell lines`;
+
+test('cleanup, documented in CASE-FORMAT.md, is accepted only as a list of shell lines', () => {
+  for (const bad of [[], [''], ['  '], 'gh issue close 1', [1], null]) {
+    assert.equal(cleanupProblem({ id: 'x', cleanup: bad }) !== null, true, JSON.stringify(bad));
+  }
+  assert.equal(cleanupProblem({ id: 'x', cleanup: ['gh issue close 1'] }), null);
+  assert.equal(cleanupProblem({ id: 'x' }), null);
+  assert.deepEqual(cases.map(cleanupProblem).filter(Boolean), []);
+  const format = readFileSync(join(skillDir, 'CASE-FORMAT.md'), 'utf8');
+  assert.match(format, /^\| `cleanup` \| .*\{\{STARTED\}\}.* \|$/m);
+});
+
+test('CASE-FORMAT.md says what the token of a case that reaches GitHub needs', () => {
+  const format = readFileSync(join(skillDir, 'CASE-FORMAT.md'), 'utf8');
+  const section = format.split(/^## /m).find((part) => part.startsWith('GitHub'));
+  assert.ok(section, 'a GitHub section');
+  assert.match(section, /`UAT_GH_TOKEN`/);
+  assert.match(section, /fine-grained/);
+  for (const permission of [/contents/i, /issues/i, /pull requests/i]) assert.match(section, new RegExp(`${permission.source}[^.]*read and write`, 'i'));
+  assert.match(section, /metadata[^.]*read/i);
+  assert.match(section, /no administration/i);
+});
+
+test('the GitHub write of aw-wayfinder closes, in its cleanup, the issues the step opened, and deletes none', () => {
+  const cleanup = byId.get('aw-wayfinder-github-write').cleanup.join('\n');
+  assert.match(cleanup, /gh issue list --state open\b/);
+  assert.match(cleanup, /createdAt[\s\S]*\{\{STARTED\}\}/, 'only the issues created since the step started');
+  assert.match(cleanup, /gh issue close [^}]*; if \(\$LASTEXITCODE\) \{ exit \$LASTEXITCODE \}/, 'an issue it fails to close fails the cleanup, even when a later one closes');
+  assert.doesNotMatch(cleanup, /gh issue delete/, 'the evidence stays');
+});
+
 test('each case starts from a restore point or continues an earlier session', () => {
   for (const c of cases) {
     assert.ok(Boolean(c.from) !== Boolean(c.continues), `${c.id}: needs exactly one of from and continues`);
