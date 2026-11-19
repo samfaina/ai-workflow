@@ -37,7 +37,7 @@ function gradesExample() {
 }
 
 test('the skill body runs the commands it ran before the rules moved, in the same order', () => {
-  const commands = [...skill.matchAll(/`((?:reader\.mjs )?(?:init|next|skip|watch|pick|check|drift|peek|summary|record|report|clean)(?![.\w])[^`]*)`/g)]
+  const commands = [...skill.matchAll(/`((?:reader\.mjs )?(?:init|next|skip|watch|pick|check|drift|peek|reset|summary|record|report|clean)(?![.\w])[^`]*)`/g)]
     .map((m) => m[1]);
   assert.deepEqual(commands, [
     'next',
@@ -52,12 +52,22 @@ test('the skill body runs the commands it ran before the rules moved, in the sam
     'check --turn <n>',
     'drift --when <when> --intent <intent> --reason <reason>',
     'reader.mjs peek --step <stepDir>',
+    'reset --case <id>',
+    'next',
     'check',
     'reader.mjs summary --step <stepDir>',
     'record --grades <file>',
     'report',
     'clean',
   ]);
+});
+
+test('a step that has to start over is reset, and the person hears which cases run again', () => {
+  const wait = textSection(skill, '### 4. Wait for `hecho`');
+  assert.match(wait, /has to start over/);
+  assert.match(wait, /`reset --case <id>`/);
+  assert.match(wait, /`continues`/);
+  assert.match(wait, /name every case it lists/);
 });
 
 // The section of ANSWERING.md for each flow when no entry fits.

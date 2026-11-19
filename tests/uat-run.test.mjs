@@ -428,6 +428,181 @@ test('a case that continues a session reuses that step\'s working copy and resto
   assert.equal(step.continues, true);
 });
 
+test('after reset, next restores the step under way fresh from its restore point', (t) => {
+  const run = makeRun(t, [caseFile('c1', { setup: [{ write: 'note.md', text: 'from the setup\n' }] })]);
+  const first = run.cli('next').output;
+  writeFileSync(join(first.workdir, 'half-run.txt'), 'the agent wrote this\n');
+  writeFileSync(join(first.workdir, 'note.md'), 'changed by the agent\n');
+
+  const reset = run.cli('reset', '--case', 'c1');
+
+  assert.equal(reset.status, 0, reset.stdout);
+  assert.deepEqual(reset.output, { status: 'reset', case: 'c1', reset: ['c1'] });
+  const again = run.cli('next').output;
+  assert.equal(again.status, 'ready');
+  assert.equal(again.case, 'c1');
+  assert.equal(again.resumed, false);
+  assert.equal(existsSync(join(again.workdir, 'half-run.txt')), false);
+  assert.equal(readFileSync(join(again.workdir, 'note.md'), 'utf8'), 'from the setup\n');
+  assert.equal(git(again.workdir, 'rev-parse', 'HEAD'), run.startCommit);
+});
+
+test('reset refuses a case that has not started, and one the run does not hold, and changes nothing; without --case it is a usage error', (t) => {
+  const run = makeRun(t, [caseFile('c1'), caseFile('c2')]);
+  const first = run.cli('next').output;
+  const before = run.state();
+
+  const notStarted = run.cli('reset', '--case', 'c2');
+  const unknown = run.cli('reset', '--case', 'nope');
+
+  assert.equal(notStarted.status, 1);
+  assert.match(notStarted.output.message, /c2 has not started/);
+  assert.equal(unknown.status, 1);
+  assert.match(unknown.output.message, /no case nope in this run/);
+  assert.deepEqual(run.state(), before);
+  assert.ok(existsSync(first.workdir));
+  assert.equal(run.cli('reset').status, 2);
+});
+
+test('reset discards a recorded step\'s result and restore point, and the step can be recorded again', (t) => {
+  const run = makeRun(t, [caseFile('c1'), caseFile('c2')]);
+  const first = run.cli('next').output;
+  mkdirSync(join(first.workdir, '.aw'), { recursive: true });
+  writeFileSync(join(first.workdir, '.aw', 'old.md'), 'first try\n');
+  run.cli('check');
+  record(run, pass());
+  run.cli('next');
+  run.cli('check');
+  record(run, pass());
+  const c2Point = run.state().points.c2;
+
+  const reset = run.cli('reset', '--case', 'c1');
+
+  assert.equal(reset.status, 0, reset.stdout);
+  const state = run.state();
+  assert.deepEqual(Object.keys(state.results), ['c2']);
+  assert.deepEqual(Object.keys(state.points), ['c2']);
+  assert.deepEqual(state.points.c2, c2Point);
+  assert.equal(existsSync(join(run.runDir, 'results', 'c1.json')), false);
+  assert.ok(existsSync(join(run.runDir, 'results', 'c2.json')));
+  assert.equal(existsSync(join(run.runDir, 'points', 'c1')), false);
+  const store = join(run.runDir, 'points.git');
+  assert.equal(git(store, 'tag', '--list', 'point/*'), 'point/c2');
+
+  const again = run.cli('next').output;
+  assert.equal(again.case, 'c1');
+  assert.equal(again.resumed, false);
+  writeFileSync(join(again.workdir, 'second-try.txt'), 'x\n');
+  run.cli('check');
+  const recorded = record(run, pass());
+  assert.equal(recorded.status, 0, recorded.stdout);
+  assert.equal(run.cli('next').output.status, 'done');
+});
+
+test('resetting a case that continues a session resets its chain back to the case that restored the working copy, and no other case', (t) => {
+  const run = makeRun(t, [
+    caseFile('apart'),
+    caseFile('root'),
+    caseFile('branch', { from: { case: 'root' } }),
+    caseFile('mid', { from: undefined, continues: 'root' }),
+    caseFile('leaf', { from: undefined, continues: 'mid' }),
+  ]);
+  for (const id of ['apart', 'root', 'branch', 'mid']) {
+    const step = run.cli('next').output;
+    assert.equal(step.case, id);
+    if (id === 'root') writeFileSync(join(step.workdir, 'first-session.txt'), 'x\n');
+    run.cli('check');
+    record(run, pass());
+  }
+  run.cli('next');
+  const before = run.state();
+
+  const reset = run.cli('reset', '--case', 'leaf');
+
+  assert.equal(reset.status, 0, reset.stdout);
+  assert.deepEqual(reset.output.reset, ['root', 'mid', 'leaf']);
+  const state = run.state();
+  assert.deepEqual(Object.keys(state.results), ['apart', 'branch']);
+  assert.deepEqual(state.points, { apart: before.points.apart, branch: before.points.branch });
+  for (const id of ['mid', 'leaf']) assert.equal(existsSync(join(run.runDir, 'steps', id)), false, id);
+
+  const root = run.cli('next').output;
+  assert.equal(root.case, 'root');
+  assert.equal(root.resumed, false);
+  assert.equal(existsSync(join(root.workdir, 'first-session.txt')), false);
+  run.cli('check');
+  record(run, pass());
+  const mid = run.cli('next').output;
+  assert.equal(mid.case, 'mid');
+  assert.equal(mid.resumed, false);
+  assert.equal(mid.workdir, root.workdir);
+});
+
+test('resetting a case also resets a step under way that continues its session, since that step loses its working copy', (t) => {
+  const run = makeRun(t, [caseFile('root'), caseFile('mid', { from: undefined, continues: 'root' })]);
+  run.cli('next');
+  run.cli('check');
+  record(run, pass());
+  run.cli('next');
+
+  const reset = run.cli('reset', '--case', 'root');
+
+  assert.deepEqual(reset.output.reset, ['root', 'mid']);
+  run.cli('next');
+  run.cli('check');
+  record(run, pass());
+  const mid = run.cli('next').output;
+  assert.equal(mid.case, 'mid');
+  assert.equal(mid.resumed, false);
+});
+
+test('a step under way further down the session resets with its whole chain, recorded cases on it included', (t) => {
+  const run = makeRun(t, [
+    caseFile('root'),
+    caseFile('mid', { from: undefined, continues: 'root' }),
+    caseFile('leaf', { from: undefined, continues: 'mid' }),
+  ]);
+  for (const id of ['root', 'mid']) {
+    run.cli('next');
+    run.cli('check');
+    record(run, pass());
+  }
+  run.cli('next');
+
+  const reset = run.cli('reset', '--case', 'root');
+
+  assert.deepEqual(reset.output.reset, ['root', 'mid', 'leaf']);
+  assert.deepEqual(run.state().results, {});
+  for (const id of ['root', 'mid', 'leaf']) {
+    const step = run.cli('next').output;
+    assert.equal(step.case, id);
+    assert.equal(step.resumed, false);
+    run.cli('check');
+    record(run, pass());
+  }
+});
+
+test('a recorded case that continued a reset session resets too, so a later case never continues the wrong session', (t) => {
+  const run = makeRun(t, [
+    caseFile('root'),
+    caseFile('mid', { from: undefined, continues: 'root' }),
+    caseFile('leaf', { from: undefined, continues: 'mid' }),
+  ]);
+  for (const id of ['root', 'mid']) {
+    run.cli('next');
+    run.cli('check');
+    record(run, pass());
+  }
+
+  const reset = run.cli('reset', '--case', 'root');
+
+  assert.deepEqual(reset.output.reset, ['root', 'mid']);
+  run.cli('next');
+  run.cli('check');
+  record(run, pass());
+  assert.equal(run.cli('next').output.case, 'mid');
+});
+
 test('drift is added to the case file with the answer used, once', (t) => {
   const run = makeRun(t, [caseFile('c1', { answers: [{ when: 'Tracker', intent: 'no tracker', reason: 'the case' }] })]);
   run.cli('next');

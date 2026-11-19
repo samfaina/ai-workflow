@@ -7,6 +7,7 @@
 //   node run.mjs check  --run <dir> [--turn <n>]
 //   node run.mjs record --run <dir> --grades <file> [--keep-point yes]
 //   node run.mjs skip   --run <dir> --reason <text>
+//   node run.mjs reset  --run <dir> --case <id>
 //   node run.mjs drift  --run <dir> --when <question> --intent <answer> --reason <why>
 //   node run.mjs report --run <dir> [--issue <n>]
 //   node run.mjs clean  --run <dir>
@@ -437,6 +438,62 @@ function skip(options) {
   print({ status: 'skipped', case: id });
 }
 
+// Deletes each target, and returns the ones it could not delete, with why: a
+// case session still open holds its working copy on some systems.
+function deleteAll(targets) {
+  const failed = [];
+  for (const target of targets) {
+    try {
+      rmSync(target, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    } catch (error) {
+      failed.push(`${target} (${error.code})`);
+    }
+  }
+  return failed;
+}
+
+// Discards a case's step (its working copy, result and session pick) and the
+// restore point it left, so next restores it fresh from the restore point it
+// starts from. A session cannot be replayed half-way, so a case that continues
+// one resets its chain back to the case that restored the working copy. Every
+// case that has started in that working copy goes too, since it continued a
+// session that no longer exists. Every other case keeps its result and restore
+// point.
+function reset(options) {
+  if (!options.case) usage('reset needs --case <id>');
+  const runDir = resolve(options.run);
+  const state = loadState(runDir);
+  const id = options.case;
+  if (!state.cases.includes(id)) throw new Refused(`no case ${id} in this run`);
+  const { store, step, aw, result } = paths(runDir);
+  const started = (caseId) => state.results[caseId] !== undefined || existsSync(step(caseId));
+  if (!started(id)) throw new Refused(`${id} has not started: next restores it fresh as it is`);
+  const continuesOf = new Map(state.cases.map((caseId) => [caseId, loadCase(state, caseId).continues]));
+  // The case that restored the working copy a case runs in.
+  const restorerOf = (caseId) => {
+    const seen = [caseId];
+    for (let at = continuesOf.get(caseId); continuesOf.has(at) && !seen.includes(at); at = continuesOf.get(at)) seen.push(at);
+    return seen.at(-1);
+  };
+  const restorer = restorerOf(id);
+  const ids = state.cases.filter((caseId) => started(caseId) && restorerOf(caseId) === restorer);
+  const failed = [];
+  for (const caseId of ids) {
+    for (const tag of [`point/${caseId}`, `point-base/${caseId}`]) tryGit(store, ['update-ref', '-d', `refs/tags/${tag}`]);
+    delete state.results[caseId];
+    delete state.points[caseId];
+    const left = deleteAll([result(caseId), dirname(aw(caseId)), step(caseId)]);
+    if (left.length > 0) failed.push({ caseId, left });
+  }
+  writeJson(paths(runDir).state, state);
+  // A step folder left behind still counts as started, so that reset can run again.
+  if (failed.length > 0) {
+    const left = failed.flatMap((f) => f.left).join(', ');
+    throw new Refused(`could not delete: ${left}: close the case session and run reset --case ${failed[0].caseId} again`);
+  }
+  print({ status: 'reset', case: id, reset: ids });
+}
+
 function drift(options) {
   for (const required of ['when', 'intent', 'reason']) if (!options[required]) usage(`drift needs --${required}`);
   const runDir = resolve(options.run);
@@ -597,14 +654,7 @@ function clean(options) {
   if (pending.length > 0) throw new Refused(`cases without a result: ${pending.join(', ')}`);
   const { steps, store, points } = paths(runDir);
   const logs = state.cases.map((id) => logFolder(join(realpathSync(runDir), 'steps', id, 'repo')));
-  const failed = [];
-  for (const target of [...logs, steps, store, points]) {
-    try {
-      rmSync(target, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
-    } catch (error) {
-      failed.push(`${target} (${error.code})`);
-    }
-  }
+  const failed = deleteAll([...logs, steps, store, points]);
   if (failed.length > 0) throw new Refused(`could not delete: ${failed.join(', ')}`);
   print({ status: 'cleaned', run: runDir });
 }
@@ -615,7 +665,7 @@ function today() {
   return `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
 }
 
-const COMMANDS = { init, next, check, record, skip, drift, report, clean, due };
+const COMMANDS = { init, next, check, record, skip, reset, drift, report, clean, due };
 const [command, ...rest] = process.argv.slice(2);
 if (!Object.hasOwn(COMMANDS, command ?? '')) {
   const withRun = Object.keys(COMMANDS).filter((name) => name !== 'due');

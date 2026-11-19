@@ -61,6 +61,8 @@ Done when every question and turn end got a proposal.
 
 The person types the answers in the case session. If they type `pregunta`, run `reader.mjs peek --step <stepDir>` and show what it finds: this is the fallback for a watcher that missed something.
 
+When a step has to start over, such as when the case session went off course or the run resumed a step cut short, ask the person to close the case session, then run `reset --case <id>` and go back to step 1 with `next`. It discards the step's working copy, its result, the session picked for it and the restore point it left, so the step comes back fresh from the **UAT restore point** it starts from instead of resumed. A session cannot be replayed half-way, so for a case that `continues` one it also resets the earlier cases back to the one that restored the working copy, and every other case that has started in that working copy: name every case it lists to the person, since each runs again.
+
 ### 5. Grade
 
 Run `check`, then `reader.mjs summary --step <stepDir>`. Read [GRADING.md](GRADING.md) and grade the step by it, from the assertion results, the summary, the working copy and the case's `judge` criteria.
