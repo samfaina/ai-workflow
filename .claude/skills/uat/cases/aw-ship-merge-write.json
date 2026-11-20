@@ -5,9 +5,9 @@
   "order": 29,
   "source": "Left unproven by #49: the merge at write access, moved to #86",
   "from": {
-    "ref": "49d218e",
+    "ref": "04a4004",
     "branch": "feat/renew-loan",
-    "base": "ef0ddf0"
+    "base": "515cf39"
   },
   "setup": [
     {
