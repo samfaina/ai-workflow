@@ -1,0 +1,6 @@
+{
+  "name": "probe",
+  "version": "0.0.0",
+  "description": "PROTOTYPE for #165, not part of the kit: one skill that asks AskUserQuestion in a fixed shape.",
+  "skills": ["./skills/ask"]
+}

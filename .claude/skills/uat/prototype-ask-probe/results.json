@@ -1,0 +1,4818 @@
+[
+  {
+    "scenario": "live-init",
+    "variant": "single",
+    "plan": {
+      "mode": "answer",
+      "answers": {
+        "Which tracker does the probe use?": "GitLab"
+      }
+    },
+    "hookFields": {},
+    "host": true,
+    "extra": [],
+    "exit": null,
+    "killed": "init",
+    "init": {
+      "claude_code_version": "2.1.329",
+      "keys": [
+        "type",
+        "subtype",
+        "cwd",
+        "session_id",
+        "tools",
+        "mcp_servers",
+        "model",
+        "permissionMode",
+        "slash_commands",
+        "terminal_slash_commands",
+        "apiKeySource",
+        "claude_code_version",
+        "output_style",
+        "agents",
+        "skills",
+        "plugins",
+        "capabilities",
+        "analytics_disabled",
+        "product_feedback_disabled",
+        "served_by_anthropic",
+        "uuid",
+        "original_cwd",
+        "additional_directories",
+        "messaging_socket_path",
+        "fast_mode_state",
+        "fast_mode_disabled_reason",
+        "per_turn_effort_active",
+        "ultrathink_available",
+        "ultrathink_typed_raises",
+        "view_mode",
+        "powershell_path"
+      ],
+      "askUserQuestionOffered": true,
+      "mcp_servers": [
+        {
+          "name": "uat",
+          "status": "connected",
+          "source": "dynamic"
+        }
+      ],
+      "plugins": [
+        "probe",
+        "orca-agent-view",
+        "mattpocock-skills",
+        "agent-skills",
+        "cowork-plugin-management",
+        "cc-plugin-agents-md",
+        "cc-plugin-telemetry",
+        "cc-plugin-privacy",
+        "cc-plugin-plugin-authoring"
+      ],
+      "permissionMode": "default",
+      "model": "claude-haiku-5-5"
+    },
+    "preInitEvents": [
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "UserPromptSubmit",
+        "hook_name": "UserPromptSubmit"
+      }
+    ],
+    "hookEvents": [
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "f8c8c4f3-2d89-4527-a91b-bef8e3f860e3",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "7ca9ae39-3c1f-412b-ac05-fca213480e50",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "f8c8c4f3-2d89-4527-a91b-bef8e3f860e3",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "7ca9ae39-3c1f-412b-ac05-fca213480e50",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart",
+        "output": "",
+        "stdout": "",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "fb212ee1-bc0c-44c5-9232-cd6737ab1a3c",
+        "hook_name": "UserPromptSubmit",
+        "hook_event": "UserPromptSubmit"
+      }
+    ],
+    "systemOther": [],
+    "asks": [],
+    "toolResults": [],
+    "hookLog": [
+      {
+        "at": "2026-11-20T09:14:52.790Z",
+        "event": "SessionStart"
+      }
+    ],
+    "hostLog": [],
+    "stderrTail": ""
+  },
+  {
+    "scenario": "live-no-host",
+    "variant": "single",
+    "plan": {
+      "mode": "answer",
+      "answers": {
+        "Which tracker does the probe use?": "GitLab"
+      }
+    },
+    "hookFields": {},
+    "host": false,
+    "extra": [],
+    "exit": null,
+    "killed": "init",
+    "init": {
+      "claude_code_version": "2.1.329",
+      "keys": [
+        "type",
+        "subtype",
+        "cwd",
+        "session_id",
+        "tools",
+        "mcp_servers",
+        "model",
+        "permissionMode",
+        "slash_commands",
+        "terminal_slash_commands",
+        "apiKeySource",
+        "claude_code_version",
+        "output_style",
+        "agents",
+        "skills",
+        "plugins",
+        "capabilities",
+        "analytics_disabled",
+        "product_feedback_disabled",
+        "served_by_anthropic",
+        "uuid",
+        "original_cwd",
+        "additional_directories",
+        "messaging_socket_path",
+        "fast_mode_state",
+        "fast_mode_disabled_reason",
+        "per_turn_effort_active",
+        "ultrathink_available",
+        "ultrathink_typed_raises",
+        "view_mode",
+        "powershell_path"
+      ],
+      "askUserQuestionOffered": false,
+      "mcp_servers": [],
+      "plugins": [
+        "probe",
+        "orca-agent-view",
+        "mattpocock-skills",
+        "agent-skills",
+        "cowork-plugin-management",
+        "cc-plugin-agents-md",
+        "cc-plugin-telemetry",
+        "cc-plugin-privacy",
+        "cc-plugin-plugin-authoring"
+      ],
+      "permissionMode": "default",
+      "model": "claude-haiku-5-5"
+    },
+    "preInitEvents": [
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "UserPromptSubmit",
+        "hook_name": "UserPromptSubmit"
+      }
+    ],
+    "hookEvents": [
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "60e27ad4-412d-439c-91cb-044a9c4606a1",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "4aa7c717-ccc8-41bf-855c-b9c6780b21bd",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "60e27ad4-412d-439c-91cb-044a9c4606a1",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "4aa7c717-ccc8-41bf-855c-b9c6780b21bd",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart",
+        "output": "",
+        "stdout": "",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "e166a8c4-cd36-449b-a51b-176839f2f147",
+        "hook_name": "UserPromptSubmit",
+        "hook_event": "UserPromptSubmit"
+      }
+    ],
+    "systemOther": [],
+    "asks": [],
+    "toolResults": [],
+    "hookLog": [
+      {
+        "at": "2026-11-20T09:14:55.833Z",
+        "event": "SessionStart"
+      }
+    ],
+    "hostLog": [],
+    "stderrTail": ""
+  },
+  {
+    "scenario": "live-bare",
+    "variant": "single",
+    "plan": {
+      "mode": "answer",
+      "answers": {
+        "Which tracker does the probe use?": "GitLab"
+      }
+    },
+    "hookFields": {},
+    "host": true,
+    "extra": [
+      "--bare"
+    ],
+    "exit": null,
+    "killed": "init",
+    "init": {
+      "claude_code_version": "2.1.329",
+      "keys": [
+        "type",
+        "subtype",
+        "cwd",
+        "session_id",
+        "tools",
+        "mcp_servers",
+        "model",
+        "permissionMode",
+        "slash_commands",
+        "terminal_slash_commands",
+        "apiKeySource",
+        "claude_code_version",
+        "output_style",
+        "agents",
+        "skills",
+        "plugins",
+        "capabilities",
+        "analytics_disabled",
+        "product_feedback_disabled",
+        "served_by_anthropic",
+        "uuid",
+        "original_cwd",
+        "additional_directories",
+        "fast_mode_state",
+        "fast_mode_disabled_reason",
+        "per_turn_effort_active",
+        "ultrathink_available",
+        "ultrathink_typed_raises",
+        "view_mode",
+        "powershell_path"
+      ],
+      "askUserQuestionOffered": false,
+      "mcp_servers": [
+        {
+          "name": "uat",
+          "status": "connected",
+          "source": "dynamic"
+        }
+      ],
+      "plugins": [
+        "probe",
+        "orca-agent-view",
+        "mattpocock-skills",
+        "agent-skills",
+        "cc-plugin-agents-md",
+        "cc-plugin-telemetry",
+        "cc-plugin-privacy",
+        "cc-plugin-plugin-authoring"
+      ],
+      "permissionMode": "default",
+      "model": "claude-haiku-5-5"
+    },
+    "preInitEvents": [],
+    "hookEvents": [],
+    "systemOther": [],
+    "asks": [],
+    "toolResults": [],
+    "hookLog": [],
+    "hostLog": [],
+    "stderrTail": ""
+  },
+  {
+    "scenario": "single",
+    "variant": "single",
+    "plan": {
+      "mode": "answer",
+      "answers": {
+        "Which tracker does the probe use?": "GitLab"
+      }
+    },
+    "hookFields": {},
+    "host": true,
+    "extra": [],
+    "exit": 0,
+    "killed": false,
+    "init": {
+      "claude_code_version": "2.1.329",
+      "keys": [
+        "type",
+        "subtype",
+        "cwd",
+        "session_id",
+        "tools",
+        "mcp_servers",
+        "model",
+        "permissionMode",
+        "slash_commands",
+        "terminal_slash_commands",
+        "apiKeySource",
+        "claude_code_version",
+        "output_style",
+        "agents",
+        "skills",
+        "plugins",
+        "capabilities",
+        "analytics_disabled",
+        "product_feedback_disabled",
+        "served_by_anthropic",
+        "uuid",
+        "original_cwd",
+        "additional_directories",
+        "messaging_socket_path",
+        "fast_mode_state",
+        "fast_mode_disabled_reason",
+        "per_turn_effort_active",
+        "ultrathink_available",
+        "ultrathink_typed_raises",
+        "view_mode",
+        "powershell_path"
+      ],
+      "askUserQuestionOffered": true,
+      "mcp_servers": [
+        {
+          "name": "uat",
+          "status": "connected",
+          "source": "dynamic"
+        }
+      ],
+      "plugins": [
+        "probe",
+        "orca-agent-view",
+        "mattpocock-skills",
+        "agent-skills",
+        "cowork-plugin-management",
+        "cc-plugin-agents-md",
+        "cc-plugin-telemetry",
+        "cc-plugin-privacy",
+        "cc-plugin-plugin-authoring"
+      ],
+      "permissionMode": "default",
+      "model": "claude-haiku-5-5"
+    },
+    "preInitEvents": [
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "UserPromptSubmit",
+        "hook_name": "UserPromptSubmit"
+      }
+    ],
+    "hookEvents": [
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "acf59714-0df2-48a4-8794-0c284849243e",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "8993f1ea-9909-429c-ba00-7c0d06f1c06c",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "acf59714-0df2-48a4-8794-0c284849243e",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "8993f1ea-9909-429c-ba00-7c0d06f1c06c",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart",
+        "output": "",
+        "stdout": "",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "1cdc13e6-9a60-4359-98bc-2be6d6626a2c",
+        "hook_name": "UserPromptSubmit",
+        "hook_event": "UserPromptSubmit"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "1cdc13e6-9a60-4359-98bc-2be6d6626a2c",
+        "hook_name": "UserPromptSubmit",
+        "hook_event": "UserPromptSubmit",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "b16641bb-e459-4d4f-9340-be5ec2d84e45",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "b4a2039a-aa12-4a19-a6d8-fe45236fbb82",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "b16641bb-e459-4d4f-9340-be5ec2d84e45",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "b4a2039a-aa12-4a19-a6d8-fe45236fbb82",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse",
+        "output": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\",\"updatedInput\":{\"questions\":[{\"question\":\"Which tracker does the probe use?\",\"header\":\"Tracker\",\"options\":[{\"label\":\"GitHub\",\"description\":\"Issues on github.com\"},{\"label\":\"GitLab\",\"description\":\"Issues on a GitLab host\"}],\"multiSelect\":false}],\"answers\":{\"Which tracker does the probe use?\":\"GitLab\"}}}}",
+        "stdout": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\",\"updatedInput\":{\"questions\":[{\"question\":\"Which tracker does the probe use?\",\"header\":\"Tracker\",\"options\":[{\"label\":\"GitHub\",\"description\":\"Issues on github.com\"},{\"label\":\"GitLab\",\"description\":\"Issues on a GitLab host\"}],\"multiSelect\":false}],\"answers\":{\"Which tracker does the probe use?\":\"GitLab\"}}}}",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "23c20bc5-f5c8-4530-ab72-c4efb1de3f46",
+        "hook_name": "PostToolUse:AskUserQuestion",
+        "hook_event": "PostToolUse"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "23c20bc5-f5c8-4530-ab72-c4efb1de3f46",
+        "hook_name": "PostToolUse:AskUserQuestion",
+        "hook_event": "PostToolUse",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "8437c081-e9ab-404d-9c4c-2ce911575714",
+        "hook_name": "PostToolBatch",
+        "hook_event": "PostToolBatch"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "8437c081-e9ab-404d-9c4c-2ce911575714",
+        "hook_name": "PostToolBatch",
+        "hook_event": "PostToolBatch",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "58fa37ea-fd18-4ea8-933a-9c069d1986b6",
+        "hook_name": "Stop",
+        "hook_event": "Stop"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "58fa37ea-fd18-4ea8-933a-9c069d1986b6",
+        "hook_name": "Stop",
+        "hook_event": "Stop",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      }
+    ],
+    "systemOther": [
+      {
+        "type": "system",
+        "subtype": "thinking_tokens",
+        "estimated_tokens": 50,
+        "estimated_tokens_delta": 50
+      },
+      {
+        "type": "system",
+        "subtype": "thinking_tokens",
+        "estimated_tokens": 254,
+        "estimated_tokens_delta": 204
+      }
+    ],
+    "asks": [
+      {
+        "questions": [
+          {
+            "question": "Which tracker does the probe use?",
+            "header": "Tracker",
+            "multiSelect": false,
+            "options": [
+              {
+                "label": "GitHub",
+                "description": "Issues on github.com"
+              },
+              {
+                "label": "GitLab",
+                "description": "Issues on a GitLab host"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "toolResults": [
+      {
+        "is_error": false,
+        "content": "Your questions have been answered: \"Which tracker does the probe use?\"=\"GitLab\". You can now continue with these answers in mind.",
+        "tool_use_result": {
+          "questions": [
+            {
+              "question": "Which tracker does the probe use?",
+              "header": "Tracker",
+              "options": [
+                {
+                  "label": "GitHub",
+                  "description": "Issues on github.com"
+                },
+                {
+                  "label": "GitLab",
+                  "description": "Issues on a GitLab host"
+                }
+              ],
+              "multiSelect": false
+            }
+          ],
+          "answers": {
+            "Which tracker does the probe use?": "GitLab"
+          }
+        }
+      }
+    ],
+    "result": {
+      "subtype": "success",
+      "is_error": false,
+      "num_turns": 2,
+      "result": "```\nYour questions have been answered: \"Which tracker does the probe use?\"=\"GitLab\". You can now continue with these answers in mind.\n```\n\nTracker: GitLab (Issues on a GitLab host)",
+      "permission_denials": [],
+      "stop_reason": "end_turn"
+    },
+    "hookLog": [
+      {
+        "at": "2026-11-20T09:14:58.182Z",
+        "event": "SessionStart"
+      },
+      {
+        "at": "2026-11-20T09:15:00.929Z",
+        "event": "PreToolUse",
+        "tool": "AskUserQuestion",
+        "input": {
+          "questions": [
+            {
+              "question": "Which tracker does the probe use?",
+              "header": "Tracker",
+              "options": [
+                {
+                  "label": "GitHub",
+                  "description": "Issues on github.com"
+                },
+                {
+                  "label": "GitLab",
+                  "description": "Issues on a GitLab host"
+                }
+              ],
+              "multiSelect": false
+            }
+          ]
+        }
+      }
+    ],
+    "hostLog": [],
+    "stderrTail": ""
+  },
+  {
+    "scenario": "multi-comma-space",
+    "variant": "multi",
+    "plan": {
+      "mode": "answer",
+      "answers": {
+        "Which tracker does the probe use?": "GitLab",
+        "Which branch prefix does the probe use?": "fix",
+        "Which labels does the probe apply?": "bug, docs"
+      }
+    },
+    "hookFields": {},
+    "host": true,
+    "extra": [],
+    "exit": 0,
+    "killed": false,
+    "init": {
+      "claude_code_version": "2.1.329",
+      "keys": [
+        "type",
+        "subtype",
+        "cwd",
+        "session_id",
+        "tools",
+        "mcp_servers",
+        "model",
+        "permissionMode",
+        "slash_commands",
+        "terminal_slash_commands",
+        "apiKeySource",
+        "claude_code_version",
+        "output_style",
+        "agents",
+        "skills",
+        "plugins",
+        "capabilities",
+        "analytics_disabled",
+        "product_feedback_disabled",
+        "served_by_anthropic",
+        "uuid",
+        "original_cwd",
+        "additional_directories",
+        "messaging_socket_path",
+        "fast_mode_state",
+        "fast_mode_disabled_reason",
+        "per_turn_effort_active",
+        "ultrathink_available",
+        "ultrathink_typed_raises",
+        "view_mode",
+        "powershell_path"
+      ],
+      "askUserQuestionOffered": true,
+      "mcp_servers": [
+        {
+          "name": "uat",
+          "status": "connected",
+          "source": "dynamic"
+        }
+      ],
+      "plugins": [
+        "probe",
+        "orca-agent-view",
+        "mattpocock-skills",
+        "agent-skills",
+        "cowork-plugin-management",
+        "cc-plugin-agents-md",
+        "cc-plugin-telemetry",
+        "cc-plugin-privacy",
+        "cc-plugin-plugin-authoring"
+      ],
+      "permissionMode": "default",
+      "model": "claude-haiku-5-5"
+    },
+    "preInitEvents": [
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "UserPromptSubmit",
+        "hook_name": "UserPromptSubmit"
+      }
+    ],
+    "hookEvents": [
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "92c5a89f-de7b-4d68-bf67-bb04f4668667",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "89570e14-d1f6-403f-8a27-1167c249b5a2",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "92c5a89f-de7b-4d68-bf67-bb04f4668667",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "89570e14-d1f6-403f-8a27-1167c249b5a2",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart",
+        "output": "",
+        "stdout": "",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "08f0aafe-56f8-4843-948b-fce99d26e9c8",
+        "hook_name": "UserPromptSubmit",
+        "hook_event": "UserPromptSubmit"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "08f0aafe-56f8-4843-948b-fce99d26e9c8",
+        "hook_name": "UserPromptSubmit",
+        "hook_event": "UserPromptSubmit",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "8acb7f8d-5838-4b37-b797-3253597d07b3",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "52190f8e-8286-48b1-b490-ced5e2caef05",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "8acb7f8d-5838-4b37-b797-3253597d07b3",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "52190f8e-8286-48b1-b490-ced5e2caef05",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse",
+        "output": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\",\"updatedInput\":{\"questions\":[{\"question\":\"Which tracker does the probe use?\",\"header\":\"Tracker\",\"options\":[{\"label\":\"GitHub\",\"description\":\"Issues on github.com\"},{\"label\":\"GitLab\",\"description\":\"Issues on a GitLab host\"}],\"multiSelect\":false},{\"question\":\"Which branch prefix does the probe use?\",\"header\":\"Prefix\",\"options\":[{\"label\":\"feat\",\"description\":\"A feature branch\"},{\"label\":\"fix\",\"description\":\"A bug-fix branch\"}],\"multiSelect\":false},{\"question\":\"Which labels does the probe apply?\",\"header\":\"Labels\",\"options\":[{\"label\":\"bug\",\"description\":\"Something is broken\"},{\"label\":\"docs\",\"description\":\"Documentation\"},{\"label\":\"chore\",\"description\":\"Upkeep\"}],\"multiSelect\":true}],\"answers\":{\"Which tracker does the probe use?\":\"GitLab\",\"Which branch prefix does the probe use?\":\"fix\",\"Which labels does the probe apply?\":\"bug, docs\"}}}}",
+        "stdout": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\",\"updatedInput\":{\"questions\":[{\"question\":\"Which tracker does the probe use?\",\"header\":\"Tracker\",\"options\":[{\"label\":\"GitHub\",\"description\":\"Issues on github.com\"},{\"label\":\"GitLab\",\"description\":\"Issues on a GitLab host\"}],\"multiSelect\":false},{\"question\":\"Which branch prefix does the probe use?\",\"header\":\"Prefix\",\"options\":[{\"label\":\"feat\",\"description\":\"A feature branch\"},{\"label\":\"fix\",\"description\":\"A bug-fix branch\"}],\"multiSelect\":false},{\"question\":\"Which labels does the probe apply?\",\"header\":\"Labels\",\"options\":[{\"label\":\"bug\",\"description\":\"Something is broken\"},{\"label\":\"docs\",\"description\":\"Documentation\"},{\"label\":\"chore\",\"description\":\"Upkeep\"}],\"multiSelect\":true}],\"answers\":{\"Which tracker does the probe use?\":\"GitLab\",\"Which branch prefix does the probe use?\":\"fix\",\"Which labels does the probe apply?\":\"bug, docs\"}}}}",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "79328735-a6e2-45d6-9095-8399e63f4f60",
+        "hook_name": "PostToolUse:AskUserQuestion",
+        "hook_event": "PostToolUse"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "79328735-a6e2-45d6-9095-8399e63f4f60",
+        "hook_name": "PostToolUse:AskUserQuestion",
+        "hook_event": "PostToolUse",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "81cebca6-d1f6-4657-84ed-a343977d92d6",
+        "hook_name": "PostToolBatch",
+        "hook_event": "PostToolBatch"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "81cebca6-d1f6-4657-84ed-a343977d92d6",
+        "hook_name": "PostToolBatch",
+        "hook_event": "PostToolBatch",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "d68a1e92-a1ac-4633-85e5-8d2725f58a9e",
+        "hook_name": "Stop",
+        "hook_event": "Stop"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "d68a1e92-a1ac-4633-85e5-8d2725f58a9e",
+        "hook_name": "Stop",
+        "hook_event": "Stop",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      }
+    ],
+    "systemOther": [
+      {
+        "type": "system",
+        "subtype": "thinking_tokens",
+        "estimated_tokens": 50,
+        "estimated_tokens_delta": 50
+      },
+      {
+        "type": "system",
+        "subtype": "thinking_tokens",
+        "estimated_tokens": 321,
+        "estimated_tokens_delta": 271
+      }
+    ],
+    "asks": [
+      {
+        "questions": [
+          {
+            "question": "Which tracker does the probe use?",
+            "header": "Tracker",
+            "multiSelect": false,
+            "options": [
+              {
+                "label": "GitHub",
+                "description": "Issues on github.com"
+              },
+              {
+                "label": "GitLab",
+                "description": "Issues on a GitLab host"
+              }
+            ]
+          },
+          {
+            "question": "Which branch prefix does the probe use?",
+            "header": "Prefix",
+            "multiSelect": false,
+            "options": [
+              {
+                "label": "feat",
+                "description": "A feature branch"
+              },
+              {
+                "label": "fix",
+                "description": "A bug-fix branch"
+              }
+            ]
+          },
+          {
+            "question": "Which labels does the probe apply?",
+            "header": "Labels",
+            "multiSelect": true,
+            "options": [
+              {
+                "label": "bug",
+                "description": "Something is broken"
+              },
+              {
+                "label": "docs",
+                "description": "Documentation"
+              },
+              {
+                "label": "chore",
+                "description": "Upkeep"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "toolResults": [
+      {
+        "is_error": false,
+        "content": "Your questions have been answered: \"Which tracker does the probe use?\"=\"GitLab\", \"Which branch prefix does the probe use?\"=\"fix\", \"Which labels does the probe apply?\"=\"bug, docs\". You can now continue with these answers in mind.",
+        "tool_use_result": {
+          "questions": [
+            {
+              "question": "Which tracker does the probe use?",
+              "header": "Tracker",
+              "options": [
+                {
+                  "label": "GitHub",
+                  "description": "Issues on github.com"
+                },
+                {
+                  "label": "GitLab",
+                  "description": "Issues on a GitLab host"
+                }
+              ],
+              "multiSelect": false
+            },
+            {
+              "question": "Which branch prefix does the probe use?",
+              "header": "Prefix",
+              "options": [
+                {
+                  "label": "feat",
+                  "description": "A feature branch"
+                },
+                {
+                  "label": "fix",
+                  "description": "A bug-fix branch"
+                }
+              ],
+              "multiSelect": false
+            },
+            {
+              "question": "Which labels does the probe apply?",
+              "header": "Labels",
+              "options": [
+                {
+                  "label": "bug",
+                  "description": "Something is broken"
+                },
+                {
+                  "label": "docs",
+                  "description": "Documentation"
+                },
+                {
+                  "label": "chore",
+                  "description": "Upkeep"
+                }
+              ],
+              "multiSelect": true
+            }
+          ],
+          "answers": {
+            "Which tracker does the probe use?": "GitLab",
+            "Which branch prefix does the probe use?": "fix",
+            "Which labels does the probe apply?": "bug, docs"
+          }
+        }
+      }
+    ],
+    "result": {
+      "subtype": "success",
+      "is_error": false,
+      "num_turns": 2,
+      "result": "```\nYour questions have been answered: \"Which tracker does the probe use?\"=\"GitLab\", \"Which branch prefix does the probe use?\"=\"fix\", \"Which labels does the probe apply?\"=\"bug, docs\". You can now continue with these answers in mind.\n```\n\nTracker: GitLab\nPrefix: fix\nLabels: bug, docs",
+      "permission_denials": [],
+      "stop_reason": "end_turn"
+    },
+    "hookLog": [
+      {
+        "at": "2026-11-20T09:15:37.969Z",
+        "event": "SessionStart"
+      },
+      {
+        "at": "2026-11-20T09:15:41.380Z",
+        "event": "PreToolUse",
+        "tool": "AskUserQuestion",
+        "input": {
+          "questions": [
+            {
+              "question": "Which tracker does the probe use?",
+              "header": "Tracker",
+              "options": [
+                {
+                  "label": "GitHub",
+                  "description": "Issues on github.com"
+                },
+                {
+                  "label": "GitLab",
+                  "description": "Issues on a GitLab host"
+                }
+              ],
+              "multiSelect": false
+            },
+            {
+              "question": "Which branch prefix does the probe use?",
+              "header": "Prefix",
+              "options": [
+                {
+                  "label": "feat",
+                  "description": "A feature branch"
+                },
+                {
+                  "label": "fix",
+                  "description": "A bug-fix branch"
+                }
+              ],
+              "multiSelect": false
+            },
+            {
+              "question": "Which labels does the probe apply?",
+              "header": "Labels",
+              "options": [
+                {
+                  "label": "bug",
+                  "description": "Something is broken"
+                },
+                {
+                  "label": "docs",
+                  "description": "Documentation"
+                },
+                {
+                  "label": "chore",
+                  "description": "Upkeep"
+                }
+              ],
+              "multiSelect": true
+            }
+          ]
+        }
+      }
+    ],
+    "hostLog": [],
+    "stderrTail": ""
+  },
+  {
+    "scenario": "multi-comma",
+    "variant": "multi",
+    "plan": {
+      "mode": "answer",
+      "answers": {
+        "Which tracker does the probe use?": "GitLab",
+        "Which branch prefix does the probe use?": "fix",
+        "Which labels does the probe apply?": "bug,docs"
+      }
+    },
+    "hookFields": {},
+    "host": true,
+    "extra": [],
+    "exit": 0,
+    "killed": false,
+    "init": {
+      "claude_code_version": "2.1.329",
+      "keys": [
+        "type",
+        "subtype",
+        "cwd",
+        "session_id",
+        "tools",
+        "mcp_servers",
+        "model",
+        "permissionMode",
+        "slash_commands",
+        "terminal_slash_commands",
+        "apiKeySource",
+        "claude_code_version",
+        "output_style",
+        "agents",
+        "skills",
+        "plugins",
+        "capabilities",
+        "analytics_disabled",
+        "product_feedback_disabled",
+        "served_by_anthropic",
+        "uuid",
+        "original_cwd",
+        "additional_directories",
+        "messaging_socket_path",
+        "fast_mode_state",
+        "fast_mode_disabled_reason",
+        "per_turn_effort_active",
+        "ultrathink_available",
+        "ultrathink_typed_raises",
+        "view_mode",
+        "powershell_path"
+      ],
+      "askUserQuestionOffered": true,
+      "mcp_servers": [
+        {
+          "name": "uat",
+          "status": "connected",
+          "source": "dynamic"
+        }
+      ],
+      "plugins": [
+        "probe",
+        "orca-agent-view",
+        "mattpocock-skills",
+        "agent-skills",
+        "cowork-plugin-management",
+        "cc-plugin-agents-md",
+        "cc-plugin-telemetry",
+        "cc-plugin-privacy",
+        "cc-plugin-plugin-authoring"
+      ],
+      "permissionMode": "default",
+      "model": "claude-haiku-5-5"
+    },
+    "preInitEvents": [
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "UserPromptSubmit",
+        "hook_name": "UserPromptSubmit"
+      }
+    ],
+    "hookEvents": [
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "1fb4dd25-aa41-48cd-91ef-bf11d6c24e1c",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "d6be0b89-27e8-48a7-a2f8-0dd728422794",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "1fb4dd25-aa41-48cd-91ef-bf11d6c24e1c",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "d6be0b89-27e8-48a7-a2f8-0dd728422794",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart",
+        "output": "",
+        "stdout": "",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "22559688-b6b6-486c-8061-8a35833f0a19",
+        "hook_name": "UserPromptSubmit",
+        "hook_event": "UserPromptSubmit"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "22559688-b6b6-486c-8061-8a35833f0a19",
+        "hook_name": "UserPromptSubmit",
+        "hook_event": "UserPromptSubmit",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "c18ae683-a489-4292-82c7-37335c6b43fb",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "dc50256c-8550-4330-8731-cd52d2d6146f",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "c18ae683-a489-4292-82c7-37335c6b43fb",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "dc50256c-8550-4330-8731-cd52d2d6146f",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse",
+        "output": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\",\"updatedInput\":{\"questions\":[{\"question\":\"Which tracker does the probe use?\",\"header\":\"Tracker\",\"options\":[{\"label\":\"GitHub\",\"description\":\"Issues on github.com\"},{\"label\":\"GitLab\",\"description\":\"Issues on a GitLab host\"}],\"multiSelect\":false},{\"question\":\"Which branch prefix does the probe use?\",\"header\":\"Prefix\",\"options\":[{\"label\":\"feat\",\"description\":\"A feature branch\"},{\"label\":\"fix\",\"description\":\"A bug-fix branch\"}],\"multiSelect\":false},{\"question\":\"Which labels does the probe apply?\",\"header\":\"Labels\",\"options\":[{\"label\":\"bug\",\"description\":\"Something is broken\"},{\"label\":\"docs\",\"description\":\"Documentation\"},{\"label\":\"chore\",\"description\":\"Upkeep\"}],\"multiSelect\":true}],\"answers\":{\"Which tracker does the probe use?\":\"GitLab\",\"Which branch prefix does the probe use?\":\"fix\",\"Which labels does the probe apply?\":\"bug,docs\"}}}}",
+        "stdout": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\",\"updatedInput\":{\"questions\":[{\"question\":\"Which tracker does the probe use?\",\"header\":\"Tracker\",\"options\":[{\"label\":\"GitHub\",\"description\":\"Issues on github.com\"},{\"label\":\"GitLab\",\"description\":\"Issues on a GitLab host\"}],\"multiSelect\":false},{\"question\":\"Which branch prefix does the probe use?\",\"header\":\"Prefix\",\"options\":[{\"label\":\"feat\",\"description\":\"A feature branch\"},{\"label\":\"fix\",\"description\":\"A bug-fix branch\"}],\"multiSelect\":false},{\"question\":\"Which labels does the probe apply?\",\"header\":\"Labels\",\"options\":[{\"label\":\"bug\",\"description\":\"Something is broken\"},{\"label\":\"docs\",\"description\":\"Documentation\"},{\"label\":\"chore\",\"description\":\"Upkeep\"}],\"multiSelect\":true}],\"answers\":{\"Which tracker does the probe use?\":\"GitLab\",\"Which branch prefix does the probe use?\":\"fix\",\"Which labels does the probe apply?\":\"bug,docs\"}}}}",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "499363ae-5d07-43e1-a1d9-cd4187d4b831",
+        "hook_name": "PostToolUse:AskUserQuestion",
+        "hook_event": "PostToolUse"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "499363ae-5d07-43e1-a1d9-cd4187d4b831",
+        "hook_name": "PostToolUse:AskUserQuestion",
+        "hook_event": "PostToolUse",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "8eef67ba-11a6-4833-8b7e-6f46d2c8bb6a",
+        "hook_name": "PostToolBatch",
+        "hook_event": "PostToolBatch"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "8eef67ba-11a6-4833-8b7e-6f46d2c8bb6a",
+        "hook_name": "PostToolBatch",
+        "hook_event": "PostToolBatch",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "43fe40b4-8bf4-4b25-9d06-c67af20d9557",
+        "hook_name": "Stop",
+        "hook_event": "Stop"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "43fe40b4-8bf4-4b25-9d06-c67af20d9557",
+        "hook_name": "Stop",
+        "hook_event": "Stop",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      }
+    ],
+    "systemOther": [
+      {
+        "type": "system",
+        "subtype": "thinking_tokens",
+        "estimated_tokens": 50,
+        "estimated_tokens_delta": 50
+      },
+      {
+        "type": "system",
+        "subtype": "thinking_tokens",
+        "estimated_tokens": 229,
+        "estimated_tokens_delta": 179
+      }
+    ],
+    "asks": [
+      {
+        "questions": [
+          {
+            "question": "Which tracker does the probe use?",
+            "header": "Tracker",
+            "multiSelect": false,
+            "options": [
+              {
+                "label": "GitHub",
+                "description": "Issues on github.com"
+              },
+              {
+                "label": "GitLab",
+                "description": "Issues on a GitLab host"
+              }
+            ]
+          },
+          {
+            "question": "Which branch prefix does the probe use?",
+            "header": "Prefix",
+            "multiSelect": false,
+            "options": [
+              {
+                "label": "feat",
+                "description": "A feature branch"
+              },
+              {
+                "label": "fix",
+                "description": "A bug-fix branch"
+              }
+            ]
+          },
+          {
+            "question": "Which labels does the probe apply?",
+            "header": "Labels",
+            "multiSelect": true,
+            "options": [
+              {
+                "label": "bug",
+                "description": "Something is broken"
+              },
+              {
+                "label": "docs",
+                "description": "Documentation"
+              },
+              {
+                "label": "chore",
+                "description": "Upkeep"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "toolResults": [
+      {
+        "is_error": false,
+        "content": "The user answered: \"Which tracker does the probe use?\"=\"GitLab\", \"Which branch prefix does the probe use?\"=\"fix\", \"Which labels does the probe apply?\"=\"bug,docs\". Read the answers carefully — they may request clarification, changes, or that you not proceed — and follow what they actually say.",
+        "tool_use_result": {
+          "questions": [
+            {
+              "question": "Which tracker does the probe use?",
+              "header": "Tracker",
+              "options": [
+                {
+                  "label": "GitHub",
+                  "description": "Issues on github.com"
+                },
+                {
+                  "label": "GitLab",
+                  "description": "Issues on a GitLab host"
+                }
+              ],
+              "multiSelect": false
+            },
+            {
+              "question": "Which branch prefix does the probe use?",
+              "header": "Prefix",
+              "options": [
+                {
+                  "label": "feat",
+                  "description": "A feature branch"
+                },
+                {
+                  "label": "fix",
+                  "description": "A bug-fix branch"
+                }
+              ],
+              "multiSelect": false
+            },
+            {
+              "question": "Which labels does the probe apply?",
+              "header": "Labels",
+              "options": [
+                {
+                  "label": "bug",
+                  "description": "Something is broken"
+                },
+                {
+                  "label": "docs",
+                  "description": "Documentation"
+                },
+                {
+                  "label": "chore",
+                  "description": "Upkeep"
+                }
+              ],
+              "multiSelect": true
+            }
+          ],
+          "answers": {
+            "Which tracker does the probe use?": "GitLab",
+            "Which branch prefix does the probe use?": "fix",
+            "Which labels does the probe apply?": "bug,docs"
+          }
+        }
+      }
+    ],
+    "result": {
+      "subtype": "success",
+      "is_error": false,
+      "num_turns": 2,
+      "result": "```\nThe user answered: \"Which tracker does the probe use?\"=\"GitLab\", \"Which branch prefix does the probe use?\"=\"fix\", \"Which labels does the probe apply?\"=\"bug,docs\". Read the answers carefully — they may request clarification, changes, or that you not proceed — and follow what they actually say.\n```\nTracker: GitLab\nPrefix: fix\nLabels: bug, docs",
+      "permission_denials": [],
+      "stop_reason": "end_turn"
+    },
+    "hookLog": [
+      {
+        "at": "2026-11-20T09:15:44.044Z",
+        "event": "SessionStart"
+      },
+      {
+        "at": "2026-11-20T09:15:47.108Z",
+        "event": "PreToolUse",
+        "tool": "AskUserQuestion",
+        "input": {
+          "questions": [
+            {
+              "question": "Which tracker does the probe use?",
+              "header": "Tracker",
+              "options": [
+                {
+                  "label": "GitHub",
+                  "description": "Issues on github.com"
+                },
+                {
+                  "label": "GitLab",
+                  "description": "Issues on a GitLab host"
+                }
+              ],
+              "multiSelect": false
+            },
+            {
+              "question": "Which branch prefix does the probe use?",
+              "header": "Prefix",
+              "options": [
+                {
+                  "label": "feat",
+                  "description": "A feature branch"
+                },
+                {
+                  "label": "fix",
+                  "description": "A bug-fix branch"
+                }
+              ],
+              "multiSelect": false
+            },
+            {
+              "question": "Which labels does the probe apply?",
+              "header": "Labels",
+              "options": [
+                {
+                  "label": "bug",
+                  "description": "Something is broken"
+                },
+                {
+                  "label": "docs",
+                  "description": "Documentation"
+                },
+                {
+                  "label": "chore",
+                  "description": "Upkeep"
+                }
+              ],
+              "multiSelect": true
+            }
+          ]
+        }
+      }
+    ],
+    "hostLog": [],
+    "stderrTail": ""
+  },
+  {
+    "scenario": "multi-array",
+    "variant": "multi",
+    "plan": {
+      "mode": "answer",
+      "answers": {
+        "Which tracker does the probe use?": "GitLab",
+        "Which branch prefix does the probe use?": "fix",
+        "Which labels does the probe apply?": [
+          "bug",
+          "docs"
+        ]
+      }
+    },
+    "hookFields": {},
+    "host": true,
+    "extra": [],
+    "exit": 0,
+    "killed": false,
+    "init": {
+      "claude_code_version": "2.1.329",
+      "keys": [
+        "type",
+        "subtype",
+        "cwd",
+        "session_id",
+        "tools",
+        "mcp_servers",
+        "model",
+        "permissionMode",
+        "slash_commands",
+        "terminal_slash_commands",
+        "apiKeySource",
+        "claude_code_version",
+        "output_style",
+        "agents",
+        "skills",
+        "plugins",
+        "capabilities",
+        "analytics_disabled",
+        "product_feedback_disabled",
+        "served_by_anthropic",
+        "uuid",
+        "original_cwd",
+        "additional_directories",
+        "messaging_socket_path",
+        "fast_mode_state",
+        "fast_mode_disabled_reason",
+        "per_turn_effort_active",
+        "ultrathink_available",
+        "ultrathink_typed_raises",
+        "view_mode",
+        "powershell_path"
+      ],
+      "askUserQuestionOffered": true,
+      "mcp_servers": [
+        {
+          "name": "uat",
+          "status": "connected",
+          "source": "dynamic"
+        }
+      ],
+      "plugins": [
+        "probe",
+        "orca-agent-view",
+        "mattpocock-skills",
+        "agent-skills",
+        "cowork-plugin-management",
+        "cc-plugin-agents-md",
+        "cc-plugin-telemetry",
+        "cc-plugin-privacy",
+        "cc-plugin-plugin-authoring"
+      ],
+      "permissionMode": "default",
+      "model": "claude-haiku-5-5"
+    },
+    "preInitEvents": [
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "UserPromptSubmit",
+        "hook_name": "UserPromptSubmit"
+      }
+    ],
+    "hookEvents": [
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "04af4c1f-9332-41b8-a69a-a26766a3263d",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "98c8631f-5185-41c2-bcf2-9fe91a2334f5",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "04af4c1f-9332-41b8-a69a-a26766a3263d",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "98c8631f-5185-41c2-bcf2-9fe91a2334f5",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart",
+        "output": "",
+        "stdout": "",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "6823a3d1-49a0-4ddb-b674-349dbb675c58",
+        "hook_name": "UserPromptSubmit",
+        "hook_event": "UserPromptSubmit"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "6823a3d1-49a0-4ddb-b674-349dbb675c58",
+        "hook_name": "UserPromptSubmit",
+        "hook_event": "UserPromptSubmit",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "15f63d13-5e54-4d2b-bb11-5a48e6d336bd",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "dba79731-e335-4fdf-9b3a-b3ec5774020a",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "15f63d13-5e54-4d2b-bb11-5a48e6d336bd",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "dba79731-e335-4fdf-9b3a-b3ec5774020a",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse",
+        "output": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\",\"updatedInput\":{\"questions\":[{\"question\":\"Which tracker does the probe use?\",\"header\":\"Tracker\",\"options\":[{\"label\":\"GitHub\",\"description\":\"Issues on github.com\"},{\"label\":\"GitLab\",\"description\":\"Issues on a GitLab host\"}],\"multiSelect\":false},{\"question\":\"Which branch prefix does the probe use?\",\"header\":\"Prefix\",\"options\":[{\"label\":\"feat\",\"description\":\"A feature branch\"},{\"label\":\"fix\",\"description\":\"A bug-fix branch\"}],\"multiSelect\":false},{\"question\":\"Which labels does the probe apply?\",\"header\":\"Labels\",\"options\":[{\"label\":\"bug\",\"description\":\"Something is broken\"},{\"label\":\"docs\",\"description\":\"Documentation\"},{\"label\":\"chore\",\"description\":\"Upkeep\"}],\"multiSelect\":true}],\"answers\":{\"Which tracker does the probe use?\":\"GitLab\",\"Which branch prefix does the probe use?\":\"fix\",\"Which labels does the probe apply?\":[\"bug\",\"docs\"]}}}}",
+        "stdout": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\",\"updatedInput\":{\"questions\":[{\"question\":\"Which tracker does the probe use?\",\"header\":\"Tracker\",\"options\":[{\"label\":\"GitHub\",\"description\":\"Issues on github.com\"},{\"label\":\"GitLab\",\"description\":\"Issues on a GitLab host\"}],\"multiSelect\":false},{\"question\":\"Which branch prefix does the probe use?\",\"header\":\"Prefix\",\"options\":[{\"label\":\"feat\",\"description\":\"A feature branch\"},{\"label\":\"fix\",\"description\":\"A bug-fix branch\"}],\"multiSelect\":false},{\"question\":\"Which labels does the probe apply?\",\"header\":\"Labels\",\"options\":[{\"label\":\"bug\",\"description\":\"Something is broken\"},{\"label\":\"docs\",\"description\":\"Documentation\"},{\"label\":\"chore\",\"description\":\"Upkeep\"}],\"multiSelect\":true}],\"answers\":{\"Which tracker does the probe use?\":\"GitLab\",\"Which branch prefix does the probe use?\":\"fix\",\"Which labels does the probe apply?\":[\"bug\",\"docs\"]}}}}",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "0904556d-f98f-4733-9b07-2519f8e8393d",
+        "hook_name": "PostToolUse:AskUserQuestion",
+        "hook_event": "PostToolUse"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "0904556d-f98f-4733-9b07-2519f8e8393d",
+        "hook_name": "PostToolUse:AskUserQuestion",
+        "hook_event": "PostToolUse",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "a70ef281-5341-40bd-a708-86ff11e2b2a6",
+        "hook_name": "PostToolBatch",
+        "hook_event": "PostToolBatch"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "a70ef281-5341-40bd-a708-86ff11e2b2a6",
+        "hook_name": "PostToolBatch",
+        "hook_event": "PostToolBatch",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "e84da5fb-b1f5-44a6-b22d-18ef440e292d",
+        "hook_name": "Stop",
+        "hook_event": "Stop"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "e84da5fb-b1f5-44a6-b22d-18ef440e292d",
+        "hook_name": "Stop",
+        "hook_event": "Stop",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      }
+    ],
+    "systemOther": [
+      {
+        "type": "system",
+        "subtype": "thinking_tokens",
+        "estimated_tokens": 50,
+        "estimated_tokens_delta": 50
+      },
+      {
+        "type": "system",
+        "subtype": "thinking_tokens",
+        "estimated_tokens": 267,
+        "estimated_tokens_delta": 217
+      }
+    ],
+    "asks": [
+      {
+        "questions": [
+          {
+            "question": "Which tracker does the probe use?",
+            "header": "Tracker",
+            "multiSelect": false,
+            "options": [
+              {
+                "label": "GitHub",
+                "description": "Issues on github.com"
+              },
+              {
+                "label": "GitLab",
+                "description": "Issues on a GitLab host"
+              }
+            ]
+          },
+          {
+            "question": "Which branch prefix does the probe use?",
+            "header": "Prefix",
+            "multiSelect": false,
+            "options": [
+              {
+                "label": "feat",
+                "description": "A feature branch"
+              },
+              {
+                "label": "fix",
+                "description": "A bug-fix branch"
+              }
+            ]
+          },
+          {
+            "question": "Which labels does the probe apply?",
+            "header": "Labels",
+            "multiSelect": true,
+            "options": [
+              {
+                "label": "bug",
+                "description": "Something is broken"
+              },
+              {
+                "label": "docs",
+                "description": "Documentation"
+              },
+              {
+                "label": "chore",
+                "description": "Upkeep"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "toolResults": [
+      {
+        "is_error": false,
+        "content": "Your questions have been answered: \"Which tracker does the probe use?\"=\"GitLab\", \"Which branch prefix does the probe use?\"=\"fix\", \"Which labels does the probe apply?\"=\"bug, docs\". You can now continue with these answers in mind.",
+        "tool_use_result": {
+          "questions": [
+            {
+              "question": "Which tracker does the probe use?",
+              "header": "Tracker",
+              "options": [
+                {
+                  "label": "GitHub",
+                  "description": "Issues on github.com"
+                },
+                {
+                  "label": "GitLab",
+                  "description": "Issues on a GitLab host"
+                }
+              ],
+              "multiSelect": false
+            },
+            {
+              "question": "Which branch prefix does the probe use?",
+              "header": "Prefix",
+              "options": [
+                {
+                  "label": "feat",
+                  "description": "A feature branch"
+                },
+                {
+                  "label": "fix",
+                  "description": "A bug-fix branch"
+                }
+              ],
+              "multiSelect": false
+            },
+            {
+              "question": "Which labels does the probe apply?",
+              "header": "Labels",
+              "options": [
+                {
+                  "label": "bug",
+                  "description": "Something is broken"
+                },
+                {
+                  "label": "docs",
+                  "description": "Documentation"
+                },
+                {
+                  "label": "chore",
+                  "description": "Upkeep"
+                }
+              ],
+              "multiSelect": true
+            }
+          ],
+          "answers": {
+            "Which tracker does the probe use?": "GitLab",
+            "Which branch prefix does the probe use?": "fix",
+            "Which labels does the probe apply?": "bug, docs"
+          }
+        }
+      }
+    ],
+    "result": {
+      "subtype": "success",
+      "is_error": false,
+      "num_turns": 2,
+      "result": "```\nYour questions have been answered: \"Which tracker does the probe use?\"=\"GitLab\", \"Which branch prefix does the probe use?\"=\"fix\", \"Which labels does the probe apply?\"=\"bug, docs\". You can now continue with these answers in mind.\n```\n\nTracker: GitLab\nPrefix: fix\nLabels: bug, docs",
+      "permission_denials": [],
+      "stop_reason": "end_turn"
+    },
+    "hookLog": [
+      {
+        "at": "2026-11-20T09:15:50.511Z",
+        "event": "SessionStart"
+      },
+      {
+        "at": "2026-11-20T09:15:53.796Z",
+        "event": "PreToolUse",
+        "tool": "AskUserQuestion",
+        "input": {
+          "questions": [
+            {
+              "question": "Which tracker does the probe use?",
+              "header": "Tracker",
+              "options": [
+                {
+                  "label": "GitHub",
+                  "description": "Issues on github.com"
+                },
+                {
+                  "label": "GitLab",
+                  "description": "Issues on a GitLab host"
+                }
+              ],
+              "multiSelect": false
+            },
+            {
+              "question": "Which branch prefix does the probe use?",
+              "header": "Prefix",
+              "options": [
+                {
+                  "label": "feat",
+                  "description": "A feature branch"
+                },
+                {
+                  "label": "fix",
+                  "description": "A bug-fix branch"
+                }
+              ],
+              "multiSelect": false
+            },
+            {
+              "question": "Which labels does the probe apply?",
+              "header": "Labels",
+              "options": [
+                {
+                  "label": "bug",
+                  "description": "Something is broken"
+                },
+                {
+                  "label": "docs",
+                  "description": "Documentation"
+                },
+                {
+                  "label": "chore",
+                  "description": "Upkeep"
+                }
+              ],
+              "multiSelect": true
+            }
+          ]
+        }
+      }
+    ],
+    "hostLog": [],
+    "stderrTail": ""
+  },
+  {
+    "scenario": "multi-partial",
+    "variant": "multi",
+    "plan": {
+      "mode": "answer",
+      "answers": {
+        "Which tracker does the probe use?": "GitLab"
+      }
+    },
+    "hookFields": {},
+    "host": true,
+    "extra": [],
+    "exit": 0,
+    "killed": false,
+    "init": {
+      "claude_code_version": "2.1.329",
+      "keys": [
+        "type",
+        "subtype",
+        "cwd",
+        "session_id",
+        "tools",
+        "mcp_servers",
+        "model",
+        "permissionMode",
+        "slash_commands",
+        "terminal_slash_commands",
+        "apiKeySource",
+        "claude_code_version",
+        "output_style",
+        "agents",
+        "skills",
+        "plugins",
+        "capabilities",
+        "analytics_disabled",
+        "product_feedback_disabled",
+        "served_by_anthropic",
+        "uuid",
+        "original_cwd",
+        "additional_directories",
+        "messaging_socket_path",
+        "fast_mode_state",
+        "fast_mode_disabled_reason",
+        "per_turn_effort_active",
+        "ultrathink_available",
+        "ultrathink_typed_raises",
+        "view_mode",
+        "powershell_path"
+      ],
+      "askUserQuestionOffered": true,
+      "mcp_servers": [
+        {
+          "name": "uat",
+          "status": "connected",
+          "source": "dynamic"
+        }
+      ],
+      "plugins": [
+        "probe",
+        "orca-agent-view",
+        "mattpocock-skills",
+        "agent-skills",
+        "cowork-plugin-management",
+        "cc-plugin-agents-md",
+        "cc-plugin-telemetry",
+        "cc-plugin-privacy",
+        "cc-plugin-plugin-authoring"
+      ],
+      "permissionMode": "default",
+      "model": "claude-haiku-5-5"
+    },
+    "preInitEvents": [
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "UserPromptSubmit",
+        "hook_name": "UserPromptSubmit"
+      }
+    ],
+    "hookEvents": [
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "4d5dde94-8073-4c15-9df1-5c23250ce759",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "e4a4036f-4c47-4ab6-ad97-2004658e87d4",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "4d5dde94-8073-4c15-9df1-5c23250ce759",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "e4a4036f-4c47-4ab6-ad97-2004658e87d4",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart",
+        "output": "",
+        "stdout": "",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "b6b63b87-95ac-4978-8557-78a2c416e447",
+        "hook_name": "UserPromptSubmit",
+        "hook_event": "UserPromptSubmit"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "b6b63b87-95ac-4978-8557-78a2c416e447",
+        "hook_name": "UserPromptSubmit",
+        "hook_event": "UserPromptSubmit",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "3c363e72-7c20-48fb-a708-48746933cf25",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "034c414d-74f9-4a28-8c96-13f6cf3bc5e8",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "3c363e72-7c20-48fb-a708-48746933cf25",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "034c414d-74f9-4a28-8c96-13f6cf3bc5e8",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse",
+        "output": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\",\"updatedInput\":{\"questions\":[{\"question\":\"Which tracker does the probe use?\",\"header\":\"Tracker\",\"options\":[{\"label\":\"GitHub\",\"description\":\"Issues on github.com\"},{\"label\":\"GitLab\",\"description\":\"Issues on a GitLab host\"}],\"multiSelect\":false},{\"question\":\"Which branch prefix does the probe use?\",\"header\":\"Prefix\",\"options\":[{\"label\":\"feat\",\"description\":\"A feature branch\"},{\"label\":\"fix\",\"description\":\"A bug-fix branch\"}],\"multiSelect\":false},{\"question\":\"Which labels does the probe apply?\",\"header\":\"Labels\",\"options\":[{\"label\":\"bug\",\"description\":\"Something is broken\"},{\"label\":\"docs\",\"description\":\"Documentation\"},{\"label\":\"chore\",\"description\":\"Upkeep\"}],\"multiSelect\":true}],\"answers\":{\"Which tracker does the probe use?\":\"GitLab\"}}}}",
+        "stdout": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\",\"updatedInput\":{\"questions\":[{\"question\":\"Which tracker does the probe use?\",\"header\":\"Tracker\",\"options\":[{\"label\":\"GitHub\",\"description\":\"Issues on github.com\"},{\"label\":\"GitLab\",\"description\":\"Issues on a GitLab host\"}],\"multiSelect\":false},{\"question\":\"Which branch prefix does the probe use?\",\"header\":\"Prefix\",\"options\":[{\"label\":\"feat\",\"description\":\"A feature branch\"},{\"label\":\"fix\",\"description\":\"A bug-fix branch\"}],\"multiSelect\":false},{\"question\":\"Which labels does the probe apply?\",\"header\":\"Labels\",\"options\":[{\"label\":\"bug\",\"description\":\"Something is broken\"},{\"label\":\"docs\",\"description\":\"Documentation\"},{\"label\":\"chore\",\"description\":\"Upkeep\"}],\"multiSelect\":true}],\"answers\":{\"Which tracker does the probe use?\":\"GitLab\"}}}}",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "7530f7b9-68ec-49c5-a934-753ef6260cb6",
+        "hook_name": "PostToolUse:AskUserQuestion",
+        "hook_event": "PostToolUse"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "7530f7b9-68ec-49c5-a934-753ef6260cb6",
+        "hook_name": "PostToolUse:AskUserQuestion",
+        "hook_event": "PostToolUse",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "a601f8d0-3c6c-4f20-8964-45d7276640e8",
+        "hook_name": "PostToolBatch",
+        "hook_event": "PostToolBatch"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "a601f8d0-3c6c-4f20-8964-45d7276640e8",
+        "hook_name": "PostToolBatch",
+        "hook_event": "PostToolBatch",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "f67ef1e1-86ca-4a01-b5c3-f3bcf479a4f2",
+        "hook_name": "Stop",
+        "hook_event": "Stop"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "f67ef1e1-86ca-4a01-b5c3-f3bcf479a4f2",
+        "hook_name": "Stop",
+        "hook_event": "Stop",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      }
+    ],
+    "systemOther": [
+      {
+        "type": "system",
+        "subtype": "thinking_tokens",
+        "estimated_tokens": 50,
+        "estimated_tokens_delta": 50
+      },
+      {
+        "type": "system",
+        "subtype": "thinking_tokens",
+        "estimated_tokens": 279,
+        "estimated_tokens_delta": 229
+      }
+    ],
+    "asks": [
+      {
+        "questions": [
+          {
+            "question": "Which tracker does the probe use?",
+            "header": "Tracker",
+            "multiSelect": false,
+            "options": [
+              {
+                "label": "GitHub",
+                "description": "Issues on github.com"
+              },
+              {
+                "label": "GitLab",
+                "description": "Issues on a GitLab host"
+              }
+            ]
+          },
+          {
+            "question": "Which branch prefix does the probe use?",
+            "header": "Prefix",
+            "multiSelect": false,
+            "options": [
+              {
+                "label": "feat",
+                "description": "A feature branch"
+              },
+              {
+                "label": "fix",
+                "description": "A bug-fix branch"
+              }
+            ]
+          },
+          {
+            "question": "Which labels does the probe apply?",
+            "header": "Labels",
+            "multiSelect": true,
+            "options": [
+              {
+                "label": "bug",
+                "description": "Something is broken"
+              },
+              {
+                "label": "docs",
+                "description": "Documentation"
+              },
+              {
+                "label": "chore",
+                "description": "Upkeep"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "toolResults": [
+      {
+        "is_error": false,
+        "content": "Your questions have been answered: \"Which tracker does the probe use?\"=\"GitLab\". You can now continue with these answers in mind.",
+        "tool_use_result": {
+          "questions": [
+            {
+              "question": "Which tracker does the probe use?",
+              "header": "Tracker",
+              "options": [
+                {
+                  "label": "GitHub",
+                  "description": "Issues on github.com"
+                },
+                {
+                  "label": "GitLab",
+                  "description": "Issues on a GitLab host"
+                }
+              ],
+              "multiSelect": false
+            },
+            {
+              "question": "Which branch prefix does the probe use?",
+              "header": "Prefix",
+              "options": [
+                {
+                  "label": "feat",
+                  "description": "A feature branch"
+                },
+                {
+                  "label": "fix",
+                  "description": "A bug-fix branch"
+                }
+              ],
+              "multiSelect": false
+            },
+            {
+              "question": "Which labels does the probe apply?",
+              "header": "Labels",
+              "options": [
+                {
+                  "label": "bug",
+                  "description": "Something is broken"
+                },
+                {
+                  "label": "docs",
+                  "description": "Documentation"
+                },
+                {
+                  "label": "chore",
+                  "description": "Upkeep"
+                }
+              ],
+              "multiSelect": true
+            }
+          ],
+          "answers": {
+            "Which tracker does the probe use?": "GitLab"
+          }
+        }
+      }
+    ],
+    "result": {
+      "subtype": "success",
+      "is_error": false,
+      "num_turns": 2,
+      "result": "```\nYour questions have been answered: \"Which tracker does the probe use?\"=\"GitLab\". You can now continue with these answers in mind.\n```\nTracker: GitLab\nPrefix: sin respuesta\nLabels: sin respuesta",
+      "permission_denials": [],
+      "stop_reason": "end_turn"
+    },
+    "hookLog": [
+      {
+        "at": "2026-11-20T09:15:57.156Z",
+        "event": "SessionStart"
+      },
+      {
+        "at": "2026-11-20T09:16:00.809Z",
+        "event": "PreToolUse",
+        "tool": "AskUserQuestion",
+        "input": {
+          "questions": [
+            {
+              "question": "Which tracker does the probe use?",
+              "header": "Tracker",
+              "options": [
+                {
+                  "label": "GitHub",
+                  "description": "Issues on github.com"
+                },
+                {
+                  "label": "GitLab",
+                  "description": "Issues on a GitLab host"
+                }
+              ],
+              "multiSelect": false
+            },
+            {
+              "question": "Which branch prefix does the probe use?",
+              "header": "Prefix",
+              "options": [
+                {
+                  "label": "feat",
+                  "description": "A feature branch"
+                },
+                {
+                  "label": "fix",
+                  "description": "A bug-fix branch"
+                }
+              ],
+              "multiSelect": false
+            },
+            {
+              "question": "Which labels does the probe apply?",
+              "header": "Labels",
+              "options": [
+                {
+                  "label": "bug",
+                  "description": "Something is broken"
+                },
+                {
+                  "label": "docs",
+                  "description": "Documentation"
+                },
+                {
+                  "label": "chore",
+                  "description": "Upkeep"
+                }
+              ],
+              "multiSelect": true
+            }
+          ]
+        }
+      }
+    ],
+    "hostLog": [],
+    "stderrTail": ""
+  },
+  {
+    "scenario": "other-text",
+    "variant": "other",
+    "plan": {
+      "mode": "answer",
+      "answers": {
+        "Which GitLab host does the probe use?": "gitlab.internal.example"
+      }
+    },
+    "hookFields": {},
+    "host": true,
+    "extra": [],
+    "exit": 0,
+    "killed": false,
+    "init": {
+      "claude_code_version": "2.1.329",
+      "keys": [
+        "type",
+        "subtype",
+        "cwd",
+        "session_id",
+        "tools",
+        "mcp_servers",
+        "model",
+        "permissionMode",
+        "slash_commands",
+        "terminal_slash_commands",
+        "apiKeySource",
+        "claude_code_version",
+        "output_style",
+        "agents",
+        "skills",
+        "plugins",
+        "capabilities",
+        "analytics_disabled",
+        "product_feedback_disabled",
+        "served_by_anthropic",
+        "uuid",
+        "original_cwd",
+        "additional_directories",
+        "messaging_socket_path",
+        "fast_mode_state",
+        "fast_mode_disabled_reason",
+        "per_turn_effort_active",
+        "ultrathink_available",
+        "ultrathink_typed_raises",
+        "view_mode",
+        "powershell_path"
+      ],
+      "askUserQuestionOffered": true,
+      "mcp_servers": [
+        {
+          "name": "uat",
+          "status": "connected",
+          "source": "dynamic"
+        }
+      ],
+      "plugins": [
+        "probe",
+        "orca-agent-view",
+        "mattpocock-skills",
+        "agent-skills",
+        "cowork-plugin-management",
+        "cc-plugin-agents-md",
+        "cc-plugin-telemetry",
+        "cc-plugin-privacy",
+        "cc-plugin-plugin-authoring"
+      ],
+      "permissionMode": "default",
+      "model": "claude-haiku-5-5"
+    },
+    "preInitEvents": [
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "UserPromptSubmit",
+        "hook_name": "UserPromptSubmit"
+      }
+    ],
+    "hookEvents": [
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "7764f635-a41e-4616-a5fc-318dfae7c92e",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "bbc39e3c-b3ce-4a56-971b-a944907e18e6",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "7764f635-a41e-4616-a5fc-318dfae7c92e",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "bbc39e3c-b3ce-4a56-971b-a944907e18e6",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart",
+        "output": "",
+        "stdout": "",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "4ed33510-f749-4299-9210-a024c3287762",
+        "hook_name": "UserPromptSubmit",
+        "hook_event": "UserPromptSubmit"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "4ed33510-f749-4299-9210-a024c3287762",
+        "hook_name": "UserPromptSubmit",
+        "hook_event": "UserPromptSubmit",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "66d30bbf-33b6-4363-b236-97e7642fcc51",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "b69073c6-eca8-4b66-9f27-4ff0728bab68",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "66d30bbf-33b6-4363-b236-97e7642fcc51",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "b69073c6-eca8-4b66-9f27-4ff0728bab68",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse",
+        "output": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\",\"updatedInput\":{\"questions\":[{\"question\":\"Which GitLab host does the probe use?\",\"header\":\"Host\",\"options\":[{\"label\":\"gitlab.com\",\"description\":\"The public GitLab\"},{\"label\":\"Self-hosted\",\"description\":\"Your own GitLab instance\"}],\"multiSelect\":false}],\"answers\":{\"Which GitLab host does the probe use?\":\"gitlab.internal.example\"}}}}",
+        "stdout": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\",\"updatedInput\":{\"questions\":[{\"question\":\"Which GitLab host does the probe use?\",\"header\":\"Host\",\"options\":[{\"label\":\"gitlab.com\",\"description\":\"The public GitLab\"},{\"label\":\"Self-hosted\",\"description\":\"Your own GitLab instance\"}],\"multiSelect\":false}],\"answers\":{\"Which GitLab host does the probe use?\":\"gitlab.internal.example\"}}}}",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "522aaedf-30ff-4697-9295-899c629b9a7a",
+        "hook_name": "PostToolUse:AskUserQuestion",
+        "hook_event": "PostToolUse"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "522aaedf-30ff-4697-9295-899c629b9a7a",
+        "hook_name": "PostToolUse:AskUserQuestion",
+        "hook_event": "PostToolUse",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "629cca01-75e7-42be-ab4d-5b0f7a7dce22",
+        "hook_name": "PostToolBatch",
+        "hook_event": "PostToolBatch"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "629cca01-75e7-42be-ab4d-5b0f7a7dce22",
+        "hook_name": "PostToolBatch",
+        "hook_event": "PostToolBatch",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "94ecbbff-e9ff-4887-9674-ae7394387e79",
+        "hook_name": "Stop",
+        "hook_event": "Stop"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "94ecbbff-e9ff-4887-9674-ae7394387e79",
+        "hook_name": "Stop",
+        "hook_event": "Stop",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      }
+    ],
+    "systemOther": [
+      {
+        "type": "system",
+        "subtype": "thinking_tokens",
+        "estimated_tokens": 50,
+        "estimated_tokens_delta": 50
+      },
+      {
+        "type": "system",
+        "subtype": "thinking_tokens",
+        "estimated_tokens": 271,
+        "estimated_tokens_delta": 221
+      },
+      {
+        "type": "system",
+        "subtype": "thinking_tokens",
+        "estimated_tokens": 50,
+        "estimated_tokens_delta": 50
+      },
+      {
+        "type": "system",
+        "subtype": "thinking_tokens",
+        "estimated_tokens": 301,
+        "estimated_tokens_delta": 251
+      }
+    ],
+    "asks": [
+      {
+        "questions": [
+          {
+            "question": "Which GitLab host does the probe use?",
+            "header": "Host",
+            "multiSelect": false,
+            "options": [
+              {
+                "label": "gitlab.com",
+                "description": "The public GitLab"
+              },
+              {
+                "label": "Self-hosted",
+                "description": "Your own GitLab instance"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "toolResults": [
+      {
+        "is_error": false,
+        "content": "The user answered: \"Which GitLab host does the probe use?\"=\"gitlab.internal.example\". Read the answers carefully — they may request clarification, changes, or that you not proceed — and follow what they actually say.",
+        "tool_use_result": {
+          "questions": [
+            {
+              "question": "Which GitLab host does the probe use?",
+              "header": "Host",
+              "options": [
+                {
+                  "label": "gitlab.com",
+                  "description": "The public GitLab"
+                },
+                {
+                  "label": "Self-hosted",
+                  "description": "Your own GitLab instance"
+                }
+              ],
+              "multiSelect": false
+            }
+          ],
+          "answers": {
+            "Which GitLab host does the probe use?": "gitlab.internal.example"
+          }
+        }
+      }
+    ],
+    "result": {
+      "subtype": "success",
+      "is_error": false,
+      "num_turns": 2,
+      "result": "```\nThe user answered: \"Which GitLab host does the probe use?\"=\"gitlab.internal.example\". Read the answers carefully — they may request clarification, changes, or that you not proceed — and follow what they actually say.\n```\nHost: gitlab.internal.example",
+      "permission_denials": [],
+      "stop_reason": "end_turn"
+    },
+    "hookLog": [
+      {
+        "at": "2026-11-20T09:16:04.480Z",
+        "event": "SessionStart"
+      },
+      {
+        "at": "2026-11-20T09:16:07.618Z",
+        "event": "PreToolUse",
+        "tool": "AskUserQuestion",
+        "input": {
+          "questions": [
+            {
+              "question": "Which GitLab host does the probe use?",
+              "header": "Host",
+              "options": [
+                {
+                  "label": "gitlab.com",
+                  "description": "The public GitLab"
+                },
+                {
+                  "label": "Self-hosted",
+                  "description": "Your own GitLab instance"
+                }
+              ],
+              "multiSelect": false
+            }
+          ]
+        }
+      }
+    ],
+    "hostLog": [],
+    "stderrTail": ""
+  },
+  {
+    "scenario": "other-annotation",
+    "variant": "other",
+    "plan": {
+      "mode": "answer",
+      "answers": {
+        "Which GitLab host does the probe use?": "Self-hosted"
+      },
+      "annotations": {
+        "Which GitLab host does the probe use?": {
+          "notes": "gitlab.internal.example"
+        }
+      }
+    },
+    "hookFields": {},
+    "host": true,
+    "extra": [],
+    "exit": 0,
+    "killed": false,
+    "init": {
+      "claude_code_version": "2.1.329",
+      "keys": [
+        "type",
+        "subtype",
+        "cwd",
+        "session_id",
+        "tools",
+        "mcp_servers",
+        "model",
+        "permissionMode",
+        "slash_commands",
+        "terminal_slash_commands",
+        "apiKeySource",
+        "claude_code_version",
+        "output_style",
+        "agents",
+        "skills",
+        "plugins",
+        "capabilities",
+        "analytics_disabled",
+        "product_feedback_disabled",
+        "served_by_anthropic",
+        "uuid",
+        "original_cwd",
+        "additional_directories",
+        "messaging_socket_path",
+        "fast_mode_state",
+        "fast_mode_disabled_reason",
+        "per_turn_effort_active",
+        "ultrathink_available",
+        "ultrathink_typed_raises",
+        "view_mode",
+        "powershell_path"
+      ],
+      "askUserQuestionOffered": true,
+      "mcp_servers": [
+        {
+          "name": "uat",
+          "status": "connected",
+          "source": "dynamic"
+        }
+      ],
+      "plugins": [
+        "probe",
+        "orca-agent-view",
+        "mattpocock-skills",
+        "agent-skills",
+        "cowork-plugin-management",
+        "cc-plugin-agents-md",
+        "cc-plugin-telemetry",
+        "cc-plugin-privacy",
+        "cc-plugin-plugin-authoring"
+      ],
+      "permissionMode": "default",
+      "model": "claude-haiku-5-5"
+    },
+    "preInitEvents": [
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "UserPromptSubmit",
+        "hook_name": "UserPromptSubmit"
+      }
+    ],
+    "hookEvents": [
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "7b39a377-8af5-426d-8a6c-e61ce7f0e5cb",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "935d5897-2097-4417-bffa-40a3a4356fd7",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "7b39a377-8af5-426d-8a6c-e61ce7f0e5cb",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "935d5897-2097-4417-bffa-40a3a4356fd7",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart",
+        "output": "",
+        "stdout": "",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "f3e16abf-16ff-4b86-8ec0-f31d5865d6c0",
+        "hook_name": "UserPromptSubmit",
+        "hook_event": "UserPromptSubmit"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "f3e16abf-16ff-4b86-8ec0-f31d5865d6c0",
+        "hook_name": "UserPromptSubmit",
+        "hook_event": "UserPromptSubmit",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "69bb7b9b-0e76-4c1e-bbf5-f0b46e23ac04",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "8cd6eeb2-3d6f-48ce-bfdc-0c34723f79e4",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "69bb7b9b-0e76-4c1e-bbf5-f0b46e23ac04",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "8cd6eeb2-3d6f-48ce-bfdc-0c34723f79e4",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse",
+        "output": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\",\"updatedInput\":{\"questions\":[{\"question\":\"Which GitLab host does the probe use?\",\"header\":\"Host\",\"options\":[{\"label\":\"gitlab.com\",\"description\":\"The public GitLab\"},{\"label\":\"Self-hosted\",\"description\":\"Your own GitLab instance\"}],\"multiSelect\":false}],\"answers\":{\"Which GitLab host does the probe use?\":\"Self-hosted\"},\"annotations\":{\"Which GitLab host does the probe use?\":{\"notes\":\"gitlab.internal.example\"}}}}}",
+        "stdout": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\",\"updatedInput\":{\"questions\":[{\"question\":\"Which GitLab host does the probe use?\",\"header\":\"Host\",\"options\":[{\"label\":\"gitlab.com\",\"description\":\"The public GitLab\"},{\"label\":\"Self-hosted\",\"description\":\"Your own GitLab instance\"}],\"multiSelect\":false}],\"answers\":{\"Which GitLab host does the probe use?\":\"Self-hosted\"},\"annotations\":{\"Which GitLab host does the probe use?\":{\"notes\":\"gitlab.internal.example\"}}}}}",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "1a7181ff-20b1-4a27-ba31-4c65a3999de8",
+        "hook_name": "PostToolUse:AskUserQuestion",
+        "hook_event": "PostToolUse"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "1a7181ff-20b1-4a27-ba31-4c65a3999de8",
+        "hook_name": "PostToolUse:AskUserQuestion",
+        "hook_event": "PostToolUse",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "04d0408d-8c03-46a4-984e-827e5577990b",
+        "hook_name": "PostToolBatch",
+        "hook_event": "PostToolBatch"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "04d0408d-8c03-46a4-984e-827e5577990b",
+        "hook_name": "PostToolBatch",
+        "hook_event": "PostToolBatch",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "089e93ab-5847-4c15-bf25-77d057b982c9",
+        "hook_name": "Stop",
+        "hook_event": "Stop"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "089e93ab-5847-4c15-bf25-77d057b982c9",
+        "hook_name": "Stop",
+        "hook_event": "Stop",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      }
+    ],
+    "systemOther": [
+      {
+        "type": "system",
+        "subtype": "thinking_tokens",
+        "estimated_tokens": 50,
+        "estimated_tokens_delta": 50
+      },
+      {
+        "type": "system",
+        "subtype": "thinking_tokens",
+        "estimated_tokens": 293,
+        "estimated_tokens_delta": 243
+      }
+    ],
+    "asks": [
+      {
+        "questions": [
+          {
+            "question": "Which GitLab host does the probe use?",
+            "header": "Host",
+            "multiSelect": false,
+            "options": [
+              {
+                "label": "gitlab.com",
+                "description": "The public GitLab"
+              },
+              {
+                "label": "Self-hosted",
+                "description": "Your own GitLab instance"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "toolResults": [
+      {
+        "is_error": false,
+        "content": "The user answered: \"Which GitLab host does the probe use?\"=\"Self-hosted\" notes: gitlab.internal.example. Read the answers carefully — they may request clarification, changes, or that you not proceed — and follow what they actually say.",
+        "tool_use_result": {
+          "questions": [
+            {
+              "question": "Which GitLab host does the probe use?",
+              "header": "Host",
+              "options": [
+                {
+                  "label": "gitlab.com",
+                  "description": "The public GitLab"
+                },
+                {
+                  "label": "Self-hosted",
+                  "description": "Your own GitLab instance"
+                }
+              ],
+              "multiSelect": false
+            }
+          ],
+          "answers": {
+            "Which GitLab host does the probe use?": "Self-hosted"
+          },
+          "annotations": {
+            "Which GitLab host does the probe use?": {
+              "notes": "gitlab.internal.example"
+            }
+          }
+        }
+      }
+    ],
+    "result": {
+      "subtype": "success",
+      "is_error": false,
+      "num_turns": 2,
+      "result": "```\nThe user answered: \"Which GitLab host does the probe use?\"=\"Self-hosted\" notes: gitlab.internal.example. Read the answers carefully — they may request clarification, changes, or that you not proceed — and follow what they actually say.\n```\nHost: Self-hosted (notas: gitlab.internal.example)",
+      "permission_denials": [],
+      "stop_reason": "end_turn"
+    },
+    "hookLog": [
+      {
+        "at": "2026-11-20T09:16:12.164Z",
+        "event": "SessionStart"
+      },
+      {
+        "at": "2026-11-20T09:16:15.243Z",
+        "event": "PreToolUse",
+        "tool": "AskUserQuestion",
+        "input": {
+          "questions": [
+            {
+              "question": "Which GitLab host does the probe use?",
+              "header": "Host",
+              "options": [
+                {
+                  "label": "gitlab.com",
+                  "description": "The public GitLab"
+                },
+                {
+                  "label": "Self-hosted",
+                  "description": "Your own GitLab instance"
+                }
+              ],
+              "multiSelect": false
+            }
+          ]
+        }
+      }
+    ],
+    "hostLog": [],
+    "stderrTail": ""
+  },
+  {
+    "scenario": "fail-exit1",
+    "variant": "single",
+    "plan": {
+      "mode": "exit1"
+    },
+    "hookFields": {},
+    "host": true,
+    "extra": [],
+    "exit": 0,
+    "killed": false,
+    "init": {
+      "claude_code_version": "2.1.329",
+      "keys": [
+        "type",
+        "subtype",
+        "cwd",
+        "session_id",
+        "tools",
+        "mcp_servers",
+        "model",
+        "permissionMode",
+        "slash_commands",
+        "terminal_slash_commands",
+        "apiKeySource",
+        "claude_code_version",
+        "output_style",
+        "agents",
+        "skills",
+        "plugins",
+        "capabilities",
+        "analytics_disabled",
+        "product_feedback_disabled",
+        "served_by_anthropic",
+        "uuid",
+        "original_cwd",
+        "additional_directories",
+        "messaging_socket_path",
+        "fast_mode_state",
+        "fast_mode_disabled_reason",
+        "per_turn_effort_active",
+        "ultrathink_available",
+        "ultrathink_typed_raises",
+        "view_mode",
+        "powershell_path"
+      ],
+      "askUserQuestionOffered": true,
+      "mcp_servers": [
+        {
+          "name": "uat",
+          "status": "connected",
+          "source": "dynamic"
+        }
+      ],
+      "plugins": [
+        "probe",
+        "orca-agent-view",
+        "mattpocock-skills",
+        "agent-skills",
+        "cowork-plugin-management",
+        "cc-plugin-agents-md",
+        "cc-plugin-telemetry",
+        "cc-plugin-privacy",
+        "cc-plugin-plugin-authoring"
+      ],
+      "permissionMode": "default",
+      "model": "claude-haiku-5-5"
+    },
+    "preInitEvents": [
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "UserPromptSubmit",
+        "hook_name": "UserPromptSubmit"
+      }
+    ],
+    "hookEvents": [
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "822aca9a-bfb6-47aa-825f-086709823f9a",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "64d8fcb6-3d62-4889-ac2a-7b2154c58da2",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "822aca9a-bfb6-47aa-825f-086709823f9a",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "64d8fcb6-3d62-4889-ac2a-7b2154c58da2",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart",
+        "output": "",
+        "stdout": "",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "000ebebf-4d31-4dc2-b2d9-e1e5050fb1f6",
+        "hook_name": "UserPromptSubmit",
+        "hook_event": "UserPromptSubmit"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "000ebebf-4d31-4dc2-b2d9-e1e5050fb1f6",
+        "hook_name": "UserPromptSubmit",
+        "hook_event": "UserPromptSubmit",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "1bbec8df-87c6-45d4-b9b1-9cdfe49efe25",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "d150c9e1-ca45-41d2-bb22-5e1dc8dbee81",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "1bbec8df-87c6-45d4-b9b1-9cdfe49efe25",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "d150c9e1-ca45-41d2-bb22-5e1dc8dbee81",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse",
+        "output": "probe hook: failing with exit 1",
+        "stdout": "",
+        "stderr": "probe hook: failing with exit 1",
+        "exit_code": 1,
+        "outcome": "error"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "bbc00796-9525-4140-9ffa-f60891220c45",
+        "hook_name": "PermissionRequest:AskUserQuestion",
+        "hook_event": "PermissionRequest"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "bc81bcd0-5bb3-461d-86c7-7f5aacf545f2",
+        "hook_name": "PostToolBatch",
+        "hook_event": "PostToolBatch"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "bbc00796-9525-4140-9ffa-f60891220c45",
+        "hook_name": "PermissionRequest:AskUserQuestion",
+        "hook_event": "PermissionRequest",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "bc81bcd0-5bb3-461d-86c7-7f5aacf545f2",
+        "hook_name": "PostToolBatch",
+        "hook_event": "PostToolBatch",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "57d71302-f9ed-4fde-9d20-8302997e37bb",
+        "hook_name": "Stop",
+        "hook_event": "Stop"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "57d71302-f9ed-4fde-9d20-8302997e37bb",
+        "hook_name": "Stop",
+        "hook_event": "Stop",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      }
+    ],
+    "systemOther": [],
+    "asks": [
+      {
+        "questions": [
+          {
+            "question": "Which tracker does the probe use?",
+            "header": "Tracker",
+            "multiSelect": false,
+            "options": [
+              {
+                "label": "GitHub",
+                "description": "Issues on github.com"
+              },
+              {
+                "label": "GitLab",
+                "description": "Issues on a GitLab host"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "toolResults": [
+      {
+        "is_error": true,
+        "content": "AskUserQuestion reached the permission host: no case of an unattended run asks it, so nobody can answer",
+        "tool_use_result": "Error: AskUserQuestion reached the permission host: no case of an unattended run asks it, so nobody can answer"
+      }
+    ],
+    "result": {
+      "subtype": "success",
+      "is_error": false,
+      "num_turns": 2,
+      "result": "```\nAskUserQuestion reached the permission host: no case of an unattended run asks it, so nobody can answer\n```",
+      "permission_denials": [
+        {
+          "tool_name": "AskUserQuestion",
+          "tool_use_id": "toolu_01XcchyjF1a7NceVuUiikhcB",
+          "tool_input": {
+            "questions": [
+              {
+                "question": "Which tracker does the probe use?",
+                "header": "Tracker",
+                "options": [
+                  {
+                    "label": "GitHub",
+                    "description": "Issues on github.com"
+                  },
+                  {
+                    "label": "GitLab",
+                    "description": "Issues on a GitLab host"
+                  }
+                ],
+                "multiSelect": false
+              }
+            ]
+          }
+        }
+      ],
+      "stop_reason": "end_turn"
+    },
+    "hookLog": [
+      {
+        "at": "2026-11-20T09:16:18.112Z",
+        "event": "SessionStart"
+      },
+      {
+        "at": "2026-11-20T09:16:20.899Z",
+        "event": "PreToolUse",
+        "tool": "AskUserQuestion",
+        "input": {
+          "questions": [
+            {
+              "question": "Which tracker does the probe use?",
+              "header": "Tracker",
+              "options": [
+                {
+                  "label": "GitHub",
+                  "description": "Issues on github.com"
+                },
+                {
+                  "label": "GitLab",
+                  "description": "Issues on a GitLab host"
+                }
+              ],
+              "multiSelect": false
+            }
+          ]
+        }
+      }
+    ],
+    "hostLog": [
+      {
+        "at": "2026-11-20T09:16:20.926Z",
+        "tool": "AskUserQuestion",
+        "decision": "deny",
+        "reason": "AskUserQuestion reached the permission host: no case of an unattended run asks it, so nobody can answer"
+      }
+    ],
+    "stderrTail": ""
+  },
+  {
+    "scenario": "fail-exit1-block",
+    "variant": "single",
+    "plan": {
+      "mode": "exit1"
+    },
+    "hookFields": {
+      "onFailure": "block"
+    },
+    "host": true,
+    "extra": [],
+    "exit": 0,
+    "killed": false,
+    "init": {
+      "claude_code_version": "2.1.329",
+      "keys": [
+        "type",
+        "subtype",
+        "cwd",
+        "session_id",
+        "tools",
+        "mcp_servers",
+        "model",
+        "permissionMode",
+        "slash_commands",
+        "terminal_slash_commands",
+        "apiKeySource",
+        "claude_code_version",
+        "output_style",
+        "agents",
+        "skills",
+        "plugins",
+        "capabilities",
+        "analytics_disabled",
+        "product_feedback_disabled",
+        "served_by_anthropic",
+        "uuid",
+        "original_cwd",
+        "additional_directories",
+        "messaging_socket_path",
+        "fast_mode_state",
+        "fast_mode_disabled_reason",
+        "per_turn_effort_active",
+        "ultrathink_available",
+        "ultrathink_typed_raises",
+        "view_mode",
+        "powershell_path"
+      ],
+      "askUserQuestionOffered": true,
+      "mcp_servers": [
+        {
+          "name": "uat",
+          "status": "connected",
+          "source": "dynamic"
+        }
+      ],
+      "plugins": [
+        "probe",
+        "orca-agent-view",
+        "mattpocock-skills",
+        "agent-skills",
+        "cowork-plugin-management",
+        "cc-plugin-agents-md",
+        "cc-plugin-telemetry",
+        "cc-plugin-privacy",
+        "cc-plugin-plugin-authoring"
+      ],
+      "permissionMode": "default",
+      "model": "claude-haiku-5-5"
+    },
+    "preInitEvents": [
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "UserPromptSubmit",
+        "hook_name": "UserPromptSubmit"
+      }
+    ],
+    "hookEvents": [
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "3e5b94b9-07ee-4f04-9df3-acd8da9daa05",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "86782a51-80c6-4ae9-a720-452ec37fc5f1",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "3e5b94b9-07ee-4f04-9df3-acd8da9daa05",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "86782a51-80c6-4ae9-a720-452ec37fc5f1",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart",
+        "output": "",
+        "stdout": "",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "a153fbd9-b1a1-44c3-975e-c56cd7b7d940",
+        "hook_name": "UserPromptSubmit",
+        "hook_event": "UserPromptSubmit"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "a153fbd9-b1a1-44c3-975e-c56cd7b7d940",
+        "hook_name": "UserPromptSubmit",
+        "hook_event": "UserPromptSubmit",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "21b01c62-66df-400b-a82c-4d9002f51504",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "4fb03ef8-e822-4a8f-a371-4cf148369e74",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "21b01c62-66df-400b-a82c-4d9002f51504",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "4fb03ef8-e822-4a8f-a371-4cf148369e74",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse",
+        "output": "probe hook: failing with exit 1",
+        "stdout": "",
+        "stderr": "probe hook: failing with exit 1",
+        "exit_code": 1,
+        "outcome": "error"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "f04379a3-da81-42cc-83d5-109d971e691e",
+        "hook_name": "PostToolBatch",
+        "hook_event": "PostToolBatch"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "f04379a3-da81-42cc-83d5-109d971e691e",
+        "hook_name": "PostToolBatch",
+        "hook_event": "PostToolBatch",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "6dd67b75-7ffe-4994-879d-57307b13e79f",
+        "hook_name": "Stop",
+        "hook_event": "Stop"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "6dd67b75-7ffe-4994-879d-57307b13e79f",
+        "hook_name": "Stop",
+        "hook_event": "Stop",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      }
+    ],
+    "systemOther": [
+      {
+        "type": "system",
+        "subtype": "thinking_tokens",
+        "estimated_tokens": 50,
+        "estimated_tokens_delta": 50
+      },
+      {
+        "type": "system",
+        "subtype": "thinking_tokens",
+        "estimated_tokens": 243,
+        "estimated_tokens_delta": 193
+      },
+      {
+        "type": "system",
+        "subtype": "thinking_tokens",
+        "estimated_tokens": 50,
+        "estimated_tokens_delta": 50
+      },
+      {
+        "type": "system",
+        "subtype": "thinking_tokens",
+        "estimated_tokens": 222,
+        "estimated_tokens_delta": 172
+      }
+    ],
+    "asks": [
+      {
+        "questions": [
+          {
+            "question": "Which tracker does the probe use?",
+            "header": "Tracker",
+            "multiSelect": false,
+            "options": [
+              {
+                "label": "GitHub",
+                "description": "Issues on github.com"
+              },
+              {
+                "label": "GitLab",
+                "description": "Issues on a GitLab host"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "toolResults": [
+      {
+        "is_error": true,
+        "content": "PreToolUse:AskUserQuestion hook error: [node \"<kit>/.claude/skills/uat/prototype-ask-probe/hook.mjs\"]: failed; blocking because onFailure is \"block\"\nprobe hook: failing with exit 1",
+        "tool_use_result": "Error: PreToolUse:AskUserQuestion hook error: [node \"<kit>/.claude/skills/uat/prototype-ask-probe/hook.mjs\"]: failed; blocking because onFailure is \"block\"\nprobe hook: failing with exit 1"
+      }
+    ],
+    "result": {
+      "subtype": "success",
+      "is_error": false,
+      "num_turns": 2,
+      "result": "```\nPreToolUse:AskUserQuestion hook error: [node \"<kit>/.claude/skills/uat/prototype-ask-probe/hook.mjs\"]: failed; blocking because onFailure is \"block\"\nprobe hook: failing with exit 1\n```",
+      "permission_denials": [
+        {
+          "tool_name": "AskUserQuestion",
+          "tool_use_id": "toolu_01MvfQ55bYCJ6y5VBzb3av6S",
+          "tool_input": {
+            "questions": [
+              {
+                "question": "Which tracker does the probe use?",
+                "header": "Tracker",
+                "options": [
+                  {
+                    "label": "GitHub",
+                    "description": "Issues on github.com"
+                  },
+                  {
+                    "label": "GitLab",
+                    "description": "Issues on a GitLab host"
+                  }
+                ],
+                "multiSelect": false
+              }
+            ]
+          }
+        }
+      ],
+      "stop_reason": "end_turn"
+    },
+    "hookLog": [
+      {
+        "at": "2026-11-20T09:16:23.518Z",
+        "event": "SessionStart"
+      },
+      {
+        "at": "2026-11-20T09:16:26.250Z",
+        "event": "PreToolUse",
+        "tool": "AskUserQuestion",
+        "input": {
+          "questions": [
+            {
+              "question": "Which tracker does the probe use?",
+              "header": "Tracker",
+              "options": [
+                {
+                  "label": "GitHub",
+                  "description": "Issues on github.com"
+                },
+                {
+                  "label": "GitLab",
+                  "description": "Issues on a GitLab host"
+                }
+              ],
+              "multiSelect": false
+            }
+          ]
+        }
+      }
+    ],
+    "hostLog": [],
+    "stderrTail": ""
+  },
+  {
+    "scenario": "fail-timeout",
+    "variant": "single",
+    "plan": {
+      "mode": "sleep",
+      "sleepSeconds": 20,
+      "answers": {
+        "Which tracker does the probe use?": "GitLab"
+      }
+    },
+    "hookFields": {
+      "timeout": 5
+    },
+    "host": true,
+    "extra": [],
+    "exit": 0,
+    "killed": false,
+    "init": {
+      "claude_code_version": "2.1.329",
+      "keys": [
+        "type",
+        "subtype",
+        "cwd",
+        "session_id",
+        "tools",
+        "mcp_servers",
+        "model",
+        "permissionMode",
+        "slash_commands",
+        "terminal_slash_commands",
+        "apiKeySource",
+        "claude_code_version",
+        "output_style",
+        "agents",
+        "skills",
+        "plugins",
+        "capabilities",
+        "analytics_disabled",
+        "product_feedback_disabled",
+        "served_by_anthropic",
+        "uuid",
+        "original_cwd",
+        "additional_directories",
+        "messaging_socket_path",
+        "fast_mode_state",
+        "fast_mode_disabled_reason",
+        "per_turn_effort_active",
+        "ultrathink_available",
+        "ultrathink_typed_raises",
+        "view_mode",
+        "powershell_path"
+      ],
+      "askUserQuestionOffered": true,
+      "mcp_servers": [
+        {
+          "name": "uat",
+          "status": "connected",
+          "source": "dynamic"
+        }
+      ],
+      "plugins": [
+        "probe",
+        "orca-agent-view",
+        "mattpocock-skills",
+        "agent-skills",
+        "cowork-plugin-management",
+        "cc-plugin-agents-md",
+        "cc-plugin-telemetry",
+        "cc-plugin-privacy",
+        "cc-plugin-plugin-authoring"
+      ],
+      "permissionMode": "default",
+      "model": "claude-haiku-5-5"
+    },
+    "preInitEvents": [
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "UserPromptSubmit",
+        "hook_name": "UserPromptSubmit"
+      }
+    ],
+    "hookEvents": [
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "446cc668-837d-45a0-b5be-bed0f332cdea",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "38caf3dd-73a4-4109-9439-3753fe718eb7",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "446cc668-837d-45a0-b5be-bed0f332cdea",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "38caf3dd-73a4-4109-9439-3753fe718eb7",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart",
+        "output": "",
+        "stdout": "",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "84b04f62-9ce6-4fc2-be71-0fb284acf6df",
+        "hook_name": "UserPromptSubmit",
+        "hook_event": "UserPromptSubmit"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "84b04f62-9ce6-4fc2-be71-0fb284acf6df",
+        "hook_name": "UserPromptSubmit",
+        "hook_event": "UserPromptSubmit",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "c56a9322-7e36-4761-8bbc-1b9dd66f25f6",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "0d58e975-1a0b-4729-872c-bc58f11285fe",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "c56a9322-7e36-4761-8bbc-1b9dd66f25f6",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "0d58e975-1a0b-4729-872c-bc58f11285fe",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse",
+        "output": "",
+        "stdout": "",
+        "stderr": "",
+        "exit_code": 1,
+        "outcome": "cancelled"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "84666c5a-3300-41bd-98b9-89c3ad237701",
+        "hook_name": "PermissionRequest:AskUserQuestion",
+        "hook_event": "PermissionRequest"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "67784500-75a5-44af-b8c9-fab06e2a6049",
+        "hook_name": "PostToolBatch",
+        "hook_event": "PostToolBatch"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "84666c5a-3300-41bd-98b9-89c3ad237701",
+        "hook_name": "PermissionRequest:AskUserQuestion",
+        "hook_event": "PermissionRequest",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "67784500-75a5-44af-b8c9-fab06e2a6049",
+        "hook_name": "PostToolBatch",
+        "hook_event": "PostToolBatch",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "c14069c7-7385-470d-a66c-0115fceb6ba1",
+        "hook_name": "Stop",
+        "hook_event": "Stop"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "c14069c7-7385-470d-a66c-0115fceb6ba1",
+        "hook_name": "Stop",
+        "hook_event": "Stop",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      }
+    ],
+    "systemOther": [
+      {
+        "type": "system",
+        "subtype": "thinking_tokens",
+        "estimated_tokens": 50,
+        "estimated_tokens_delta": 50
+      },
+      {
+        "type": "system",
+        "subtype": "thinking_tokens",
+        "estimated_tokens": 360,
+        "estimated_tokens_delta": 310
+      },
+      {
+        "type": "system",
+        "subtype": "informational",
+        "content": "A hook didn't answer in time, so it didn't check this action.",
+        "level": "warning",
+        "tag": "hook_no_verdict",
+        "hook_no_verdict": {
+          "hook_event": "PreToolUse",
+          "tool_use_id": "toolu_01DZfp4Qdf4d86zirAQZrDJy",
+          "timed_out": true
+        }
+      }
+    ],
+    "asks": [
+      {
+        "questions": [
+          {
+            "question": "Which tracker does the probe use?",
+            "header": "Tracker",
+            "multiSelect": false,
+            "options": [
+              {
+                "label": "GitHub",
+                "description": "Issues on github.com"
+              },
+              {
+                "label": "GitLab",
+                "description": "Issues on a GitLab host"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "toolResults": [
+      {
+        "is_error": true,
+        "content": "AskUserQuestion reached the permission host: no case of an unattended run asks it, so nobody can answer",
+        "tool_use_result": "Error: AskUserQuestion reached the permission host: no case of an unattended run asks it, so nobody can answer"
+      }
+    ],
+    "result": {
+      "subtype": "success",
+      "is_error": false,
+      "num_turns": 2,
+      "result": "```\nAskUserQuestion reached the permission host: no case of an unattended run asks it, so nobody can answer\n```",
+      "permission_denials": [
+        {
+          "tool_name": "AskUserQuestion",
+          "tool_use_id": "toolu_01DZfp4Qdf4d86zirAQZrDJy",
+          "tool_input": {
+            "questions": [
+              {
+                "question": "Which tracker does the probe use?",
+                "header": "Tracker",
+                "options": [
+                  {
+                    "label": "GitHub",
+                    "description": "Issues on github.com"
+                  },
+                  {
+                    "label": "GitLab",
+                    "description": "Issues on a GitLab host"
+                  }
+                ],
+                "multiSelect": false
+              }
+            ]
+          }
+        }
+      ],
+      "stop_reason": "end_turn"
+    },
+    "hookLog": [
+      {
+        "at": "2026-11-20T09:16:30.051Z",
+        "event": "SessionStart"
+      },
+      {
+        "at": "2026-11-20T09:16:33.049Z",
+        "event": "PreToolUse",
+        "tool": "AskUserQuestion",
+        "input": {
+          "questions": [
+            {
+              "question": "Which tracker does the probe use?",
+              "header": "Tracker",
+              "options": [
+                {
+                  "label": "GitHub",
+                  "description": "Issues on github.com"
+                },
+                {
+                  "label": "GitLab",
+                  "description": "Issues on a GitLab host"
+                }
+              ],
+              "multiSelect": false
+            }
+          ]
+        }
+      }
+    ],
+    "hostLog": [
+      {
+        "at": "2026-11-20T09:16:37.932Z",
+        "tool": "AskUserQuestion",
+        "decision": "deny",
+        "reason": "AskUserQuestion reached the permission host: no case of an unattended run asks it, so nobody can answer"
+      }
+    ],
+    "stderrTail": ""
+  },
+  {
+    "scenario": "fail-timeout-block",
+    "variant": "single",
+    "plan": {
+      "mode": "sleep",
+      "sleepSeconds": 20,
+      "answers": {
+        "Which tracker does the probe use?": "GitLab"
+      }
+    },
+    "hookFields": {
+      "timeout": 5,
+      "onFailure": "block"
+    },
+    "host": true,
+    "extra": [],
+    "exit": 0,
+    "killed": false,
+    "init": {
+      "claude_code_version": "2.1.329",
+      "keys": [
+        "type",
+        "subtype",
+        "cwd",
+        "session_id",
+        "tools",
+        "mcp_servers",
+        "model",
+        "permissionMode",
+        "slash_commands",
+        "terminal_slash_commands",
+        "apiKeySource",
+        "claude_code_version",
+        "output_style",
+        "agents",
+        "skills",
+        "plugins",
+        "capabilities",
+        "analytics_disabled",
+        "product_feedback_disabled",
+        "served_by_anthropic",
+        "uuid",
+        "original_cwd",
+        "additional_directories",
+        "messaging_socket_path",
+        "fast_mode_state",
+        "fast_mode_disabled_reason",
+        "per_turn_effort_active",
+        "ultrathink_available",
+        "ultrathink_typed_raises",
+        "view_mode",
+        "powershell_path"
+      ],
+      "askUserQuestionOffered": true,
+      "mcp_servers": [
+        {
+          "name": "uat",
+          "status": "connected",
+          "source": "dynamic"
+        }
+      ],
+      "plugins": [
+        "probe",
+        "orca-agent-view",
+        "mattpocock-skills",
+        "agent-skills",
+        "cowork-plugin-management",
+        "cc-plugin-agents-md",
+        "cc-plugin-telemetry",
+        "cc-plugin-privacy",
+        "cc-plugin-plugin-authoring"
+      ],
+      "permissionMode": "default",
+      "model": "claude-haiku-5-5"
+    },
+    "preInitEvents": [
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_event": "SessionStart",
+        "hook_name": "SessionStart:startup"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_event": "UserPromptSubmit",
+        "hook_name": "UserPromptSubmit"
+      }
+    ],
+    "hookEvents": [
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "e06522da-24ee-4277-a58a-8c2d8ef59a4a",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "fcedc885-dc20-4ae5-b65a-fbecb7a43044",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "e06522da-24ee-4277-a58a-8c2d8ef59a4a",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "fcedc885-dc20-4ae5-b65a-fbecb7a43044",
+        "hook_name": "SessionStart:startup",
+        "hook_event": "SessionStart",
+        "output": "",
+        "stdout": "",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "1d44a1fd-1efa-46ae-ac43-4fee60175c60",
+        "hook_name": "UserPromptSubmit",
+        "hook_event": "UserPromptSubmit"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "1d44a1fd-1efa-46ae-ac43-4fee60175c60",
+        "hook_name": "UserPromptSubmit",
+        "hook_event": "UserPromptSubmit",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "d4f79dd6-3522-4efe-aeaa-8907c00661be",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "a4c2860d-523d-4515-90bb-95ac3c484d8e",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "d4f79dd6-3522-4efe-aeaa-8907c00661be",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "a4c2860d-523d-4515-90bb-95ac3c484d8e",
+        "hook_name": "PreToolUse:AskUserQuestion",
+        "hook_event": "PreToolUse",
+        "output": "",
+        "stdout": "",
+        "stderr": "",
+        "exit_code": 1,
+        "outcome": "cancelled"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "faaef7b3-4ad7-4c21-802e-433a286ba2c2",
+        "hook_name": "PostToolBatch",
+        "hook_event": "PostToolBatch"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "faaef7b3-4ad7-4c21-802e-433a286ba2c2",
+        "hook_name": "PostToolBatch",
+        "hook_event": "PostToolBatch",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_started",
+        "hook_id": "74baaf10-1c3e-41dc-a311-ca3792dd856d",
+        "hook_name": "Stop",
+        "hook_event": "Stop"
+      },
+      {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_id": "74baaf10-1c3e-41dc-a311-ca3792dd856d",
+        "hook_name": "Stop",
+        "hook_event": "Stop",
+        "output": "{}\r\n",
+        "stdout": "{}\r\n",
+        "stderr": "",
+        "exit_code": 0,
+        "outcome": "success"
+      }
+    ],
+    "systemOther": [
+      {
+        "type": "system",
+        "subtype": "thinking_tokens",
+        "estimated_tokens": 50,
+        "estimated_tokens_delta": 50
+      },
+      {
+        "type": "system",
+        "subtype": "thinking_tokens",
+        "estimated_tokens": 387,
+        "estimated_tokens_delta": 337
+      }
+    ],
+    "asks": [
+      {
+        "questions": [
+          {
+            "question": "Which tracker does the probe use?",
+            "header": "Tracker",
+            "multiSelect": false,
+            "options": [
+              {
+                "label": "GitHub",
+                "description": "Issues on github.com"
+              },
+              {
+                "label": "GitLab",
+                "description": "Issues on a GitLab host"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "toolResults": [
+      {
+        "is_error": true,
+        "content": "PreToolUse:AskUserQuestion hook error: [node \"<kit>/.claude/skills/uat/prototype-ask-probe/hook.mjs\"]: timed out; blocking because onFailure is \"block\"",
+        "tool_use_result": "Error: PreToolUse:AskUserQuestion hook error: [node \"<kit>/.claude/skills/uat/prototype-ask-probe/hook.mjs\"]: timed out; blocking because onFailure is \"block\""
+      }
+    ],
+    "result": {
+      "subtype": "success",
+      "is_error": false,
+      "num_turns": 2,
+      "result": "```\nPreToolUse:AskUserQuestion hook error: [node \"<kit>/.claude/skills/uat/prototype-ask-probe/hook.mjs\"]: timed out; blocking because onFailure is \"block\"\n```",
+      "permission_denials": [
+        {
+          "tool_name": "AskUserQuestion",
+          "tool_use_id": "toolu_01DAEvS5bjE5tdwHvaU19i3W",
+          "tool_input": {
+            "questions": [
+              {
+                "question": "Which tracker does the probe use?",
+                "header": "Tracker",
+                "options": [
+                  {
+                    "label": "GitHub",
+                    "description": "Issues on github.com"
+                  },
+                  {
+                    "label": "GitLab",
+                    "description": "Issues on a GitLab host"
+                  }
+                ],
+                "multiSelect": false
+              }
+            ]
+          }
+        }
+      ],
+      "stop_reason": "end_turn"
+    },
+    "hookLog": [
+      {
+        "at": "2026-11-20T09:16:41.445Z",
+        "event": "SessionStart"
+      },
+      {
+        "at": "2026-11-20T09:16:45.161Z",
+        "event": "PreToolUse",
+        "tool": "AskUserQuestion",
+        "input": {
+          "questions": [
+            {
+              "question": "Which tracker does the probe use?",
+              "header": "Tracker",
+              "options": [
+                {
+                  "label": "GitHub",
+                  "description": "Issues on github.com"
+                },
+                {
+                  "label": "GitLab",
+                  "description": "Issues on a GitLab host"
+                }
+              ],
+              "multiSelect": false
+            }
+          ]
+        }
+      }
+    ],
+    "hostLog": [],
+    "stderrTail": ""
+  }
+]
