@@ -85,9 +85,8 @@
   },
   "aw-wayfinder-none-declined": {
     "verdict": "Pass",
-    "fingerprint": "46a39ede26a7698e55dd8be6f7d3af0ba90a1b63a1e57d4c816379fd7994c59d",
-    "kitCommit": "71eb0e8c77ca9a36f9690982c098b851d726051f",
-    "date": "2026-11-18T16:07:22.000Z",
-    "issue": 106
+    "fingerprint": "17a5256e5abd6682f29529b3c2a2b25e5f34443369d310d299cfaec05df89e57",
+    "kitCommit": "44470602ee74fa7c7fd3f11af60cb20ddce279d9",
+    "date": "2026-11-20T20:52:15.431Z"
   }
 }
