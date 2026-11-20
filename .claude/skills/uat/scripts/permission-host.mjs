@@ -8,8 +8,9 @@
 //   node permission-host.mjs --workdir <dir> --log <file> [--scratch <owner/name>]
 //
 // It allows any tool inside the working copy, denies a file tool's write
-// outside it, and denies AskUserQuestion, which no case of an unattended run
-// asks. In a shell command it allows `gh` reads, and denies a `gh` write, or a
+// outside it, and denies AskUserQuestion, which the driver's answering hook
+// (ask-hook.mjs) answers before any prompt: reaching the host means that hook
+// did not run. In a shell command it allows `gh` reads, and denies a `gh` write, or a
 // `git push`, `fetch` or `pull`, aimed at a repo other than the scratch repo
 // that --scratch names or a repo in the step folder, the working copy's parent.
 // That filter is best effort: the guarantee is the token the driver gives the
@@ -223,7 +224,7 @@ function shellDenial(line) {
 
 function decide(toolName, input) {
   if (toolName === 'AskUserQuestion') {
-    return { behavior: 'deny', message: 'AskUserQuestion reached the permission host: no case of an unattended run asks it, so nobody can answer' };
+    return { behavior: 'deny', message: 'AskUserQuestion reached the permission host: the UAT driver\'s answering hook should have answered it, so that hook did not run' };
   }
   const key = WRITES[toolName];
   if (key && !(typeof input?.[key] === 'string' && isInside(input[key]))) {

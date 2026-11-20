@@ -12,7 +12,7 @@ How to propose the answer to a question asked during a **UAT case**, from the ca
 
 These rules hold in both flows: a run with the **UAT conductor**, and an **Unattended run**.
 
-Answers and turns are intents, and option labels change between runs. Match each question, whether the agent asked it with options or in prose, to an entry's `when`, then pick the option of **this run** that fulfils its `intent`. Give the reason with the answer.
+Answers and turns are intents, and option labels change between runs. Match each question, whether the agent asked it with options or in prose, to an entry's `when`, then pick the option of **this run** that fulfils its `intent`. Give the reason with the answer. When the entry's `intent` says to type the answer in and no option of this run fulfils it, the answer is that text, given through the question's free-text choice, "Other".
 
 A turn that ends with the agent waiting is often a question in plain prose. Treat its text like a question, and take the reply from the first entry of `turns` not sent yet.
 

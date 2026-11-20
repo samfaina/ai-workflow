@@ -18,7 +18,7 @@ Grade each criterion in `judge` against the summary and the working copy: pass, 
 
 Sort every problem into a **skill defect** or an **environment problem** (a missing dependency, the clone's state, the network).
 
-In an unattended run you also get the permission host's log: each permission prompt of the case session and the host's decision. A denial the case did not expect makes the step Not proven, with an environment finding that names it, since the host's limits say nothing about the skill. A step with a denial is never a Pass.
+In an unattended run you also get the permission host's log, each permission prompt of the case session and the host's decision, and the answering hook's log, each question the agent asked with options and how the driver answered it. A denial the case did not expect makes the step Not proven, with an environment finding that names it, since neither the host's limits nor a question the driver could not answer say anything about the skill. A step with a denial is never a Pass.
 
 | Verdict | When |
 | --- | --- |

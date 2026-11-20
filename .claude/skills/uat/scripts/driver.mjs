@@ -10,8 +10,12 @@
 // checkout, and its permission prompts go to the permission host
 // (permission-host.mjs). Every turn after the first, and every case that
 // `continues` an earlier one, resumes the session by id with the same flags.
-// A turn that ends in prose gets one judgement call by ANSWERING.md, unless no
-// `turns` or `answers` entry is left, and each step one by GRADING.md.
+// Its --settings give it a PreToolUse hook on AskUserQuestion (ask-hook.mjs),
+// which answers each question with options by ANSWERING.md, records a drift
+// answer, or ends the step at a stop point. A turn that ends in prose gets one
+// judgement call by ANSWERING.md, unless no `turns` or `answers` entry is
+// left, and each step one by GRADING.md. Before the first case, a liveness
+// check confirms that the hook and the permission host are live.
 //
 // A case writes to GitHub only on the scratch repo, the source clone's GitHub
 // remote: the permission host filters the session's gh and git commands, and
@@ -28,11 +32,13 @@
 // resumed with `auto --run <dir>`: a step left without a result is reset and
 // run again from its restore point.
 
-import { spawnSync } from 'node:child_process';
-import { closeSync, existsSync, openSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
-import { delimiter, dirname, join, resolve } from 'node:path';
+import { spawn, spawnSync } from 'node:child_process';
+import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
+import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
 
+import { asJson, claude, claudeCommand, judgement, section, tail } from './claude.mjs';
 import { githubRepo } from './github-repo.mjs';
 import { Refused } from './refused.mjs';
 import { callsOf } from './shell-commands.mjs';
@@ -43,15 +49,20 @@ const kitRoot = join(skillDir, '..', '..', '..').replaceAll('\\', '/');
 const runScript = join(scriptsDir, 'run.mjs');
 const readerScript = join(scriptsDir, 'reader.mjs');
 const hostScript = join(scriptsDir, 'permission-host.mjs');
+const askHookScript = join(scriptsDir, 'ask-hook.mjs');
 
 const HOST_SERVER = 'uat';
 const HOST_TOOL = `mcp__${HOST_SERVER}__approve`;
 export const DEFAULT_JUDGE_MODEL = 'sonnet';
-const OUTPUT_LIMIT = 600;
+// The answering hook's log in the step folder, as ask-hook.mjs names it.
+const ASKS_FILE = 'asks.jsonl';
+// Long enough for the hook's judgement call and its one retry.
+const ASK_HOOK_TIMEOUT_S = 300;
+// The liveness check's SessionStart hook only writes a file.
+const LIVE_HOOK_TIMEOUT_S = 30;
 
 const readJson = (file) => JSON.parse(readFileSync(file, 'utf8'));
 const writeJson = (file, value) => writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`);
-const tail = (text) => (text ?? '').trim().slice(-OUTPUT_LIMIT);
 
 // One command of a script beside this one, as a process. A refusal stops the
 // run with the command's own message.
@@ -70,46 +81,6 @@ function callScript(file, command, ...args) {
 }
 const runMjs = (command, runDir, ...args) => JSON.parse(callScript(runScript, command, '--run', runDir, ...args));
 const readerMjs = (command, stepDir, ...args) => JSON.parse(callScript(readerScript, command, '--step', stepDir, ...args));
-
-// The file PATH runs for `name`, as a shell finds it, with PATHEXT on Windows.
-function onPath(name) {
-  const pathKey = Object.keys(process.env).find((key) => key.toUpperCase() === 'PATH');
-  const extensions = process.platform === 'win32' ? (process.env.PATHEXT ?? '.COM;.EXE;.BAT;.CMD').split(';').filter(Boolean) : [''];
-  for (const dir of (process.env[pathKey] ?? '').split(delimiter).filter(Boolean)) {
-    for (const extension of extensions) {
-      const file = join(dir, `${name}${extension}`);
-      if (existsSync(file) && statSync(file).isFile()) return file;
-    }
-  }
-  return null;
-}
-
-// cmd.exe parses a batch file's command line twice, once for /c and once when
-// the batch expands %*, so each argument is quoted and its metacharacters
-// escaped twice, the way npm's own tooling does it.
-const CMD_META = /([()\][%!^"`<>&|;, *?])/g;
-function cmdArgument(arg) {
-  const quoted = `"${arg.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\*)$/, '$1$1')}"`;
-  return quoted.replace(CMD_META, '^$1').replace(CMD_META, '^$1');
-}
-
-// Runs `claude` with the prompt on stdin, so that no prompt meets a shell's
-// quoting or a command line's length limit.
-function claude(args, { cwd, input, env = process.env, stdoutFile }) {
-  const file = onPath('claude');
-  if (!file) throw new Refused('no claude on PATH: the driver runs each case session and judgement call in Claude Code');
-  const batch = process.platform === 'win32' && /\.(cmd|bat)$/i.test(file);
-  const command = batch ? (process.env.ComSpec ?? 'cmd.exe') : file;
-  const argv = batch ? ['/d', '/s', '/c', `"${[file.replace(CMD_META, '^$1'), ...args.map(cmdArgument)].join(' ')}"`] : args;
-  const out = stdoutFile ? openSync(stdoutFile, 'w') : 'pipe';
-  try {
-    const result = spawnSync(command, argv, { cwd, env, input, encoding: 'utf8', stdio: ['pipe', out, 'pipe'], windowsVerbatimArguments: batch, maxBuffer: 64 * 1024 * 1024 });
-    if (result.error) throw new Refused(`claude did not start: ${result.error.message}`);
-    return result;
-  } finally {
-    if (stdoutFile) closeSync(out);
-  }
-}
 
 // The driver's own variable for the fine-grained token limited to the scratch
 // repo (CASE-FORMAT.md says what it needs).
@@ -300,24 +271,11 @@ function saveQuota({ stepDir, quotaBefore, run }) {
   writeJson(join(stepDir, QUOTA_FILE), { before: quotaBefore, after: run.quota.reading });
 }
 
-// One turn of the case session: the prompt sent, and the turn's stream saved
-// in the step folder. The session id comes from the stream's init event.
-function sessionTurn(step, prompt, sessionId) {
-  const number = step.turnsRun + 1;
-  const streamFile = join(step.stepDir, `session-${number}.jsonl`);
-  const args = [
-    '-p',
-    '--plugin-dir', kitRoot,
-    '--mcp-config', step.mcpConfig,
-    '--permission-prompts', 'host',
-    '--permission-prompt-tool', HOST_TOOL,
-    '--output-format', 'stream-json',
-    '--verbose',
-    ...(sessionId ? ['--resume', sessionId] : []),
-  ];
-  const result = claude(args, { cwd: step.workdir, input: prompt, env: step.env, stdoutFile: streamFile });
-  step.turnsRun = number;
-  const events = readFileSync(streamFile, 'utf8')
+// The JSON lines of a file, skipping any that is not JSON; none when the file
+// is missing.
+function jsonLines(file) {
+  if (!existsSync(file)) return [];
+  return readFileSync(file, 'utf8')
     .split('\n')
     .flatMap((line) => {
       try {
@@ -326,12 +284,60 @@ function sessionTurn(step, prompt, sessionId) {
         return [];
       }
     });
+}
+
+// A hook's command line. Claude Code runs it in a shell, bash or cmd.exe, so
+// each word is double-quoted, with forward slashes, which both read alike.
+const hookCommand = (...words) => words.map((word) => `"${word.replaceAll('\\', '/')}"`).join(' ');
+
+// The settings a case session gets: the PreToolUse hook that answers
+// AskUserQuestion for the case, with an explicit timeout and onFailure
+// "block", so that a hook that fails or hangs refuses the question instead of
+// leaving it to the permission host. `marker` adds the SessionStart hook of
+// the liveness check, which writes that file.
+function hookSettings({ runDir, judgeModel }, caseId, marker) {
+  const ask = { type: 'command', command: hookCommand(process.execPath, askHookScript, '--run', runDir, '--case', caseId, '--judge-model', judgeModel), timeout: ASK_HOOK_TIMEOUT_S, onFailure: 'block' };
+  const hooks = { PreToolUse: [{ matcher: 'AskUserQuestion', hooks: [ask] }] };
+  if (marker) hooks.SessionStart = [{ hooks: [{ type: 'command', command: hookCommand(process.execPath, askHookScript, '--live', marker), timeout: LIVE_HOOK_TIMEOUT_S }] }];
+  return { hooks };
+}
+
+// The flags of a case session, every turn of it and the liveness check alike.
+const sessionArgs = ({ mcpConfig, settings }) => [
+  '-p',
+  '--plugin-dir', kitRoot,
+  '--settings', settings,
+  '--mcp-config', mcpConfig,
+  '--permission-prompts', 'host',
+  '--permission-prompt-tool', HOST_TOOL,
+  '--output-format', 'stream-json',
+  '--verbose',
+];
+
+// One turn of the case session: the prompt sent, and the turn's stream saved
+// in the step folder. The session id comes from the stream's init event. The
+// answering hook's decisions in the turn come back with it: the `answers`
+// entries it used, and `stopped`, the reason, when it ended the step at a stop
+// point.
+function sessionTurn(step, prompt, sessionId) {
+  const number = step.turnsRun + 1;
+  const streamFile = join(step.stepDir, `session-${number}.jsonl`);
+  const args = [...sessionArgs(step), ...(sessionId ? ['--resume', sessionId] : [])];
+  const result = claude(args, { cwd: step.workdir, input: prompt, env: step.env, stdoutFile: streamFile });
+  step.turnsRun = number;
+  const events = jsonLines(streamFile);
   const { quota } = step.run;
   const { reading, rejected } = readQuota(events, quota.reading);
   quota.reading = reading;
   saveQuota(step);
+  const asked = jsonLines(step.asksLog).slice(step.asksSeen);
+  step.asksSeen += asked.length;
+  for (const entry of asked) for (const index of entry.entries ?? []) step.used.add(index);
+  const stopped = asked.find((entry) => entry.decision === 'stop')?.reason ?? null;
   const id = events.find((e) => e.type === 'system' && e.subtype === 'init')?.session_id ?? sessionId;
   const end = events.findLast((e) => e.type === 'result');
+  // A turn the hook ended at a stop point is over, however Claude Code ends it.
+  if (stopped !== null && id) return { sessionId: id, text: end?.result ?? '', stopped };
   if (result.status !== 0 || !end || end.is_error || !id) {
     const why = end?.is_error ? (end.result ?? end.subtype) : `exit ${result.status}: ${tail(result.stderr)}`;
     // A turn the plan's rate limit refused stops the run like any other failure,
@@ -341,49 +347,8 @@ function sessionTurn(step, prompt, sessionId) {
     const resume = limited ? 'it waits for the window to reset if its threshold says so, and restarts the step' : 'it restarts the step';
     throw new Refused(`${step.id}: the case session ${failed} on turn ${number}: ${why}. Run auto again: ${resume} from its restore point`);
   }
-  return { sessionId: id, text: end.result ?? '' };
+  return { sessionId: id, text: end.result ?? '', stopped: null };
 }
-
-// The first JSON object in a judgement's text, fenced or not.
-function jsonIn(text) {
-  const start = text.indexOf('{');
-  const end = text.lastIndexOf('}');
-  if (start === -1 || end < start) return null;
-  try {
-    const value = JSON.parse(text.slice(start, end + 1));
-    return value !== null && typeof value === 'object' && !Array.isArray(value) ? value : null;
-  } catch {
-    return null;
-  }
-}
-
-// One judgement call. `accept` returns why a value is refused, or null. A
-// refused value is asked again once, with the refusal.
-function judgement(step, kind, prompt, accept) {
-  const tools = kind === 'grade' ? 'Read,Grep,Glob' : '';
-  const args = ['-p', '--model', step.judgeModel, '--output-format', 'json', '--no-session-persistence', '--tools', tools];
-  let ask = prompt;
-  for (let attempt = 1; ; attempt += 1) {
-    const result = claude(args, { cwd: step.workdir, input: ask });
-    let text = null;
-    try {
-      text = JSON.parse(result.stdout).result;
-    } catch {
-      // Left null: refused below.
-    }
-    if (result.status !== 0 || typeof text !== 'string') {
-      throw new Refused(`${step.id}: the ${kind} judgement call failed: exit ${result.status}: ${tail(result.stderr) || tail(result.stdout)}`);
-    }
-    const value = jsonIn(text);
-    const refusal = value === null ? 'the reply holds no JSON object' : accept(value);
-    if (refusal === null) return value;
-    if (attempt === 2) throw new Refused(`${step.id}: the ${kind} judgement was refused twice: ${refusal}`);
-    ask = `${prompt}\n\n## Your last reply was refused\n\n${refusal}\n\nReply again with one JSON object.`;
-  }
-}
-
-const section = (title, body) => `## ${title}\n\n${body}\n`;
-const asJson = (value) => `\`\`\`json\n${JSON.stringify(value, null, 2)}\n\`\`\``;
 
 // The reply to a turn that ended, by ANSWERING.md: the next `turns` entry or an
 // `answers` entry, or the end of the step.
@@ -431,6 +396,7 @@ function acceptReply(step) {
 
 function gradePrompt(step, ended, checks, summary) {
   const hostLog = existsSync(step.hostLog) ? readFileSync(step.hostLog, 'utf8').trim() : '';
+  const asks = existsSync(step.asksLog) ? readFileSync(step.asksLog, 'utf8').trim() : '';
   return [
     '# UAT judgement: grade\n',
     'You grade one step of an unattended run of a UAT case, by the rules below. Your working directory is the working copy the step ran in: read it with your tools when the evidence needs it. Reply with the grades file, one JSON object and nothing else.\n',
@@ -443,17 +409,35 @@ function gradePrompt(step, ended, checks, summary) {
       'Permission host log',
       `Each permission prompt of the case session and the host's decision, graded by the rules above.\n\n${hostLog ? `\`\`\`\n${hostLog}\n\`\`\`` : 'No permission prompt reached the host.'}`,
     ),
+    section(
+      'Answering hook log',
+      `Each AskUserQuestion call of the case session and how the driver answered it, by ANSWERING.md: \`allow\` with the answers given, \`drift\` naming the questions no entry fitted, \`stop\` at a stop point, or \`deny\` when it could not answer.\n\n${asks ? `\`\`\`\n${asks}\n\`\`\`` : 'The agent asked no question with options.'}`,
+    ),
   ].join('\n');
 }
 
 // The permission host's denials in the step, as it logged them.
-function hostDenials(hostLog) {
-  if (!existsSync(hostLog)) return [];
-  return readFileSync(hostLog, 'utf8')
-    .split('\n')
-    .filter((line) => line.trim())
-    .map((line) => JSON.parse(line))
-    .filter((entry) => entry.decision === 'deny');
+const hostDenials = (hostLog) => jsonLines(hostLog).filter((entry) => entry.decision === 'deny');
+
+// The questions the answering hook did not answer: those it denied, as it
+// logged them, and those Claude Code refused because the hook failed or timed
+// out, which the result events list in `permission_denials`, with the hook's
+// error as the tool result.
+function askDenials(step) {
+  const logged = jsonLines(step.asksLog);
+  const denials = logged.filter((entry) => entry.decision === 'deny').map((entry) => ({ tool: 'AskUserQuestion', reason: entry.reason }));
+  const known = new Set(logged.map((entry) => entry.tool_use_id));
+  for (let turn = 1; turn <= step.turnsRun; turn += 1) {
+    const events = jsonLines(join(step.stepDir, `session-${turn}.jsonl`));
+    const blocks = events.filter((e) => e.type === 'user' && Array.isArray(e.message?.content)).flatMap((e) => e.message.content);
+    const resultOf = (id) => blocks.find((block) => block.type === 'tool_result' && block.tool_use_id === id)?.content;
+    for (const denial of events.findLast((e) => e.type === 'result')?.permission_denials ?? []) {
+      if (denial.tool_name !== 'AskUserQuestion' || known.has(denial.tool_use_id)) continue;
+      const text = resultOf(denial.tool_use_id);
+      denials.push({ tool: 'AskUserQuestion', reason: `the answering hook gave no answer: ${typeof text === 'string' ? text.trim() : 'it failed or timed out'}` });
+    }
+  }
+  return denials;
 }
 
 // By GRADING.md, a denial the case did not expect is an environment problem:
@@ -463,9 +447,9 @@ function denialRefusal(grades, denials) {
   if (denials.length === 0) return null;
   const listed = denials.map((entry) => `${entry.tool}${entry.detail ? ` (${entry.detail})` : ''}: ${entry.reason}`).join('; ');
   const rule = 'a denial the case did not expect makes the step Not proven, with an environment finding that names it';
-  if (grades.verdict === 'Pass') return `the permission host denied ${listed}. A step with a denial is never a Pass: ${rule}`;
+  if (grades.verdict === 'Pass') return `the case session was denied ${listed}. A step with a denial is never a Pass: ${rule}`;
   if (grades.verdict === 'Not proven' && !(grades.findings ?? []).some((finding) => finding.kind === 'environment')) {
-    return `the permission host denied ${listed}, and the grades hold no environment finding: ${rule}`;
+    return `the case session was denied ${listed}, and the grades hold no environment finding: ${rule}`;
   }
   return null;
 }
@@ -504,6 +488,101 @@ function scratchRepo(source) {
   return null;
 }
 
+// The --mcp-config that starts the permission host for the working copy
+// `workdir`, logging to `log`.
+function writeHostConfig(file, { workdir, log, scratch }) {
+  const args = [hostScript, '--workdir', workdir, '--log', log, ...(scratch ? ['--scratch', scratch] : [])];
+  writeJson(file, { mcpServers: { [HOST_SERVER]: { command: process.execPath, args } } });
+}
+
+// The liveness check of #165: one session with a case session's flags and
+// settings, in a scratch folder of the run, killed at its init event so that
+// nothing reaches the model. The run stops before any case unless hooks from
+// --settings ran, AskUserQuestion is offered, the permission host connected,
+// the kit is loaded and Claude Code is new enough to honour onFailure. Each
+// can fail on a Claude Code that changes how -p loads them, such as one that
+// makes --bare its default.
+const LIVENESS_PROMPT = '# UAT liveness check\n\nThis session is stopped at its init event, before this prompt is sent. Reply with nothing.';
+const MIN_VERSION = '2.1.295';
+const LIVENESS_TIMEOUT_MS = 120_000;
+
+const versionParts = (text) => (String(text).match(/(\d+)\.(\d+)\.(\d+)/) ?? []).slice(1).map(Number);
+function olderThan(version, minimum) {
+  const [have, need] = [versionParts(version), versionParts(minimum)];
+  if (have.length === 0) return true;
+  for (let i = 0; i < 3; i += 1) if (have[i] !== need[i]) return have[i] < need[i];
+  return false;
+}
+
+// The init event of a session started with `args`, which is then killed with
+// what it started: on Windows the whole tree, since a batch file's cmd.exe
+// does not pass the kill on.
+function initEvent(args, { cwd, input, env, streamFile }) {
+  const { command, argv, windowsVerbatimArguments } = claudeCommand(args);
+  return new Promise((resolvePromise, reject) => {
+    const child = spawn(command, argv, { cwd, env, windowsVerbatimArguments, stdio: ['pipe', 'pipe', 'pipe'] });
+    let stderr = '';
+    let settled = false;
+    const stop = () => {
+      if (process.platform === 'win32') spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
+      else child.kill('SIGKILL');
+    };
+    const settle = (fn, value) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      stop();
+      fn(value);
+    };
+    const timer = setTimeout(() => settle(reject, new Refused(`claude printed no init event in ${LIVENESS_TIMEOUT_MS / 1000} seconds`)), LIVENESS_TIMEOUT_MS);
+    child.on('error', (error) => settle(reject, new Refused(`claude did not start: ${error.message}`)));
+    child.stderr.on('data', (chunk) => (stderr += chunk));
+    createInterface({ input: child.stdout }).on('line', (line) => {
+      appendFileSync(streamFile, `${line}\n`);
+      let event = null;
+      try {
+        event = JSON.parse(line);
+      } catch {
+        return;
+      }
+      if (event.type === 'system' && event.subtype === 'init') settle(resolvePromise, event);
+    });
+    child.on('close', (status) => settle(reject, new Refused(`claude exited (${status}) before its init event: ${tail(stderr)}`)));
+    child.stdin.end(input);
+  });
+}
+
+async function checkLiveness(run) {
+  const dir = join(run.runDir, 'liveness');
+  rmSync(dir, { recursive: true, force: true });
+  const workdir = join(dir, 'repo');
+  mkdirSync(workdir, { recursive: true });
+  const marker = join(dir, 'hooks-ran');
+  const mcpConfig = join(dir, 'permission-host.json');
+  const settings = join(dir, 'settings.json');
+  writeHostConfig(mcpConfig, { workdir, log: join(dir, 'permissions.jsonl'), scratch: run.scratch });
+  writeJson(settings, hookSettings(run, 'liveness', marker));
+  const stopsHere = 'so auto stops before any case';
+  let init;
+  try {
+    init = await initEvent(sessionArgs({ mcpConfig, settings }), { cwd: workdir, input: LIVENESS_PROMPT, env: githubEnv(dir), streamFile: join(dir, 'session.jsonl') });
+  } catch (error) {
+    if (!(error instanceof Refused)) throw error;
+    throw new Refused(`the liveness check's session gave no init event, ${stopsHere}: ${error.message}`);
+  }
+  const host = (init.mcp_servers ?? []).find((server) => server.name === HOST_SERVER);
+  const pluginName = readJson(join(kitRoot, '.claude-plugin', 'plugin.json')).name;
+  const plugins = (init.plugins ?? []).map((plugin) => (typeof plugin === 'string' ? plugin : plugin?.name));
+  const failures = [
+    !existsSync(marker) && 'the hooks auto passes with --settings did not run, as a Claude Code that runs -p as --bare skips them, so nothing would answer AskUserQuestion',
+    !(init.tools ?? []).includes('AskUserQuestion') && 'AskUserQuestion is not among the tools of the session, so the permission host is not declared or -p offers no questions',
+    host?.status !== 'connected' && `the permission host, MCP server ${HOST_SERVER}, is ${host?.status ?? 'absent'}, not connected`,
+    !plugins.includes(pluginName) && `the kit under test, plugin ${pluginName} from --plugin-dir, is not loaded`,
+    olderThan(init.claude_code_version, MIN_VERSION) && `Claude Code ${init.claude_code_version ?? '(no version)'} is older than ${MIN_VERSION}, the first that honours onFailure on a hook`,
+  ].filter(Boolean);
+  if (failures.length > 0) throw new Refused(`the liveness check failed, ${stopsHere}: ${failures.join('; ')}. Its session is in ${dir}`);
+}
+
 function runStep(run, uatCase, brief) {
   const { runDir, judgeModel, scratch } = run;
   const { stepDir, workdir } = brief;
@@ -517,21 +596,28 @@ function runStep(run, uatCase, brief) {
     judgeModel,
     hostLog: join(stepDir, 'permissions.jsonl'),
     mcpConfig: join(stepDir, 'permission-host.json'),
+    settings: join(stepDir, 'settings.json'),
+    asksLog: join(stepDir, ASKS_FILE),
+    asksSeen: 0,
     turnsRun: 0,
     turnsSent: 0,
     used: new Set(),
     unusedAnswers: () => (uatCase.answers ?? []).map((_, index) => index).filter((index) => !step.used.has(index)),
   };
-  const hostArgs = [hostScript, '--workdir', workdir, '--log', step.hostLog, ...(scratch ? ['--scratch', scratch] : [])];
-  writeJson(step.mcpConfig, { mcpServers: { [HOST_SERVER]: { command: process.execPath, args: hostArgs } } });
+  writeHostConfig(step.mcpConfig, { workdir, log: step.hostLog, scratch });
+  writeJson(step.settings, hookSettings(run, uatCase.id));
   saveQuota(step);
   step.env = runShell(uatCase, { workdir, stepDir, env: githubEnv(stepDir) });
 
   const { continues, startedAt } = readJson(join(stepDir, 'step.json'));
-  let { sessionId, text } = sessionTurn(step, brief.paste.command, continues ? continuedSession(runDir, uatCase) : null);
+  let { sessionId, text, stopped } = sessionTurn(step, brief.paste.command, continues ? continuedSession(runDir, uatCase) : null);
   readerMjs('pick', stepDir, '--session', sessionId);
   let ended;
   for (;;) {
+    if (stopped !== null) {
+      ended = `The agent asked through AskUserQuestion at a stop point, and the step ended there, unanswered: ${stopped}`;
+      break;
+    }
     if (step.turnsSent === (uatCase.turns ?? []).length && step.unusedAnswers().length === 0) {
       ended = 'Every `turns` and `answers` entry had been used when the agent ended its turn, so the step ended there.';
       break;
@@ -546,7 +632,7 @@ function runStep(run, uatCase, brief) {
     }
     if (reply.entry === 'turn') step.turnsSent += 1;
     else step.used.add(reply.index);
-    ({ sessionId, text } = sessionTurn(step, reply.message, sessionId));
+    ({ sessionId, text, stopped } = sessionTurn(step, reply.message, sessionId));
     const turn = step.turnsSent;
     if (reply.entry === 'turn' && (uatCase.turns[turn - 1].assertions ?? []).length > 0) runMjs('check', runDir, '--turn', String(turn));
   }
@@ -555,7 +641,7 @@ function runStep(run, uatCase, brief) {
   const checks = readJson(join(stepDir, 'checks.json'));
   const summary = readerMjs('summary', stepDir);
   const gradesFile = join(stepDir, 'grades.json');
-  const denials = hostDenials(step.hostLog);
+  const denials = [...hostDenials(step.hostLog), ...askDenials(step)];
   judgement(step, 'grade', gradePrompt(step, ended, checks, summary), (grades) => {
     const refusal = denialRefusal(grades, denials);
     if (refusal) return refusal;
@@ -597,7 +683,7 @@ function thresholdsOf(options) {
 
 // Runs the batch of the run folder, a new one when `source` is given, until
 // next is done, then writes the report. Returns what auto prints.
-export function auto(options) {
+export async function auto(options) {
   if (process.env.ANTHROPIC_API_KEY) {
     throw new Refused('ANTHROPIC_API_KEY is set: an unattended run spends the plan, never the API. Unset it and run auto again');
   }
@@ -627,6 +713,7 @@ export function auto(options) {
     quota: { thresholds, reading: latestReading(runDir) },
   };
 
+  let live = false;
   for (;;) {
     const state = readJson(stateFile);
     const id = state.cases.find((caseId) => !state.results[caseId]);
@@ -637,6 +724,12 @@ export function auto(options) {
       continue;
     }
     paceOnQuota(run, `case ${id}`);
+    // Once per auto, before the first case it runs, and so after the quota
+    // says a case may run.
+    if (!live) {
+      await checkLiveness(run);
+      live = true;
+    }
     const brief = runMjs('next', runDir);
     if (brief.status === 'blocked') {
       runMjs('skip', runDir, '--reason', `Blocked: it starts from ${brief.needs}, which did not pass and so left no restore point.`);

@@ -32,10 +32,12 @@ function fakeClaude(run, script) {
   env[pathKey] = `${bin}${delimiter}${env[pathKey] ?? ''}`;
   const callsFile = join(dir, 'calls.jsonl');
   const calls = () => (existsSync(callsFile) ? readFileSync(callsFile, 'utf8').trim().split('\n').map((line) => JSON.parse(line)) : []);
+  const isLiveness = (call) => call.prompt.startsWith('# UAT liveness check');
   return {
     env,
     calls,
-    sessions: () => calls().filter((call) => call.args.includes('stream-json')),
+    liveness: () => calls().filter(isLiveness),
+    sessions: () => calls().filter((call) => call.args.includes('stream-json') && !isLiveness(call)),
     judgements: () => calls().filter((call) => !call.args.includes('stream-json')),
   };
 }
@@ -133,11 +135,17 @@ test('a follow-up turn and a continues case resume the same session, with the fl
   assert.equal(resumed(continued), session);
   assert.equal(JSON.parse(readText(join(run.runDir, 'steps', 'b', 'step.json'))).session, session);
   assert.deepEqual(withoutResume(followUp.args), first.args);
-  // The continued case logs its permission prompts in its own step folder.
-  const hostConfigOf = (call) => call.args[call.args.indexOf('--mcp-config') + 1];
-  assert.equal(hostConfigOf(continued), join(run.runDir, 'steps', 'b', 'permission-host.json'));
-  assert.deepEqual(withoutResume(continued.args).map((arg) => (arg === hostConfigOf(continued) ? hostConfigOf(first) : arg)), first.args);
-  for (const flag of ['--plugin-dir', '--mcp-config', '--permission-prompt-tool']) assert.ok(first.args.includes(flag), flag);
+  // The continued case logs its permission prompts, and answers its questions, in its own step folder.
+  const valueOf = (call, flag) => call.args[call.args.indexOf(flag) + 1];
+  assert.equal(valueOf(continued, '--mcp-config'), join(run.runDir, 'steps', 'b', 'permission-host.json'));
+  assert.equal(valueOf(continued, '--settings'), join(run.runDir, 'steps', 'b', 'settings.json'));
+  const asFirst = (arg) => ({ [valueOf(continued, '--mcp-config')]: valueOf(first, '--mcp-config'), [valueOf(continued, '--settings')]: valueOf(first, '--settings') })[arg] ?? arg;
+  assert.deepEqual(withoutResume(continued.args).map(asFirst), first.args);
+  for (const flag of ['--plugin-dir', '--settings', '--mcp-config', '--permission-prompt-tool']) assert.ok(first.args.includes(flag), flag);
+  const [hook] = JSON.parse(readText(valueOf(first, '--settings'))).hooks.PreToolUse;
+  assert.equal(hook.matcher, 'AskUserQuestion');
+  assert.equal(hook.hooks[0].onFailure, 'block');
+  assert.ok(hook.hooks[0].timeout > 0, 'an explicit timeout');
   assert.deepEqual(first.args.slice(first.args.indexOf('--permission-prompts'), first.args.indexOf('--permission-prompts') + 2), ['--permission-prompts', 'host']);
   assert.ok(first.args.includes('--verbose'));
 
@@ -207,6 +215,162 @@ test('a turn that ends with no turns or answers entry left ends the step without
 
 const readLines = (file) => readText(file).trim().split('\n').map((line) => JSON.parse(line));
 
+const choice = (question, labels, multiSelect = false) => ({ question, header: question.split(' ')[1], multiSelect, options: labels.map((label) => ({ label, description: `${label}, described` })) });
+const askTool = (...questions) => ({ name: 'AskUserQuestion', input: { questions } });
+const askCalls = (fake) => fake.judgements().filter((call) => kindOf(call) === 'ask');
+// The tool results of a step's session turn, as its stream holds them.
+const toolResults = (run, id, turn = 1) =>
+  readLines(join(run.runDir, 'steps', id, `session-${turn}.jsonl`))
+    .filter((event) => event.type === 'user' && Array.isArray(event.message.content))
+    .flatMap((event) => event.message.content.filter((block) => block.type === 'tool_result'));
+const tracker = choice('Which tracker does the app use?', ['GitHub', 'GitLab', 'Local files']);
+const prefix = choice('Which branch prefix does the app use?', ['feat', 'fix']);
+const labels = choice('Which labels does the app apply?', ['bug', 'docs', 'chore'], true);
+const setupAnswers = [
+  { when: 'Where tickets live', intent: 'GitLab', reason: 'the case checks the GitLab adapter' },
+  { when: 'The branch prefix', intent: 'The one for fixes', reason: 'the case fixes a bug' },
+  { when: 'The labels to apply', intent: 'Bug and documentation', reason: 'the case checks both labels' },
+];
+
+test('a scripted AskUserQuestion with several questions, one of them multiSelect, is answered in one call with this run\'s labels, in the shape #165 recorded', (t) => {
+  const run = makeRun(t, [caseFile('a', { answers: setupAnswers })]);
+  const answer = {
+    action: 'answer',
+    answers: [
+      { question: tracker.question, labels: ['GitLab'], entry: 0, reason: 'tickets live in GitLab' },
+      { question: prefix.question, labels: ['fix'], entry: 1, reason: 'the one for fixes' },
+      { question: labels.question, labels: ['bug', 'docs'], entry: 2, reason: 'bug and documentation' },
+    ],
+  };
+  const fake = fakeClaude(run, { turns: [{ tools: [askTool(tracker, prefix, labels)], text: 'Set up.' }], judgements: [{ ask: answer }, { grade: pass() }] });
+
+  const result = auto(run, fake);
+  assert.equal(result.status, 0, result.report);
+
+  const [result1] = toolResults(run, 'a');
+  assert.equal(result1.is_error, false);
+  assert.equal(
+    result1.content,
+    `Your questions have been answered: "${tracker.question}"="GitLab", "${prefix.question}"="fix", "${labels.question}"="bug, docs". You can now continue with these answers in mind.`,
+  );
+  const log = readLines(join(run.runDir, 'steps', 'a', 'session-1.jsonl'));
+  assert.equal(log.filter((event) => event.type === 'user').length, 2, 'the prompt and one tool result: one call answered all three');
+  const [ask] = askCalls(fake);
+  assert.match(ask.prompt, /### Stop points/, 'the call follows ANSWERING.md');
+  for (const text of [tracker.question, 'Local files', labels.question, '"multiSelect": true', 'Where tickets live', 'Bug and documentation']) assert.ok(ask.prompt.includes(text), text);
+  // Every answers entry was used by the hook, so the turn that ended needs no reply.
+  assert.deepEqual(fake.judgements().map(kindOf), ['ask', 'grade']);
+  assert.match(gradeCalls(fake)[0].prompt, /Answering hook log[\s\S]*"decision":"allow"[\s\S]*"bug, docs"/);
+  assert.equal(run.state().results.a.verdict, 'Pass');
+});
+
+test('a label that is not one of this run\'s options is refused and asked again once, and refused twice the question is denied with the reason, which keeps the step from a Pass', (t) => {
+  const run = makeRun(t, [caseFile('retried', { order: 1, answers: [setupAnswers[0]] }), caseFile('denied', { order: 2, answers: [setupAnswers[0]] })]);
+  const wrong = { action: 'answer', answers: [{ question: tracker.question, labels: ['Gitlab'], entry: 0, reason: 'tickets live in GitLab' }] };
+  const right = { action: 'answer', answers: [{ question: tracker.question, labels: ['GitLab'], entry: 0, reason: 'tickets live in GitLab' }] };
+  const notProven = { verdict: 'Not proven', line: 'The setup skill asked where tickets live, and the driver could not answer, so the setup never ran.', judge: [], findings: [{ kind: 'environment', text: 'The driver gave no valid answer.' }] };
+  const fake = fakeClaude(run, {
+    turns: [
+      { tools: [askTool(tracker)], text: 'Set up.' },
+      { tools: [askTool(tracker)], text: 'I could not get an answer.' },
+    ],
+    judgements: [{ ask: wrong }, { ask: right }, { grade: pass() }, { ask: wrong }, { ask: wrong }, { reply: { action: 'end', reason: 'not waiting' } }, { grade: pass() }, { grade: notProven }],
+  });
+
+  const result = auto(run, fake);
+  assert.equal(result.status, 0, result.report);
+
+  const [first, retry, , secondRetry] = askCalls(fake);
+  assert.ok(retry.prompt.startsWith(first.prompt), 'the retry asks the same question again');
+  assert.match(retry.prompt.slice(first.prompt.length), /was refused[\s\S]*"Gitlab" is not an option[\s\S]*"GitHub", "GitLab", "Local files"/);
+  assert.equal(toolResults(run, 'retried')[0].content.includes('"GitLab"'), true);
+  assert.equal(run.state().results.retried.verdict, 'Pass');
+
+  assert.match(secondRetry.prompt, /was refused/);
+  const [denied] = toolResults(run, 'denied');
+  assert.equal(denied.is_error, true);
+  assert.match(denied.content, /could not answer[\s\S]*refused twice[\s\S]*"Gitlab" is not an option/);
+  const deniedGrades = gradeCalls(fake).slice(1);
+  assert.match(deniedGrades[1].prompt.slice(deniedGrades[0].prompt.length), /was refused[\s\S]*AskUserQuestion[\s\S]*refused twice[\s\S]*never a Pass/);
+  assert.equal(run.state().results.denied.verdict, 'Not proven');
+});
+
+test('a question the answering hook fails on is refused by Claude Code, since the hook blocks on failure, and that refusal keeps the step from a Pass', (t) => {
+  const run = makeRun(t, [caseFile('a', { answers: [setupAnswers[0]] })]);
+  const notProven = { verdict: 'Not proven', line: 'The setup skill asked where tickets live, and the driver\'s answering hook failed, so the setup never ran.', judge: [], findings: [{ kind: 'environment', text: 'The answering hook failed.' }] };
+  const fake = fakeClaude(run, {
+    turns: [{ tools: [{ ...askTool(tracker), hookFails: true }], text: 'I got no answer.' }],
+    judgements: [{ reply: { action: 'end', reason: 'not waiting' } }, { grade: pass() }, { grade: notProven }],
+  });
+
+  const result = auto(run, fake);
+  assert.equal(result.status, 0, result.report);
+
+  const [blocked] = toolResults(run, 'a');
+  assert.equal(blocked.is_error, true);
+  assert.match(blocked.content, /blocking because onFailure is "block"/);
+  const [first, retry] = gradeCalls(fake);
+  assert.match(retry.prompt.slice(first.prompt.length), /was refused[\s\S]*AskUserQuestion: the answering hook gave no answer[\s\S]*the hook crashed[\s\S]*never a Pass/);
+  assert.equal(run.state().results.a.verdict, 'Not proven');
+});
+
+test('a question no entry fits gets a drift answer among its options, written to the case file with drift: true, and a drift answer in free text is refused', (t) => {
+  const run = makeRun(t, [caseFile('a', { answers: [setupAnswers[0]] })]);
+  const colour = choice('Which colour does the app use?', ['Blue', 'Green']);
+  const freeText = { action: 'answer', answers: [{ question: tracker.question, labels: ['GitLab'], entry: 0, reason: 'GitLab' }, { question: colour.question, other: 'Teal', entry: null, reason: 'the case does not test colour' }] };
+  const drift = { action: 'answer', answers: [{ question: tracker.question, labels: ['GitLab'], entry: 0, reason: 'GitLab' }, { question: colour.question, labels: ['Blue'], entry: null, reason: 'the case does not test colour, and Blue is the first option' }] };
+  const fake = fakeClaude(run, { turns: [{ tools: [askTool(tracker, colour)], text: 'Set up.' }], judgements: [{ ask: freeText }, { ask: drift }, { grade: pass() }] });
+
+  const result = auto(run, fake);
+  assert.equal(result.status, 0, result.report);
+
+  const [, retry] = askCalls(fake);
+  assert.match(retry.prompt, /was refused[\s\S]*drift answer[\s\S]*among its options[\s\S]*not free text/);
+  assert.match(toolResults(run, 'a')[0].content, /"Which colour does the app use\?"="Blue"/);
+  const saved = JSON.parse(readText(join(run.casesDir, 'a.json')));
+  assert.deepEqual(saved.answers.at(-1), { when: colour.question, intent: 'Blue', reason: 'the case does not test colour, and Blue is the first option', drift: true });
+  assert.equal(saved.answers.length, 2, 'only the question no entry fitted is added');
+  assert.match(readText(join(run.runDir, 'summary.md')), /1 question not in the case, added/);
+});
+
+test('an entry that says to type the answer in is answered with free text through "Other"', (t) => {
+  const host = choice('Which GitLab host does the app use?', ['gitlab.com', 'Self-hosted']);
+  const run = makeRun(t, [caseFile('a', { answers: [{ when: 'The GitLab host', intent: 'gitlab.internal.example, typed in if it is not an option', reason: 'the case checks a self-hosted GitLab' }] })]);
+  const answer = { action: 'answer', answers: [{ question: host.question, other: 'gitlab.internal.example', entry: 0, reason: 'typed in, as the entry says' }] };
+  const fake = fakeClaude(run, { turns: [{ tools: [askTool(host)], text: 'Set up.' }], judgements: [{ ask: answer }, { grade: pass() }] });
+
+  const result = auto(run, fake);
+  assert.equal(result.status, 0, result.report);
+
+  assert.match(toolResults(run, 'a')[0].content, /^The user answered: "Which GitLab host does the app use\?"="gitlab\.internal\.example"/);
+});
+
+test('an AskUserQuestion at a stop point ends the step unanswered, with turns left unsent, as a person typing hecho ends it', (t) => {
+  const approval = choice('Do you approve the spec?', ['Approve', 'Change it']);
+  const run = makeRun(t, [
+    caseFile('a', {
+      answers: [{ when: 'Approval of the spec', intent: 'Accept what it proposes', reason: 'the case reads the spec' }],
+      turns: [{ intent: 'Go on', reason: 'the case runs to the end' }],
+      assertions: [{ name: 'left at draft', file: 'spec.md', frontmatter: { status: 'draft' } }],
+    }),
+  ]);
+  const stopReason = 'a stop point: the case checks that the spec is left at draft, so its approval stays unanswered';
+  const fake = fakeClaude(run, {
+    turns: [{ tools: [write('{{CWD}}/spec.md', '---\nstatus: draft\n---\n'), askTool(approval)], text: 'Approved.' }],
+    judgements: [{ ask: { action: 'end', reason: stopReason } }, { grade: pass() }],
+  });
+
+  const result = auto(run, fake);
+  assert.equal(result.status, 0, result.report);
+
+  assert.deepEqual(fake.sessions().map((call) => call.prompt), ['/a'], 'no turn was sent after the stop point');
+  assert.deepEqual(fake.judgements().map(kindOf), ['ask', 'grade'], 'no reply was judged');
+  assert.equal(toolResults(run, 'a').length, 1, 'the question has no tool result: only the Write ran');
+  assert.ok(gradeCalls(fake)[0].prompt.includes(stopReason));
+  assert.match(gradeCalls(fake)[0].prompt, /How the step ended[\s\S]*AskUserQuestion at a stop point/);
+  assert.equal(run.state().results.a.verdict, 'Pass');
+});
+
 test('a write outside the working copy is denied and logged in the step folder, and the grading call sees the log', (t) => {
   const criterion = 'It wrote its notes only inside the working copy';
   const run = makeRun(t, [caseFile('a', { assertions: [{ judge: criterion }] })]);
@@ -220,7 +384,7 @@ test('a write outside the working copy is denied and logged in the step folder, 
   const fake = fakeClaude(run, {
     turns: [
       {
-        tools: [write('{{CWD}}/inside.txt', 'in\n'), write(outside, 'out\n'), write('{{CWD}}/../escape.txt', 'out\n'), { name: 'AskUserQuestion', input: { questions: [] } }],
+        tools: [write('{{CWD}}/inside.txt', 'in\n'), write(outside, 'out\n'), write('{{CWD}}/../escape.txt', 'out\n')],
         text: 'Done.',
       },
     ],
@@ -239,7 +403,6 @@ test('a write outside the working copy is denied and logged in the step folder, 
     ['Write', 'allow'],
     ['Write', 'deny'],
     ['Write', 'deny'],
-    ['AskUserQuestion', 'deny'],
   ]);
   assert.equal(log[1].detail, outside);
   assert.match(log[1].reason, /only inside the working copy/);
@@ -395,6 +558,55 @@ test('an assisted case is skipped with its reason and stays due, and a case bloc
   assert.match(results.y.line, /\bf\b[\s\S]*did not pass/);
   assert.deepEqual(Object.keys(run.ledger()).sort(), ['f', 'z']);
   assert.deepEqual(run.due().output.due.find((entry) => entry.case === 'x'), { case: 'x', reason: 'new' });
+});
+
+test('before the first case, auto checks in one session it kills at init that the hook and the permission host are live, with the flags a case session gets', (t) => {
+  const run = makeRun(t, [caseFile('a', { order: 1 }), caseFile('b', { order: 2 })]);
+  const fake = fakeClaude(run, { turns: [{ text: 'Done.' }, { text: 'Done.' }], judgements: [{ grade: pass() }, { grade: pass() }] });
+
+  const result = auto(run, fake);
+  assert.equal(result.status, 0, result.report);
+
+  const [check, ...more] = fake.liveness();
+  assert.deepEqual(more, [], 'one check per auto, however many cases');
+  const [first] = fake.sessions();
+  assert.ok(check.at < first.at);
+  const flagsOf = (call) => call.args.filter((arg) => arg.startsWith('-'));
+  assert.deepEqual(flagsOf(check), flagsOf(first));
+  assert.deepEqual(Object.keys(run.state().results), ['a', 'b'], 'the check took no scripted turn');
+
+  // clean deletes the check's folder and the session log Claude Code kept for it.
+  const checkLogs = join(run.root, 'config', 'projects', join(run.runDir, 'liveness', 'repo').replace(/[^A-Za-z0-9]/g, '-'));
+  assert.ok(existsSync(checkLogs));
+  assert.equal(run.cli('clean').status, 0);
+  assert.equal(existsSync(join(run.runDir, 'liveness')), false);
+  assert.equal(existsSync(checkLogs), false);
+});
+
+test('with the hook or the permission host not live, auto stops before the first case and says which check failed', (t) => {
+  const scenarios = [
+    [{ hooks: false }, /hooks[\s\S]*--settings[\s\S]*did not run/],
+    [{ tools: ['Read', 'Write', 'Bash'] }, /AskUserQuestion[\s\S]*not among the tools/],
+    [{ mcp: 'failed' }, /permission host[\s\S]*failed, not connected/],
+    [{ plugins: [] }, /plugin ai-workflow[\s\S]*not loaded/],
+    [{ version: '2.1.290' }, /2\.1\.290[\s\S]*older than 2\.1\.295/],
+  ];
+  for (const [binary, why] of scenarios) {
+    const run = makeRun(t, [caseFile('a')]);
+    const fake = fakeClaude(run, { binary, turns: [{ text: 'Done.' }], judgements: [{ grade: pass() }] });
+
+    const result = auto(run, fake);
+
+    const label = JSON.stringify(binary);
+    assert.equal(result.status, 1, label);
+    assert.equal(result.output.status, 'refused', label);
+    assert.match(result.output.message, /liveness check[\s\S]*before any case/, label);
+    assert.match(result.output.message, why, label);
+    assert.equal(fake.liveness().length, 1, label);
+    assert.deepEqual(fake.sessions(), [], label);
+    assert.deepEqual(fake.judgements(), [], label);
+    assert.equal(existsSync(join(run.runDir, 'steps')), false, `${label}: no step started`);
+  }
 });
 
 test('auto refuses to start while ANTHROPIC_API_KEY is set, before any step or call', (t) => {
@@ -679,7 +891,8 @@ test('a shell line that fails stops the run before the session starts, naming th
 
   assert.equal(result.status, 1);
   assert.match(result.output.message, /^a: its shell lines failed[\s\S]*exit 3/);
-  assert.deepEqual(fake.calls(), []);
+  assert.deepEqual(fake.sessions(), []);
+  assert.deepEqual(fake.judgements(), []);
 });
 
 test('report writes a review of the run beside the summary, with every criterion and finding, and no quota or cost figure', (t) => {
@@ -732,8 +945,8 @@ test('auto given --source starts a run of the chosen cases in a new run folder, 
   assert.equal(existsSync(unknownDir), false);
 });
 
-test('the driver and the permission host are dependency-free Node ESM', () => {
-  for (const name of ['driver.mjs', 'permission-host.mjs']) {
+test('the driver, the permission host, the answering hook and the Claude Code launcher are dependency-free Node ESM', () => {
+  for (const name of ['driver.mjs', 'permission-host.mjs', 'ask-hook.mjs', 'claude.mjs']) {
     const text = readText(join(repoRoot, '.claude', 'skills', 'uat', 'scripts', name));
     const imports = [...text.matchAll(/^import [^;]* from '([^']+)';$/gm)].map(([, from]) => from);
     assert.ok(imports.length > 0, name);

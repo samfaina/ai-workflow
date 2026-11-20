@@ -17,14 +17,50 @@
 //   call it makes is first
 //   put to the permission host, over MCP, as Claude Code does for a tool that
 //   would prompt, and runs only when the host allows it.
+// - A case session also takes `--settings`, whose hooks it runs as Claude Code
+//   2.1.329 did in the #165 probe. Each `SessionStart` hook runs before the
+//   init event. Before a tool call goes to the permission host, each
+//   `PreToolUse` hook whose `matcher` fits the tool runs as a shell command,
+//   with the event on stdin (`hook_event_name`, `tool_name`, `tool_input`,
+//   `tool_use_id`, `session_id`, `cwd`), and is killed after its `timeout` in
+//   seconds. Its stdout is read as JSON: `continue: false` ends the turn
+//   there, with a `result` that is no error, and
+//   `hookSpecificOutput.permissionDecision` `allow` runs the tool with its
+//   `updatedInput`, never asking the host, while `deny` refuses it with
+//   `permissionDecisionReason`. A hook that fails or times out blocks the call
+//   when its `onFailure` is `block`, and otherwise leaves it to the host.
+//   Every refused call is listed in the `result` event's `permission_denials`,
+//   as `{ tool_name, tool_use_id, tool_input }`.
+// - An AskUserQuestion that runs is answered by its `updatedInput.answers`,
+//   keyed by each question's text, a multiSelect one's labels joined with
+//   ", " or given as an array. Its tool result reads `Your questions have been
+//   answered: ...` when every value is a label of its question, and `The user
+//   answered: ...` when one is free text. The session log keeps the answers in
+//   the entry's `toolUseResult`.
+// - The init event holds what the driver's liveness check reads: `tools`,
+//   which hold AskUserQuestion, `mcp_servers` with the host's `status`,
+//   `plugins` with the name of the plugin --plugin-dir loads, and
+//   `claude_code_version`. The liveness check kills the session at init, so
+//   that nothing reaches the model: given its prompt, which starts
+//   `# UAT liveness check`, the fake waits after init as a model call would,
+//   and takes no turn.
 // - A judgement call is `claude -p` with the prompt on stdin, `--model` and
 //   `--output-format json`. It prints one `result` event whose `result` is the
 //   judgement's text.
 //
 // FAKE_CLAUDE names the script, a JSON file:
 //
-//   { "turns": [{ "rateLimit", "tools": [{ "name", "input" }], "text" } | { "rateLimit", "tools", "error" }],
-//     "judgements": [{ "reply": {...} } | { "grade": {...} }] }
+//   { "binary": { "version", "hooks", "tools", "mcp", "plugins" },
+//     "turns": [{ "rateLimit", "tools": [{ "name", "input" }], "text" } | { "rateLimit", "tools", "error" }],
+//     "judgements": [{ "reply": {...} } | { "grade": {...} } | { "ask": {...} } | { "fail": "<stderr>" }] }
+//
+// `binary` stands for the installed Claude Code, each field optional: the
+// `version` init names, `hooks: false` for one that runs no hook from
+// --settings (as `--bare` does), and the init event's `tools`, host `mcp`
+// status and `plugins`. A judgement entry `fail` makes that call exit 1 with
+// that text on stderr, whatever its kind. A tool with `hookFails: true` stands
+// for a PreToolUse hook that crashed: each hook that fits it is taken to have
+// exited 1 without running.
 //
 // Each case-session call takes the next entry of `turns`, and each judgement
 // call the next entry of `judgements`, whose key must be the kind of call the
@@ -35,14 +71,14 @@
 // working directory. Every call is appended to calls.jsonl beside the script,
 // with the time it started.
 
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { createInterface } from 'node:readline';
 
-const VALUED = new Set(['--plugin-dir', '--mcp-config', '--permission-prompts', '--permission-prompt-tool', '--output-format', '--resume', '--model', '--tools']);
+const VALUED = new Set(['--plugin-dir', '--settings', '--mcp-config', '--permission-prompts', '--permission-prompt-tool', '--output-format', '--resume', '--model', '--tools']);
 const BARE = new Set(['-p', '--verbose', '--no-session-persistence']);
 
 function fail(message) {
@@ -64,6 +100,7 @@ function parseArgs(args) {
 const scriptFile = process.env.FAKE_CLAUDE;
 if (!scriptFile) fail('FAKE_CLAUDE is not set');
 const script = JSON.parse(readFileSync(scriptFile, 'utf8'));
+const binary = script.binary ?? {};
 const progressFile = `${scriptFile}.progress.json`;
 const progress = existsSync(progressFile) ? JSON.parse(readFileSync(progressFile, 'utf8')) : { turns: 0, judgements: 0 };
 const takeNext = (queue) => {
@@ -87,13 +124,14 @@ if (options['--output-format'] === 'json') {
   if (!options['--model']) fail('a judgement call names no --model');
   const kind = prompt.match(/^# UAT judgement: (\w+)/)?.[1];
   const entry = takeNext('judgements');
+  if (Object.hasOwn(entry, 'fail')) fail(entry.fail);
   if (!kind || !Object.hasOwn(entry, kind)) fail(`the next judgement is ${Object.keys(entry)[0]}, the call asks for ${kind}`);
   const value = entry[kind];
   emit({ type: 'result', subtype: 'success', is_error: false, result: typeof value === 'string' ? value : JSON.stringify(value), total_cost_usd: 0.0123 });
   process.exit(0);
 }
 
-for (const flag of ['--plugin-dir', '--mcp-config', '--permission-prompt-tool']) if (!options[flag]) fail(`a case session without ${flag}`);
+for (const flag of ['--plugin-dir', '--settings', '--mcp-config', '--permission-prompt-tool']) if (!options[flag]) fail(`a case session without ${flag}`);
 if (options['--permission-prompts'] !== 'host') fail('a case session without --permission-prompts host');
 if (options['--output-format'] !== 'stream-json' || !options['--verbose']) fail('a case session without --output-format stream-json --verbose');
 
@@ -108,8 +146,37 @@ const record = (type, message, extra = {}) => {
   emit({ type, message, session_id: sessionId });
 };
 
+const settings = JSON.parse(readFileSync(options['--settings'], 'utf8'));
+// The hooks --settings gives `event`, for the tool `toolName` when the event names one.
+const hooksFor = (event, toolName) =>
+  binary.hooks === false
+    ? []
+    : (settings.hooks?.[event] ?? [])
+        .filter((group) => !group.matcher || toolName === undefined || new RegExp(`^(?:${group.matcher})$`).test(toolName))
+        .flatMap((group) => group.hooks ?? []);
+for (const hook of hooksFor('SessionStart')) {
+  await runHook(hook, { session_id: sessionId, hook_event_name: 'SessionStart', source: options['--resume'] ? 'resume' : 'startup', cwd });
+}
+
+const pluginDir = options['--plugin-dir'];
+const pluginName = JSON.parse(readFileSync(join(pluginDir, '.claude-plugin', 'plugin.json'), 'utf8')).name;
+emit({
+  type: 'system',
+  subtype: 'init',
+  session_id: sessionId,
+  cwd,
+  claude_code_version: binary.version ?? '2.1.329',
+  tools: binary.tools ?? ['Read', 'Write', 'Bash', 'AskUserQuestion'],
+  mcp_servers: [{ name: 'uat', status: binary.mcp ?? 'connected' }],
+  plugins: binary.plugins ?? [{ name: pluginName, path: pluginDir }],
+});
+if (prompt.startsWith('# UAT liveness check')) {
+  // Killed here by the driver: a model call would take this long.
+  setInterval(() => {}, 60_000);
+  await new Promise(() => {});
+}
+
 const turn = takeNext('turns');
-emit({ type: 'system', subtype: 'init', session_id: sessionId, cwd, tools: ['Read', 'Write', 'Bash'], mcp_servers: [{ name: 'uat', status: 'connected' }] });
 if (turn.rateLimit) {
   const { status = 'allowed', ...windows } = turn.rateLimit;
   const unifiedWindows = Object.fromEntries(
@@ -123,31 +190,121 @@ record('user', {
   content: command ? `<command-message>${command[1]}</command-message>\n<command-name>/${command[1]}</command-name>\n<command-args>${command[2].trim()}</command-args>` : prompt,
 });
 
-const host = (turn.tools ?? []).length > 0 ? await connectHost(options['--mcp-config'], options['--permission-prompt-tool']) : null;
+let host = null;
+const denials = [];
+let stopped = null;
 for (const [index, tool] of (turn.tools ?? []).entries()) {
   const input = JSON.parse(JSON.stringify(tool.input).replaceAll('{{CWD}}', cwd.replaceAll('\\', '\\\\')));
   const id = `toolu_${index}_${randomUUID().slice(0, 8)}`;
   record('assistant', { id: `msg_${id}`, role: 'assistant', stop_reason: 'tool_use', content: [{ type: 'tool_use', id, name: tool.name, input }] });
-  const decision = await host.approve({ tool_name: tool.name, input, tool_use_id: id });
-  if (decision.behavior === 'allow') runTool(tool.name, decision.updatedInput ?? input);
-  const content = decision.behavior === 'allow' ? 'done' : decision.message;
-  record('user', { role: 'user', content: [{ type: 'tool_result', tool_use_id: id, content, is_error: decision.behavior !== 'allow' }] });
+  const hooked = await preToolUse(tool.name, input, id, tool.hookFails === true);
+  if (hooked.stop !== undefined) {
+    stopped = hooked.stop;
+    break;
+  }
+  if (!hooked.decision) host ??= await connectHost(options['--mcp-config'], options['--permission-prompt-tool']);
+  const decision = hooked.decision ?? (await host.approve({ tool_name: tool.name, input, tool_use_id: id }));
+  if (decision.behavior === 'allow') {
+    const { content, toolUseResult } = runTool(tool.name, decision.updatedInput ?? input);
+    record('user', { role: 'user', content: [{ type: 'tool_result', tool_use_id: id, content, is_error: false }] }, toolUseResult ? { toolUseResult } : {});
+  } else {
+    denials.push({ tool_name: tool.name, tool_use_id: id, tool_input: input });
+    record('user', { role: 'user', content: [{ type: 'tool_result', tool_use_id: id, content: decision.message, is_error: true }] });
+  }
 }
 host?.close();
 
+if (stopped !== null) {
+  emit({ type: 'result', subtype: 'success', is_error: false, result: '', session_id: sessionId, permission_denials: denials });
+  process.exit(0);
+}
 if (turn.error !== undefined) {
-  emit({ type: 'result', subtype: 'error_during_execution', is_error: true, result: turn.error, session_id: sessionId });
+  emit({ type: 'result', subtype: 'error_during_execution', is_error: true, result: turn.error, session_id: sessionId, permission_denials: denials });
   process.exit(1);
 }
 const messageId = `msg_${randomUUID().slice(0, 8)}`;
 record('assistant', { id: messageId, role: 'assistant', stop_reason: 'end_turn', content: [{ type: 'text', text: turn.text }] });
-emit({ type: 'result', subtype: 'success', is_error: false, result: turn.text, session_id: sessionId, total_cost_usd: 0.4567, usage: { input_tokens: 1234, output_tokens: 567 } });
+emit({
+  type: 'result',
+  subtype: 'success',
+  is_error: false,
+  result: turn.text,
+  session_id: sessionId,
+  total_cost_usd: 0.4567,
+  usage: { input_tokens: 1234, output_tokens: 567 },
+  permission_denials: denials,
+});
+
+// A hook's command, run by the shell with `input` on stdin and killed after
+// its timeout: its exit status, stdout and stderr, and whether it timed out.
+function runHook(hook, input) {
+  return new Promise((resolve) => {
+    const child = spawn(hook.command, { shell: true, cwd, stdio: ['pipe', 'pipe', 'pipe'] });
+    let stdout = '';
+    let stderr = '';
+    let timedOut = false;
+    child.stdout.on('data', (chunk) => (stdout += chunk));
+    child.stderr.on('data', (chunk) => (stderr += chunk));
+    const timer = setTimeout(() => {
+      timedOut = true;
+      if (process.platform === 'win32') spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F']);
+      else child.kill('SIGKILL');
+    }, (hook.timeout ?? 60) * 1000);
+    child.on('close', (status) => {
+      clearTimeout(timer);
+      resolve({ status, stdout, stderr, timedOut });
+    });
+    child.stdin.end(JSON.stringify(input));
+  });
+}
+
+// What the PreToolUse hooks decide for a tool call: `{ stop }` to end the
+// turn, `{ decision }` to allow or deny it, or `{}` to leave it to the host.
+async function preToolUse(name, input, id, crashes) {
+  for (const hook of hooksFor('PreToolUse', name)) {
+    const event = { session_id: sessionId, cwd, permission_mode: 'default', hook_event_name: 'PreToolUse', tool_name: name, tool_input: input, tool_use_id: id };
+    const ran = crashes ? { status: 1, stdout: '', stderr: 'Error: the hook crashed', timedOut: false } : await runHook(hook, event);
+    if (ran.timedOut || ran.status !== 0) {
+      if (hook.onFailure !== 'block') continue;
+      const what = ran.timedOut ? 'timed out' : 'failed';
+      return { decision: { behavior: 'deny', message: `PreToolUse:${name} hook error: [${hook.command}]: ${what}; blocking because onFailure is "block"\n${ran.stderr}` } };
+    }
+    let output = {};
+    try {
+      output = JSON.parse(ran.stdout || '{}');
+    } catch {
+      // Not JSON: no decision.
+    }
+    if (output.continue === false) return { stop: output.stopReason ?? '' };
+    const specific = output.hookSpecificOutput ?? {};
+    if (specific.permissionDecision === 'allow') return { decision: { behavior: 'allow', updatedInput: specific.updatedInput ?? input } };
+    if (specific.permissionDecision === 'deny') return { decision: { behavior: 'deny', message: specific.permissionDecisionReason ?? '' } };
+  }
+  return {};
+}
 
 function runTool(name, input) {
   if (name === 'Write') {
     mkdirSync(dirname(input.file_path), { recursive: true });
     writeFileSync(input.file_path, input.content);
   }
+  if (name === 'AskUserQuestion') return answerQuestions(input);
+  return { content: 'done' };
+}
+
+// The tool result of an AskUserQuestion, as the #165 probe recorded it.
+function answerQuestions({ questions = [], answers = {} }) {
+  const given = Object.fromEntries(Object.entries(answers).map(([question, value]) => [question, Array.isArray(value) ? value.join(', ') : value]));
+  const labelsOnly = questions.every((q) => {
+    if (!Object.hasOwn(given, q.question)) return true;
+    const values = q.multiSelect ? given[q.question].split(', ') : [given[q.question]];
+    return values.every((value) => q.options.some((option) => option.label === value));
+  });
+  const pairs = Object.entries(given).map(([question, value]) => `"${question}"="${value}"`).join(', ');
+  const content = labelsOnly
+    ? `Your questions have been answered: ${pairs}. You can now continue with these answers in mind.`
+    : `The user answered: ${pairs}. Read the answers carefully — they may request clarification, changes, or that you not proceed — and follow what they actually say.`;
+  return { content, toolUseResult: { questions, answers: given } };
 }
 
 // The permission host, started from --mcp-config as Claude Code starts an MCP
