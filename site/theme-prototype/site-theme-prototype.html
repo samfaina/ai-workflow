@@ -1,0 +1,453 @@
+<title>aw site theme prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Source+Sans+3:wght@400;500;600&family=Source+Code+Pro:wght@400;500&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap">
+<script>
+  /* PROTOTYPE, throwaway. Question: which palette and type pairing should the ai-workflow docs site use?
+     One page, the same real content under 7 palettes x 4 type pairings x dark/light, switched from the bottom bar. */
+  document.documentElement.dataset.palette = 'rp-main';
+  document.documentElement.dataset.font = 'space';
+  document.documentElement.dataset.theme = 'dark';
+</script>
+<style>
+/* Layout concept: a transit line map. Routes are lines, phases are stations, the one human gate is a filled, pulsing station. */
+:root{--bg:#191724;--panel:#1f1d2e;--sunk:#26233a;--rule:#403d52;--ink:#e0def4;--soft:#908caa;--line:#ebbcba;--gate:#eb6f92;--fast:#9ccfd8;--pocock:#9ccfd8;--addy:#6295aa;--pstack:#c4a7e7;--hl:#f6c177;--line-soft:#3b313c;--gate-soft:#3b2536;--fast-soft:#2e3441;--line-mark:#ebbcba;--gate-mark:#eb6f92;--fast-mark:#9ccfd8;--on-accent:#191724;color-scheme:dark}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--bg:#faf4ed;--panel:#fffaf3;--sunk:#f2e9e1;--rule:#dfdad9;--ink:#575279;--soft:#6a6781;--line:#925856;--gate:#945164;--fast:#406e76;--pocock:#417079;--addy:#286983;--pstack:#736287;--hl:#8c5e1f;--line-soft:#f5e5df;--gate-soft:#f1e1de;--fast-soft:#e5e8e3;--line-mark:#d7827e;--gate-mark:#b4637a;--fast-mark:#56949f;--on-accent:#ffffff;color-scheme:light}}
+:root[data-theme="light"]{--bg:#faf4ed;--panel:#fffaf3;--sunk:#f2e9e1;--rule:#dfdad9;--ink:#575279;--soft:#6a6781;--line:#925856;--gate:#945164;--fast:#406e76;--pocock:#417079;--addy:#286983;--pstack:#736287;--hl:#8c5e1f;--line-soft:#f5e5df;--gate-soft:#f1e1de;--fast-soft:#e5e8e3;--line-mark:#d7827e;--gate-mark:#b4637a;--fast-mark:#56949f;--on-accent:#ffffff;color-scheme:light}
+:root[data-palette="rp-main"]{--bg:#191724;--panel:#1f1d2e;--sunk:#26233a;--rule:#403d52;--ink:#e0def4;--soft:#908caa;--line:#ebbcba;--gate:#eb6f92;--fast:#9ccfd8;--pocock:#9ccfd8;--addy:#6295aa;--pstack:#c4a7e7;--hl:#f6c177;--line-soft:#3b313c;--gate-soft:#3b2536;--fast-soft:#2e3441;--line-mark:#ebbcba;--gate-mark:#eb6f92;--fast-mark:#9ccfd8;--on-accent:#191724;color-scheme:dark}
+@media (prefers-color-scheme: light){:root[data-palette="rp-main"]:not([data-theme="dark"]){--bg:#faf4ed;--panel:#fffaf3;--sunk:#f2e9e1;--rule:#dfdad9;--ink:#575279;--soft:#6a6781;--line:#925856;--gate:#945164;--fast:#406e76;--pocock:#417079;--addy:#286983;--pstack:#736287;--hl:#8c5e1f;--line-soft:#f5e5df;--gate-soft:#f1e1de;--fast-soft:#e5e8e3;--line-mark:#d7827e;--gate-mark:#b4637a;--fast-mark:#56949f;--on-accent:#ffffff;color-scheme:light}}
+:root[data-palette="rp-main"][data-theme="light"]{--bg:#faf4ed;--panel:#fffaf3;--sunk:#f2e9e1;--rule:#dfdad9;--ink:#575279;--soft:#6a6781;--line:#925856;--gate:#945164;--fast:#406e76;--pocock:#417079;--addy:#286983;--pstack:#736287;--hl:#8c5e1f;--line-soft:#f5e5df;--gate-soft:#f1e1de;--fast-soft:#e5e8e3;--line-mark:#d7827e;--gate-mark:#b4637a;--fast-mark:#56949f;--on-accent:#ffffff;color-scheme:light}
+:root[data-palette="rp-moon"]{--bg:#232136;--panel:#2a273f;--sunk:#393552;--rule:#44415a;--ink:#e0def4;--soft:#a4a1b9;--line:#ea9a97;--gate:#ed809f;--fast:#9ccfd8;--pocock:#9ccfd8;--addy:#6caac3;--pstack:#c4a7e7;--hl:#f6c177;--line-soft:#433446;--gate-soft:#432d45;--fast-soft:#363d50;--line-mark:#ea9a97;--gate-mark:#eb6f92;--fast-mark:#9ccfd8;--on-accent:#232136;color-scheme:dark}
+@media (prefers-color-scheme: light){:root[data-palette="rp-moon"]:not([data-theme="dark"]){--bg:#faf4ed;--panel:#fffaf3;--sunk:#f2e9e1;--rule:#dfdad9;--ink:#575279;--soft:#6a6781;--line:#925856;--gate:#945164;--fast:#406e76;--pocock:#417079;--addy:#286983;--pstack:#736287;--hl:#8c5e1f;--line-soft:#f5e5df;--gate-soft:#f1e1de;--fast-soft:#e5e8e3;--line-mark:#d7827e;--gate-mark:#b4637a;--fast-mark:#56949f;--on-accent:#ffffff;color-scheme:light}}
+:root[data-palette="rp-moon"][data-theme="light"]{--bg:#faf4ed;--panel:#fffaf3;--sunk:#f2e9e1;--rule:#dfdad9;--ink:#575279;--soft:#6a6781;--line:#925856;--gate:#945164;--fast:#406e76;--pocock:#417079;--addy:#286983;--pstack:#736287;--hl:#8c5e1f;--line-soft:#f5e5df;--gate-soft:#f1e1de;--fast-soft:#e5e8e3;--line-mark:#d7827e;--gate-mark:#b4637a;--fast-mark:#56949f;--on-accent:#ffffff;color-scheme:light}
+:root[data-palette="catppuccin"]{--bg:#1e1e2e;--panel:#181825;--sunk:#313244;--rule:#45475a;--ink:#cdd6f4;--soft:#a6adc8;--line:#f9e2af;--gate:#fab387;--fast:#89dceb;--pocock:#89b4fa;--addy:#94e2d5;--pstack:#cba6f7;--hl:#f9e2af;--line-soft:#413d43;--gate-soft:#41363c;--fast-soft:#2f3c4c;--line-mark:#f9e2af;--gate-mark:#fab387;--fast-mark:#89dceb;--on-accent:#1e1e2e;color-scheme:dark}
+@media (prefers-color-scheme: light){:root[data-palette="catppuccin"]:not([data-theme="dark"]){--bg:#eff1f5;--panel:#e6e9ef;--sunk:#dce0e8;--rule:#ccd0da;--ink:#4c4f69;--soft:#5f6275;--line:#8a5812;--gate:#a84207;--fast:#166c7b;--pocock:#1a5ad8;--addy:#116c71;--pstack:#7d34dc;--hl:#8a5812;--line-soft:#ede4d9;--gate-soft:#f1dfd7;--fast-soft:#d4e6ed;--line-mark:#df8e1d;--gate-mark:#fe640b;--fast-mark:#209fb5;--on-accent:#ffffff;color-scheme:light}}
+:root[data-palette="catppuccin"][data-theme="light"]{--bg:#eff1f5;--panel:#e6e9ef;--sunk:#dce0e8;--rule:#ccd0da;--ink:#4c4f69;--soft:#5f6275;--line:#8a5812;--gate:#a84207;--fast:#166c7b;--pocock:#1a5ad8;--addy:#116c71;--pstack:#7d34dc;--hl:#8a5812;--line-soft:#ede4d9;--gate-soft:#f1dfd7;--fast-soft:#d4e6ed;--line-mark:#df8e1d;--gate-mark:#fe640b;--fast-mark:#209fb5;--on-accent:#ffffff;color-scheme:light}
+:root[data-palette="ayu"]{--bg:#0d1017;--panel:#10141c;--sunk:#1b1f29;--rule:#2d3640;--ink:#bfbdb6;--soft:#98a0ac;--line:#e6b450;--gate:#ff8f40;--fast:#39bae6;--pocock:#59c2ff;--addy:#95e6cb;--pstack:#d2a6ff;--hl:#e6b450;--line-soft:#302a20;--gate-soft:#34241e;--fast-soft:#142b38;--line-mark:#e6b450;--gate-mark:#ff8f40;--fast-mark:#39bae6;--on-accent:#0d1017;color-scheme:dark}
+@media (prefers-color-scheme: light){:root[data-palette="ayu"]:not([data-theme="dark"]){--bg:#f8f9fa;--panel:#ffffff;--sunk:#eff1f3;--rule:#dfe2e6;--ink:#4b5157;--soft:#646b72;--line:#8f5c00;--gate:#a54a05;--fast:#146e8c;--pocock:#2771ad;--addy:#23785e;--pstack:#7d4fc4;--hl:#8f5c00;--line-soft:#eae5da;--gate-soft:#eee2da;--fast-soft:#dae7ec;--line-mark:#8f5c00;--gate-mark:#a84b05;--fast-mark:#14708f;--on-accent:#ffffff;color-scheme:light}}
+:root[data-palette="ayu"][data-theme="light"]{--bg:#f8f9fa;--panel:#ffffff;--sunk:#eff1f3;--rule:#dfe2e6;--ink:#4b5157;--soft:#646b72;--line:#8f5c00;--gate:#a54a05;--fast:#146e8c;--pocock:#2771ad;--addy:#23785e;--pstack:#7d4fc4;--hl:#8f5c00;--line-soft:#eae5da;--gate-soft:#eee2da;--fast-soft:#dae7ec;--line-mark:#8f5c00;--gate-mark:#a84b05;--fast-mark:#14708f;--on-accent:#ffffff;color-scheme:light}
+:root[data-palette="tokyo"]{--bg:#1a1b26;--panel:#16161e;--sunk:#292e42;--rule:#3b4261;--ink:#c0caf5;--soft:#a9b1d6;--line:#7aa2f7;--gate:#ff9e64;--fast:#73daca;--pocock:#7dcfff;--addy:#9ece6a;--pstack:#bb9af7;--hl:#e0af68;--line-soft:#293147;--gate-soft:#3f3030;--fast-soft:#283a40;--line-mark:#7aa2f7;--gate-mark:#ff9e64;--fast-mark:#73daca;--on-accent:#1a1b26;color-scheme:dark}
+@media (prefers-color-scheme: light){:root[data-palette="tokyo"]:not([data-theme="dark"]){--bg:#e1e2e7;--panel:#e9e9ec;--sunk:#d0d5e3;--rule:#c4c8da;--ink:#3358b0;--soft:#4c5989;--line:#215aa8;--gate:#8a4800;--fast:#0d6856;--pocock:#006385;--addy:#4a6230;--pstack:#7440b7;--hl:#705632;--line-soft:#cad5e7;--gate-soft:#dbd1c9;--fast-soft:#c6d7d8;--line-mark:#2e7de9;--gate-mark:#b15c00;--fast-mark:#118c74;--on-accent:#ffffff;color-scheme:light}}
+:root[data-palette="tokyo"][data-theme="light"]{--bg:#e1e2e7;--panel:#e9e9ec;--sunk:#d0d5e3;--rule:#c4c8da;--ink:#3358b0;--soft:#4c5989;--line:#215aa8;--gate:#8a4800;--fast:#0d6856;--pocock:#006385;--addy:#4a6230;--pstack:#7440b7;--hl:#705632;--line-soft:#cad5e7;--gate-soft:#dbd1c9;--fast-soft:#c6d7d8;--line-mark:#2e7de9;--gate-mark:#b15c00;--fast-mark:#118c74;--on-accent:#ffffff;color-scheme:light}
+:root[data-palette="nord"]{--bg:#2e3440;--panel:#3b4252;--sunk:#434c5e;--rule:#4c566a;--ink:#eceff4;--soft:#d8dee9;--line:#8fc4d3;--gate:#e1b2a3;--fast:#9ac3c2;--pocock:#a9bfd5;--addy:#acc598;--pstack:#ceb4c9;--hl:#ebcb8b;--line-soft:#3c4a57;--gate-soft:#484148;--fast-soft:#3e4a54;--line-mark:#88c0d0;--gate-mark:#d08770;--fast-mark:#8fbcbb;--on-accent:#2e3440;color-scheme:dark}
+@media (prefers-color-scheme: light){:root[data-palette="nord"]:not([data-theme="dark"]){--bg:#eceff4;--panel:#f5f7fa;--sunk:#e5e9f0;--rule:#d8dee9;--ink:#2e3440;--soft:#4c566a;--line:#496586;--gate:#89594a;--fast:#506969;--pocock:#556a7f;--addy:#5b6a4e;--pstack:#7a6176;--hl:#7d6420;--line-soft:#dae1eb;--gate-soft:#e8e1e3;--fast-soft:#e0e8ed;--line-mark:#5e81ac;--gate-mark:#d08770;--fast-mark:#8fbcbb;--on-accent:#ffffff;color-scheme:light}}
+:root[data-palette="nord"][data-theme="light"]{--bg:#eceff4;--panel:#f5f7fa;--sunk:#e5e9f0;--rule:#d8dee9;--ink:#2e3440;--soft:#4c566a;--line:#496586;--gate:#89594a;--fast:#506969;--pocock:#556a7f;--addy:#5b6a4e;--pstack:#7a6176;--hl:#7d6420;--line-soft:#dae1eb;--gate-soft:#e8e1e3;--fast-soft:#e0e8ed;--line-mark:#5e81ac;--gate-mark:#d08770;--fast-mark:#8fbcbb;--on-accent:#ffffff;color-scheme:light}
+:root[data-palette="poimandres"]{--bg:#1b1e28;--panel:#232633;--sunk:#303340;--rule:#383c4f;--ink:#e4f0fb;--soft:#a6accd;--line:#5de4c7;--gate:#d87fad;--fast:#89ddff;--pocock:#add7ff;--addy:#5fb3a1;--pstack:#fcc5e9;--hl:#fffac2;--line-soft:#263e41;--gate-soft:#382a3b;--fast-soft:#2d3d4a;--line-mark:#5de4c7;--gate-mark:#d0679d;--fast-mark:#89ddff;--on-accent:#1b1e28;color-scheme:dark}
+@media (prefers-color-scheme: light){:root[data-palette="poimandres"]:not([data-theme="dark"]){--bg:#eef1f6;--panel:#f9fafc;--sunk:#e2e6ee;--rule:#d3d8e3;--ink:#2b2f40;--soft:#5a6080;--line:#0c715c;--gate:#a23b72;--fast:#19688f;--pocock:#2c68a4;--addy:#2a7265;--pstack:#9d4687;--hl:#7f6400;--line-soft:#d1e4e5;--gate-soft:#e6dae6;--fast-soft:#d3e2ed;--line-mark:#0f8a70;--gate-mark:#b0407c;--fast-mark:#1f7fae;--on-accent:#ffffff;color-scheme:light}}
+:root[data-palette="poimandres"][data-theme="light"]{--bg:#eef1f6;--panel:#f9fafc;--sunk:#e2e6ee;--rule:#d3d8e3;--ink:#2b2f40;--soft:#5a6080;--line:#0c715c;--gate:#a23b72;--fast:#19688f;--pocock:#2c68a4;--addy:#2a7265;--pstack:#9d4687;--hl:#7f6400;--line-soft:#d1e4e5;--gate-soft:#e6dae6;--fast-soft:#d3e2ed;--line-mark:#0f8a70;--gate-mark:#b0407c;--fast-mark:#1f7fae;--on-accent:#ffffff;color-scheme:light}
+
+:root {
+  --display: "Familjen Grotesk", "Segoe UI", sans-serif;
+  --body: "Instrument Sans", "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --display-weight: 700;
+}
+:root[data-font="familjen"] { --display: "Familjen Grotesk", "Segoe UI", sans-serif; --body: "Instrument Sans", "Segoe UI", sans-serif; --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace; --display-weight: 700; }
+:root[data-font="space"] { --display: "Space Grotesk", "Segoe UI", sans-serif; --body: "Inter", "Segoe UI", sans-serif; --mono: "JetBrains Mono", ui-monospace, Menlo, monospace; --display-weight: 700; }
+:root[data-font="fraunces"] { --display: "Fraunces", Georgia, serif; --body: "Source Sans 3", "Segoe UI", sans-serif; --mono: "Source Code Pro", ui-monospace, Menlo, monospace; --display-weight: 600; }
+:root[data-font="bricolage"] { --display: "Bricolage Grotesque", "Segoe UI", sans-serif; --body: "DM Sans", "Segoe UI", sans-serif; --mono: "DM Mono", ui-monospace, Menlo, monospace; --display-weight: 700; }
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
+body { background: var(--bg); color: var(--ink); font: 400 16px/1.6 var(--body); padding-bottom: 120px; transition: background .2s, color .2s; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--panel); }
+h1, h2, h3 { font-family: var(--display); line-height: 1.15; margin: 0; text-wrap: balance; color: var(--ink); }
+h1 { font-size: clamp(2.2rem, 6vw, 3.8rem); font-weight: var(--display-weight); letter-spacing: -.02em; }
+h2 { font-size: clamp(1.6rem, 3.4vw, 2.2rem); font-weight: var(--display-weight); letter-spacing: -.01em; }
+h3 { font-size: 1.15rem; font-weight: 600; }
+p { margin: 0; }
+a { color: var(--line); }
+code, pre { font-family: var(--mono); font-size: .875em; }
+code { background: var(--sunk); padding: .08em .35em; border-radius: 4px; overflow-wrap: anywhere; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 3px solid var(--line); outline-offset: 2px; border-radius: 4px; }
+
+.wrap { max-width: 1120px; margin-inline: auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.eyebrow { font: 500 .78rem/1.3 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--soft); }
+.lead { font-size: 1.12rem; color: var(--soft); max-width: 62ch; }
+.muted { color: var(--soft); }
+.small { font-size: .9rem; }
+
+.hero { background: var(--panel); border-bottom: 1px solid var(--rule); padding-block: 48px 36px; margin-top: calc(-1 * env(safe-area-inset-top, 0px)); padding-top: calc(env(safe-area-inset-top, 0px) + 48px); }
+.hero .wrap { display: grid; gap: 20px; }
+.hero h1 { max-width: 17ch; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.btn { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 16px; border-radius: 6px; font-weight: 600; text-decoration: none; border: 1.5px solid var(--line); color: var(--line); background: transparent; }
+.btn.primary { background: var(--line); color: var(--on-accent); }
+/* overflow-x: auto also clips vertically, so the list carries room for the gate's 10px halo on top and left. */
+.miniline { list-style: none; margin: 4px 0 0 -12px; padding: 12px 0 8px 12px; display: flex; overflow-x: auto; }
+.miniline li { position: relative; flex: 1 0 86px; min-width: 86px; padding: 30px 8px 0 0; font: 500 .72rem/1.25 var(--mono); color: var(--soft); }
+.miniline li::before { content: ""; position: absolute; top: 10px; left: 0; right: 0; height: 4px; background: var(--line-mark); }
+.miniline li:last-child::before { right: calc(100% - 20px); }
+.miniline li::after { content: ""; box-sizing: border-box; position: absolute; top: 2px; left: 0; width: 20px; height: 20px; border-radius: 50%; background: var(--panel); border: 4px solid var(--line-mark); }
+.miniline li.gate { color: var(--gate); font-weight: 600; }
+.miniline li.gate::after { background: var(--gate-mark); border-color: var(--gate-mark); animation: gatepulse 2.2s ease-out infinite; }
+@keyframes gatepulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--gate-mark) 60%, transparent); }
+  70% { box-shadow: 0 0 0 10px color-mix(in srgb, var(--gate-mark) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--gate-mark) 0%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) { .miniline li.gate::after, .gate .dot i { animation: none; } }
+.miniline li.opt { opacity: .7; }
+.miniline li.opt::after { border-style: dashed; }
+
+section { padding-block: 52px; border-bottom: 1px solid var(--rule); }
+section > .wrap { display: grid; gap: 22px; }
+.sec-head { display: grid; gap: 8px; }
+
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.seg button { min-height: 40px; padding: 6px 13px; border: 1.5px solid var(--rule); border-radius: 6px; background: var(--panel); font-weight: 500; }
+.seg button[aria-pressed="true"] { background: var(--line); border-color: var(--line); color: var(--on-accent); }
+.seg.route button[data-v="fast"][aria-pressed="true"] { background: var(--fast); border-color: var(--fast); }
+.label { font-weight: 600; font-size: .85rem; color: var(--soft); }
+.ctrl { display: grid; gap: 6px; }
+
+.flow { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 32px; align-items: start; }
+.stations { list-style: none; margin: 0; padding: 0; --c: var(--line-mark); }
+.stations.fast { --c: var(--fast-mark); }
+.stations li { position: relative; }
+.stations li::before { content: ""; position: absolute; left: 20px; top: 0; bottom: 0; width: 4px; background: var(--c); }
+.stations li:first-child::before { top: 22px; }
+.stations li:last-child::before { bottom: calc(100% - 22px); }
+.stations li.opt::before { background: repeating-linear-gradient(var(--c) 0 6px, transparent 6px 11px); }
+.st { position: relative; display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 12px; width: 100%; text-align: left; padding: 7px 8px 7px 10px; border: 0; background: none; border-radius: 6px; align-items: center; min-height: 44px; }
+.st { overflow: visible; }
+/* Positioned above the neighbouring stations' line and buttons, so the gate's halo is never painted over. */
+.dot { position: relative; width: 24px; height: 24px; display: grid; place-items: center; z-index: 2; }
+.dot i { display: block; width: 16px; height: 16px; border-radius: 50%; background: var(--bg); border: 3px solid var(--c); }
+.gate .dot i { background: var(--gate-mark); border-color: var(--gate-mark); animation: gatepulse 2.2s ease-out infinite; }
+.st b { font: 600 1rem/1.2 var(--display); display: block; }
+.st small { color: var(--soft); font-size: .8rem; display: block; line-height: 1.3; }
+.gate .st b { color: var(--gate); }
+.st[aria-current="step"] { background: var(--line-soft); }
+.stations.fast .st[aria-current="step"] { background: var(--fast-soft); }
+.gate .st[aria-current="step"] { background: var(--gate-soft); }
+.detail { background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; padding: 22px; display: grid; gap: 14px; min-width: 0; }
+.detail h3 { font-size: 1.5rem; }
+.tag { justify-self: start; font: 600 .75rem/1.2 var(--mono); padding: 4px 8px; border-radius: 4px; background: var(--line-soft); color: var(--line); }
+.tag.person { background: var(--gate-soft); color: var(--gate); }
+.kv { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 8px 12px; margin: 0; }
+.kv dt { font-weight: 600; font-size: .85rem; color: var(--soft); padding-top: 2px; }
+.kv dd { margin: 0; min-width: 0; }
+
+.sources { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 16px; }
+.src { --c: var(--line); background: var(--panel); border: 1px solid var(--rule); border-top: 3px solid var(--c); border-radius: 8px; padding: 18px; display: grid; gap: 12px; align-content: start; min-width: 0; }
+.src.pocock { --c: var(--pocock); } .src.addy { --c: var(--addy); } .src.pstack { --c: var(--pstack); }
+.src h3 { font-size: 1.2rem; }
+.src > p { color: var(--soft); font-size: .93rem; }
+.src-group { display: grid; gap: 6px; }
+.src-group > span { font: 600 .72rem/1.2 var(--mono); letter-spacing: .05em; text-transform: uppercase; color: var(--c); }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; list-style: none; margin: 0; padding: 0; }
+.chips li { font: 400 .78rem/1.3 var(--mono); padding: 3px 7px; border-radius: 4px; background: var(--sunk); overflow-wrap: anywhere; }
+
+.tree-wrap { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.tree { list-style: none; margin: 0; padding: 10px; background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; font: 400 .86rem/1.3 var(--mono); min-width: 0; }
+.tree .gl { font: 700 1rem/1.25 var(--display); color: var(--line); padding: 12px 8px 6px; border-top: 1px solid var(--rule); margin-top: 8px; }
+.tree .gl:first-child { margin-top: 0; padding-top: 4px; border-top: 0; }
+.tree .gl small { display: block; font: 400 .8rem/1.35 var(--body); color: var(--soft); }
+.tree button { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; width: 100%; min-height: 34px; padding: 4px 8px; border: 0; background: none; text-align: left; border-radius: 4px; font: inherit; }
+.tree button:hover { background: var(--sunk); }
+.tree button[aria-current="true"] { background: var(--line-soft); }
+.pill { font: 500 .68rem/1.2 var(--mono); padding: 2px 6px; border-radius: 3px; color: var(--on-accent); white-space: nowrap; }
+.pill.pocock { background: var(--pocock); } .pill.addy { background: var(--addy); } .pill.pstack { background: var(--pstack); } .pill.kit { background: var(--line); }
+.pill.kind { background: none; color: var(--soft); border: 1px solid var(--rule); }
+/* Pinned while the skill list scrolls; sticky stays inside .tree-wrap, so it lets go once the section ends. */
+.tree-detail { background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; padding: 20px; display: grid; gap: 12px; min-width: 0; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); }
+.tree-detail h3 { font: 500 1.05rem/1.3 var(--mono); }
+
+.sim { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; padding: 22px; }
+.op { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--rule); }
+.op code { background: none; padding: 0; }
+.wd { display: flex; flex: none; border: 1.5px solid var(--rule); border-radius: 6px; overflow: hidden; }
+.wd button { min-width: 62px; min-height: 36px; border: 0; background: none; font-weight: 600; font-size: .85rem; }
+.wd button[aria-pressed="true"][data-v="write"] { background: var(--fast); color: var(--on-accent); }
+.wd button[aria-pressed="true"][data-v="draft"] { background: var(--gate); color: var(--on-accent); }
+.out { display: grid; gap: 12px; align-content: start; min-width: 0; }
+.out h3 { font-size: 1rem; }
+.out ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.out .does { color: var(--fast); } .out .drafts { color: var(--gate); }
+.note { padding: 12px 14px; border-radius: 6px; background: var(--sunk); font-size: .93rem; }
+pre.block { margin: 0; padding: 14px; background: var(--sunk); border-radius: 6px; overflow-x: auto; line-height: 1.55; }
+pre.block .k { color: var(--line); } pre.block .h { color: var(--hl); font-weight: 500; } pre.block .c { color: var(--soft); } pre.block .g { color: var(--gate); }
+
+@media (max-width: 820px) {
+  .flow, .tree-wrap, .sim { grid-template-columns: minmax(0, 1fr); }
+  /* One column: the detail sits after the list, so it pins to the bottom (above the prototype bar) with a capped height. */
+  .tree-detail { top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 112px); max-height: 42vh; overflow-y: auto; box-shadow: 0 -8px 24px rgb(0 0 0 / .25); }
+  .kv { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .kv dd { margin-bottom: 8px; }
+}
+
+/* Prototype switcher: deliberately not part of the design under test. Fixed neutral colors in both themes. */
+.proto { position: fixed; z-index: 30; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); width: min(760px, calc(100vw - 24px)); display: grid; gap: 6px; padding: 8px 10px; background: #0a0a0a; color: #f2f2f2; border: 1px solid #3a3a3a; border-radius: 12px; box-shadow: 0 10px 30px rgb(0 0 0 / .45); font: 500 13px/1.3 ui-sans-serif, system-ui, sans-serif; }
+.proto .row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+.proto .cyc { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.proto .cyc span { min-width: 0; }
+.proto .cyc b { color: #9a9a9a; font-weight: 500; margin-right: 4px; }
+.proto button { min-width: 32px; min-height: 32px; border: 1px solid #3a3a3a; border-radius: 6px; background: #1c1c1c; color: #f2f2f2; font: inherit; }
+.proto button:hover { background: #2a2a2a; }
+.proto .meta { color: #9a9a9a; font-size: 12px; }
+.proto kbd { font: 11px ui-monospace, monospace; border: 1px solid #3a3a3a; border-radius: 3px; padding: 0 4px; color: #bdbdbd; }
+.proto .swatches { display: flex; gap: 3px; }
+.proto .swatches i { width: 14px; height: 14px; border-radius: 3px; border: 1px solid #3a3a3a; }
+</style>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">ai-workflow · aw- skills for Claude Code and any SKILL.md harness</p>
+    <h1>From a task to a merged change, with one human gate</h1>
+    <p class="lead">A kit of agent skills that writes a spec when the change deserves one, proves every acceptance criterion with evidence, and reviews the diff before anything ships. It works with or without a tracker, on any VCS host.</p>
+    <div class="actions">
+      <a class="btn primary" href="#routes">Walk the routes</a>
+      <a class="btn" href="#install">Install the kit</a>
+    </div>
+    <ol class="miniline" aria-label="The standard route at a glance">
+      <li>intake</li><li>spec</li><li class="gate">Spec approval</li><li>slices</li><li>build</li><li>verify</li><li>review</li><li>ship</li><li class="opt">retro</li>
+    </ol>
+  </div>
+</header>
+
+<main>
+<section id="routes">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Three routes, one gate</h2>
+      <p class="lead"><code>/aw-intake</code> sends every task down one route. When in doubt, it picks the longer one. Pick a route, then a station to see who acts and what it leaves behind.</p>
+    </div>
+    <div class="ctrl">
+      <span class="label" id="l-route">Route</span>
+      <div class="seg route" id="routes-seg" role="group" aria-labelledby="l-route"></div>
+    </div>
+    <div class="flow">
+      <ol class="stations" id="stations"></ol>
+      <aside class="detail" id="detail" aria-live="polite"></aside>
+    </div>
+  </div>
+</section>
+
+<section id="upstreams">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Where the skills come from</h2>
+      <p class="lead">Three upstreams, pinned to a commit. A copy keeps its upstream text apart from the mechanical transform; an adaptation derives from it; a kit skill is written from scratch.</p>
+    </div>
+    <div class="sources">
+      <article class="src pocock">
+        <h3>Matt Pocock</h3>
+        <p>Align before coding, and work in small vertical steps.</p>
+        <div class="src-group"><span>Copies</span><ul class="chips"><li>aw-grilling</li><li>aw-grill-with-docs</li><li>aw-domain-modeling</li><li>aw-research</li><li>aw-prototype</li><li>aw-diagnosing-bugs</li><li>aw-codebase-design</li><li>aw-improve-codebase-architecture</li><li>aw-writing-for-agents</li><li>aw-handoff</li><li>aw-to-questionnaire</li><li>aw-wait-what</li></ul></div>
+        <div class="src-group"><span>Adaptations</span><ul class="chips"><li>aw-spec</li><li>aw-slices</li><li>aw-tdd</li><li>aw-wayfinder</li><li>aw-setup</li><li>aw-review-steps</li><li>aw-ship</li><li>aw-retro</li><li>aw-wizard</li></ul></div>
+      </article>
+      <article class="src addy">
+        <h3>Addy Osmani</h3>
+        <p>Spec boundaries, security, and discipline on the way out.</p>
+        <div class="src-group"><span>Copies</span><ul class="chips"><li>aw-source-driven-development</li></ul></div>
+        <div class="src-group"><span>Adaptations</span><ul class="chips"><li>aw-security-and-hardening</li><li>aw-observability-and-instrumentation</li><li>aw-check-spec</li><li>aw-ship</li></ul></div>
+      </article>
+      <article class="src pstack">
+        <h3>pstack</h3>
+        <p>Prove it works. Adapted only, never synced.</p>
+        <div class="src-group"><span>Adaptations</span><ul class="chips"><li>aw-unslop</li><li>aw-blast-radius</li><li>aw-benchmark-checklist</li></ul></div>
+      </article>
+      <article class="src kit">
+        <h3>The kit</h3>
+        <p>Written from scratch for this workflow.</p>
+        <div class="src-group"><span>Kit skills</span><ul class="chips"><li>aw-intake</li><li>aw-build</li><li>aw-build-steps</li><li>aw-create-verify</li><li>aw-verify</li><li>aw-verify-steps</li><li>aw-review</li><li>aw-converge</li><li>aw-converge-steps</li><li>aw-implement</li></ul></div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section id="skills">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>What each skill does</h2>
+      <p class="lead">All 38, grouped by the part each plays. Pick one to see what it needs, who calls it and what it leaves done.</p>
+    </div>
+    <div class="tree-wrap">
+      <ul class="tree" id="skilllist"></ul>
+      <aside class="tree-detail" id="skilldetail" aria-live="polite"></aside>
+    </div>
+  </div>
+</section>
+
+<section id="install">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>What the agent may do</h2>
+      <p class="lead">Each VCS write operation sits at <code>write</code>, which the agent performs, or <code>draft</code>, which it leaves in <code>.aw/drafts/</code> for you. These are the defaults with no configuration. Flip them to see the result.</p>
+    </div>
+    <div class="sim">
+      <div id="ops"></div>
+      <div class="out" id="simout" aria-live="polite"></div>
+    </div>
+    <div class="sec-head"><h3>A spec, as it lands in the repo</h3></div>
+<pre class="block"><span class="c">---</span>
+<span class="k">status:</span> approved   <span class="c"># draft until a person approves it in the conversation</span>
+<span class="c">---</span>
+## Acceptance criteria
+- <span class="h">AC-1</span> A ticket with no route gets one, with its reasons.
+- <span class="h">AC-2</span> A spec contradiction sends the task back to <span class="g">/aw-intake</span>.
+
+## Traceability
+| AC   | Evidence                                    |
+| ---- | ------------------------------------------- |
+| AC-1 | test: tests/intake.test.mjs:42              |
+| AC-2 | verify: verify/ac-2.md (passed)             |</pre>
+  </div>
+</section>
+</main>
+
+<div class="proto" role="region" aria-label="Prototype switcher">
+  <div class="row">
+    <div class="cyc"><b>Palette</b><button id="pprev" aria-label="Previous palette">‹</button><span id="plabel"></span><button id="pnext" aria-label="Next palette">›</button></div>
+    <div class="cyc"><b>Type</b><button id="fprev" aria-label="Previous type pairing">‹</button><span id="flabel"></span><button id="fnext" aria-label="Next type pairing">›</button></div>
+    <button id="theme" style="padding:0 10px">Dark</button>
+    <span class="swatches" id="sw" aria-hidden="true"></span>
+  </div>
+  <div class="row meta"><span id="adj"></span><span><kbd>←</kbd><kbd>→</kbd> palette · <kbd>Shift</kbd>+<kbd>←</kbd><kbd>→</kbd> type · <kbd>T</kbd> theme</span></div>
+</div>
+
+<script>
+const LABELS = {"rp-main":"Rosé Pine · Main / Dawn","rp-moon":"Rosé Pine · Moon / Dawn","catppuccin":"Catppuccin · Mocha / Latte","ayu":"Ayu · Dark / Light (reference)","tokyo":"Tokyo Night · Night / Day","nord":"Nord · Polar Night / Snow Storm","poimandres":"Poimandres · dark / light (derived)"};
+const REPORT = {"rp-main":{"label":"Rosé Pine · Main / Dawn","dark":["addy #31748f→#6295aa"],"light":["soft #797593→#6a6781","line #d7827e→#925856","gate #b4637a→#945164","fast #56949f→#406e76","pocock #56949f→#417079","pstack #907aa9→#736287","hl #ea9d34→#8c5e1f"]},"rp-moon":{"label":"Rosé Pine · Moon / Dawn","dark":["soft #908caa→#a4a1b9","gate #eb6f92→#ed809f","addy #3e8fb0→#6caac3"],"light":["soft #797593→#6a6781","line #d7827e→#925856","gate #b4637a→#945164","fast #56949f→#406e76","pocock #56949f→#417079","pstack #907aa9→#736287","hl #ea9d34→#8c5e1f"]},"catppuccin":{"label":"Catppuccin · Mocha / Latte","dark":[],"light":["soft #6c6f85→#5f6275","line #df8e1d→#8a5812","gate #fe640b→#a84207","fast #209fb5→#166c7b","pocock #1e66f5→#1a5ad8","addy #179299→#116c71","pstack #8839ef→#7d34dc","hl #df8e1d→#8a5812"]},"ayu":{"label":"Ayu · Dark / Light (reference)","dark":[],"light":["gate #a84b05→#a54a05","fast #14708f→#146e8c","pocock #2a78b8→#2771ad"]},"tokyo":{"label":"Tokyo Night · Night / Day","dark":[],"light":["ink #3760bf→#3358b0","soft #6172b0→#4c5989","line #2e7de9→#215aa8","gate #b15c00→#8a4800","fast #118c74→#0d6856","pocock #007197→#006385","addy #587539→#4a6230","pstack #9854f1→#7440b7","hl #8c6c3e→#705632"]},"nord":{"label":"Nord · Polar Night / Snow Storm","dark":["line #88c0d0→#8fc4d3","gate #d08770→#e1b2a3","fast #8fbcbb→#9ac3c2","pocock #81a1c1→#a9bfd5","addy #a3be8c→#acc598","pstack #b48ead→#ceb4c9"],"light":["line #5e81ac→#496586","gate #d08770→#89594a","fast #8fbcbb→#506969","pocock #81a1c1→#556a7f","addy #a3be8c→#5b6a4e","pstack #b48ead→#7a6176"]},"poimandres":{"label":"Poimandres · dark / light (derived)","dark":["gate #d0679d→#d87fad"],"light":["line #0f8a70→#0c715c","gate #b0407c→#a23b72","fast #1f7fae→#19688f","pocock #2f6fae→#2c68a4","addy #2f7f70→#2a7265","pstack #a0478a→#9d4687","hl #8a6d00→#7f6400"]}};
+const FONTS = { familjen: 'Familjen Grotesk / Instrument Sans / IBM Plex Mono', space: 'Space Grotesk / Inter / JetBrains Mono', fraunces: 'Fraunces / Source Sans 3 / Source Code Pro', bricolage: 'Bricolage Grotesque / DM Sans / DM Mono' };
+const root = document.documentElement;
+const pal = Object.keys(LABELS), fon = Object.keys(FONTS);
+let pi = 0, fi = 0;
+let mode = matchMedia('(prefers-color-scheme: light)').matches && root.dataset.theme !== 'dark' ? 'light' : (root.dataset.theme || 'dark');
+
+function render() {
+  root.dataset.palette = pal[pi];
+  root.dataset.font = fon[fi];
+  root.dataset.theme = mode;
+  document.getElementById('plabel').textContent = `${pi + 1}/${pal.length} ${LABELS[pal[pi]]}`;
+  document.getElementById('flabel').textContent = `${fi + 1}/${fon.length} ${FONTS[fon[fi]]}`;
+  document.getElementById('theme').textContent = mode === 'dark' ? 'Dark' : 'Light';
+  const adj = REPORT[pal[pi]][mode];
+  document.getElementById('adj').textContent = adj.length ? `AA-adjusted (${mode}): ${adj.join('; ')}` : `No AA adjustment needed (${mode})`;
+  const cs = getComputedStyle(root);
+  document.getElementById('sw').innerHTML = ['bg', 'panel', 'ink', 'line', 'gate', 'fast', 'pocock', 'addy', 'pstack', 'hl'].map(t => `<i title="--${t}" style="background:${cs.getPropertyValue('--' + t)}"></i>`).join('');
+}
+const step = (which, d) => { if (which === 'p') pi = (pi + d + pal.length) % pal.length; else fi = (fi + d + fon.length) % fon.length; render(); };
+document.getElementById('pprev').onclick = () => step('p', -1);
+document.getElementById('pnext').onclick = () => step('p', 1);
+document.getElementById('fprev').onclick = () => step('f', -1);
+document.getElementById('fnext').onclick = () => step('f', 1);
+document.getElementById('theme').onclick = () => { mode = mode === 'dark' ? 'light' : 'dark'; render(); };
+addEventListener('keydown', e => {
+  if (e.target.closest('input, textarea, [contenteditable]')) return;
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); step(e.shiftKey ? 'f' : 'p', e.key === 'ArrowLeft' ? -1 : 1); }
+  if (e.key === 't' || e.key === 'T') { mode = mode === 'dark' ? 'light' : 'dark'; render(); }
+});
+
+/* Routes */
+const ROUTES = {
+  fast: { label: 'Fast', when: 'Fits in one session, with no change to contracts, data or security, and no spec contradiction.', st: [
+    { n: 'aw-intake', s: 'Classify, state 1 to 3 done-when criteria', who: 'Agent', what: 'Classifies the task\'s type and route with reasons, and gives a fast-route task 1 to 3 done-when criteria in place of a spec.', leaves: 'The route, the criteria, and the name of the next skill.' },
+    { n: 'Pre-step', s: 'Reproduce, characterize or measure', who: 'Agent', what: 'Runs the action the task type calls for: a reproduction that goes red on a bug, characterization tests before a refactor, or a performance baseline.', leaves: 'A red command under .aw/repro/, tests, or a baseline number.' },
+    { n: 'aw-build', s: 'Build the task, test-first, no spec', who: 'Agent', what: 'Builds the whole task from the done-when criteria, red then green, and stops if a spec contradiction shows up.', leaves: 'One local commit with Done when: lines.' },
+    { n: 'aw-verify', s: 'Only if a verify skill exists', opt: true, who: 'Agent', what: 'Proves each criterion on the running app through the repo\'s verify skill.', leaves: 'Verify results under .aw/verify/.' },
+    { n: 'aw-review', s: 'Spec, Standards and Security axes', who: 'Agent, three subagents', what: 'Reviews the diff on three axes in separate subagents. A defect counts only when a run proves it.', leaves: 'A local review report.' },
+    { n: 'aw-ship', s: 'Full checks, then push as far as allowed', who: 'Agent, or you where it drafts', what: 'Runs the full checks, writes the review request body, and pushes, opens and merges only as far as the VCS adapter allows.', leaves: 'A review request, or drafts in .aw/drafts/.' },
+  ] },
+  standard: { label: 'Standard', when: 'Everything that is not fast or epic.', st: [
+    { n: 'aw-intake', s: 'Classify type and route, run the pre-step', who: 'Agent', what: 'Classifies the task and looks for a spec contradiction in the specs whose Traceability points at what it touches.', leaves: 'The route and the name of the next skill.' },
+    { n: 'aw-spec', s: 'Write the spec, hold it at draft', who: 'Agent, with you', what: 'Explores the repo, writes the spec in the glossary\'s vocabulary, and sketches the test seams.', leaves: 'docs/specs/…/spec.md at status: draft.' },
+    { n: 'Spec approval', s: 'The one fixed human gate', gate: true, who: 'You', what: 'You accept the draft explicitly in the conversation. Only then does the agent set status: approved. It catches a misunderstanding before it costs code.', leaves: 'status: approved.' },
+    { n: 'aw-slices', s: 'Plan tracer-bullet slices', who: 'Agent, with you', what: 'Splits the spec into vertical slices covering every AC-n, riskiest first, and agrees the test seams with you.', leaves: 'The slice plan in the spec, and mirror tickets where the tracker allows.' },
+    { n: 'aw-build', s: 'Once per slice, test-first', who: 'Agent', what: 'Builds one slice per call through aw-tdd and ticks its done marker.', leaves: 'One local commit per slice.' },
+    { n: 'aw-verify', s: 'Prove each AC-n on the real app', who: 'Agent', what: 'Runs a verify journey per acceptance criterion through the repo\'s verify skill.', leaves: 'Verify results in the spec\'s verify/ folder, named in Traceability.' },
+    { n: 'aw-review', s: 'Spec, Standards and Security axes', who: 'Agent, three subagents', what: 'Reviews the diff from the diff base. Defects need a run; everything else is a risk.', leaves: 'A local review report.' },
+    { n: 'aw-ship', s: 'Full checks, spec to implemented', who: 'Agent, or you where it drafts', what: 'Sets the spec to implemented, writes the review request body with Merge Danger and a rollback plan, and ships as far as the adapter allows.', leaves: 'A review request, or drafts in .aw/drafts/.' },
+    { n: 'aw-retro', s: 'Optional: turn repeated errors into controls', opt: true, who: 'Agent, then you', what: 'Turns each error class the session repeated into the highest control on its ladder that works, and changes nothing until you approve.', leaves: 'A retro report under .aw/retros/.' },
+  ] },
+  epic: { label: 'Epic', when: 'Several sessions or several deliverables.', st: [
+    { n: 'aw-intake', s: 'Classify as epic', who: 'Agent', what: 'Recognises an effort too big for one spec and sends it to aw-wayfinder.', leaves: 'The route and the next skill.' },
+    { n: 'aw-wayfinder', s: 'Chart the map, one decision per session', who: 'Agent, with you', what: 'Charts the destination and a map of decision tickets in the tracker, then resolves one ticket per session. It builds nothing.', leaves: 'A map ticket, decision tickets, and finally the deliverables.' },
+    { n: 'Each deliverable', s: 'Takes the standard route, own spec', gate: true, who: 'You, once per deliverable', what: 'aw-wayfinder hands each deliverable to aw-spec. Every one goes through its own spec approval.', leaves: 'One spec per deliverable.' },
+  ] },
+};
+let route = 'standard', stIdx = 2;
+function drawRoutes() {
+  document.getElementById('routes-seg').innerHTML = Object.entries(ROUTES).map(([k, r]) => `<button data-v="${k}" aria-pressed="${k === route}">${r.label}</button>`).join('');
+  const r = ROUTES[route], ol = document.getElementById('stations');
+  ol.className = 'stations' + (route === 'fast' ? ' fast' : '');
+  ol.innerHTML = r.st.map((s, i) => `<li class="${s.gate ? 'gate' : ''}${s.opt ? ' opt' : ''}"><button class="st" data-i="${i}" ${i === stIdx ? 'aria-current="step"' : ''}><span class="dot"><i></i></span><span><b>${s.n}</b><small>${s.s}</small></span></button></li>`).join('');
+  const s = r.st[stIdx];
+  document.getElementById('detail').innerHTML = `<span class="tag ${s.gate ? 'person' : ''}">${r.label} route · ${s.gate ? 'human gate' : 'station ' + (stIdx + 1)}</span><h3>${s.n}</h3><p class="muted">${s.gate ? r.when : s.what}</p>${s.gate ? `<p>${s.what}</p>` : ''}<dl class="kv"><dt>Who acts</dt><dd>${s.who}</dd><dt>Leaves</dt><dd>${s.leaves}</dd><dt>Route</dt><dd class="muted small">${r.when}</dd></dl>`;
+}
+document.getElementById('routes-seg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; route = b.dataset.v; stIdx = route === 'standard' ? 2 : 0; drawRoutes(); });
+document.getElementById('stations').addEventListener('click', e => { const b = e.target.closest('.st'); if (!b) return; stIdx = +b.dataset.i; drawRoutes(); });
+
+/* Skills */
+const SKILLS = [
+  { g: 'Setup', sub: 'Run once per repo, and again to change the configuration.' },
+  { n: 'aw-setup', inv: 1, o: 'pocock', k: 'adaptation', does: 'Configures the repo for the workflow in one interview: the tracker, VCS and checks adapters, the domain doc, the Agent skills block, and repo housekeeping.', needs: 'A repo. It also works with nothing configured yet.', leaves: 'docs/agents/tracker.md, vcs.md, checks.md and domain.md, and the Agent skills block in AGENTS.md or CLAUDE.md.' },
+  { g: 'Phases', sub: 'Each owned by one skill and producing one artifact. You invoke them.' },
+  { n: 'aw-intake', inv: 1, o: 'kit', k: 'kit skill', does: 'Starts every task: classifies its type and route with reasons, runs the type\'s pre-step, and names the next skill.', needs: 'A ticket or free text.', leaves: 'A route, a pre-step result, and on the fast route 1 to 3 done-when criteria.' },
+  { n: 'aw-wayfinder', inv: 1, o: 'pocock', k: 'adaptation', does: 'Charts an epic-route effort as a map of decision tickets, resolves them one per session, then hands each deliverable to /aw-spec. Plans and never builds.', needs: 'An epic-route task, and a tracker. It offers a local-markdown one if there is none.', leaves: 'A map ticket, its decision tickets, and the list of deliverables.' },
+  { n: 'aw-spec', inv: 1, o: 'pocock', k: 'adaptation', does: 'Grills you, explores the repo, and writes the spec as a draft. Sets it to approved only on your explicit approval.', needs: 'A standard-route task, or one deliverable of a cleared map.', leaves: 'docs/specs/<slug>/spec.md, at draft and then approved.' },
+  { n: 'aw-slices', inv: 1, o: 'pocock', k: 'adaptation', does: 'Plans an approved spec as vertical tracer-bullet slices covering every AC-n, riskiest first, and agrees the test seams with you.', needs: 'An approved spec.', leaves: 'The slice plan and Test strategy in the spec, and mirror tickets where the tracker allows.' },
+  { n: 'aw-build', inv: 1, o: 'kit', k: 'kit skill', does: 'Builds one slice per call, test-first. On the fast route it builds the whole task. In a fix run it fixes the introduced defects of the latest review report.', needs: 'A slice plan, done-when criteria, or a review report.', leaves: 'One local commit, a ticked done marker and updated Traceability.' },
+  { n: 'aw-create-verify', inv: 1, o: 'kit', k: 'kit skill', does: 'Writes the repo\'s verify skill: how to start, drive, observe and clean up the real app, with a feature map. Runs it once end to end.', needs: 'A repo with an app to run. Run once per app, before the first /aw-verify.', leaves: '.claude/skills/verify-&lt;app&gt;/' },
+  { n: 'aw-verify', inv: 1, o: 'kit', k: 'kit skill', does: 'Proves each acceptance criterion on the real app through the verify skill. Without one, it says which criteria need test: or manual: evidence.', needs: 'A built spec, or fast-route done-when criteria, and a verify skill.', leaves: 'Verify results named in Traceability, in a local commit.' },
+  { n: 'aw-review', inv: 1, o: 'kit', k: 'kit skill', does: 'Reviews the diff on the Spec, Standards and Security axes, each in its own subagent. A defect counts only when a run proves it.', needs: 'A work branch with commits since the diff base.', leaves: 'A local review report. Nothing is posted to the review host.' },
+  { n: 'aw-ship', inv: 1, o: 'pocock', o2: 'addy', k: 'adaptation', does: 'Runs the full checks, sets the spec to implemented, writes the review request body, then pushes, opens and merges as far as the VCS adapter allows.', needs: 'A review report with no proven defect.', leaves: 'A review request, or drafts in .aw/drafts/.' },
+  { n: 'aw-retro', inv: 1, o: 'pocock', k: 'adaptation', does: 'Turns every error class the session repeated into the highest control on the ladder that works, proven to fail on the real case and pass on a correct one.', needs: 'A finished session.', leaves: 'A retro report under .aw/retros/. It changes nothing until you approve.' },
+  { g: 'Runs across phases', sub: 'They drive several phases in one call. Neither ever ships.' },
+  { n: 'aw-converge', inv: 1, o: 'kit', k: 'kit skill', does: 'Repeats rounds of fix run, /aw-verify when the fix calls for it, and /aw-review until no introduced defect is left, up to 3 rounds by default.', needs: 'A review report with introduced defects.', leaves: 'A review report with none, or the defects left at the limit and why it stopped.' },
+  { n: 'aw-implement', inv: 1, o: 'kit', k: 'kit skill', does: 'Takes an approved spec or a fast-route task from what is left to build to a clean review: builds each slice, verifies, reviews, and runs rounds as needed.', needs: 'An approved spec with a slice plan, or a fast-route task.', leaves: 'Built slices and a review report with no introduced defect. Asks only during a HITL slice or to agree a test seam.' },
+  { g: 'Phase procedures', sub: 'The steps behind a phase, so that a run can repeat them. Never invoked directly.' },
+  { n: 'aw-build-steps', proc: 1, o: 'kit', k: 'kit skill', does: 'The steps of /aw-build: one slice, the fast route, or a fix run.', needs: 'A call from /aw-build, aw-converge-steps or /aw-implement.', leaves: 'What /aw-build leaves.' },
+  { n: 'aw-verify-steps', proc: 1, o: 'kit', k: 'kit skill', does: 'The steps of /aw-verify: prove each criterion on the real app and record the results.', needs: 'A call from /aw-verify, aw-converge-steps or /aw-implement.', leaves: 'What /aw-verify leaves.' },
+  { n: 'aw-review-steps', proc: 1, o: 'pocock', k: 'adaptation', does: 'The steps of /aw-review: review the three axes and write the review report.', needs: 'A call from /aw-review, aw-converge-steps or /aw-implement.', leaves: 'What /aw-review leaves.' },
+  { n: 'aw-converge-steps', proc: 1, o: 'kit', k: 'kit skill', does: 'The rounds of /aw-converge, the convergence procedure.', needs: 'A call from /aw-converge or /aw-implement.', leaves: 'What /aw-converge leaves.' },
+  { g: 'Skills the phases call', sub: 'Phase-free. A phase or another skill loads one when it needs it, and you can invoke any of them.' },
+  { n: 'aw-tdd', o: 'pocock', k: 'adaptation', does: 'The red-to-green loop, with what a good test is, where tests go and the anti-patterns. Seams are shown to you before you confirm them.', by: 'aw-build', leaves: 'Tests at the agreed seams.' },
+  { n: 'aw-check-spec', o: 'addy', k: 'adaptation', does: 'Checks the specs under docs/specs/ with a script: format, statuses and traceability.', by: 'aw-spec, aw-slices, aw-build, aw-verify, aw-ship, aw-setup, aw-unslop', leaves: 'A pass, or the findings to fix.' },
+  { n: 'aw-security-and-hardening', o: 'addy', k: 'adaptation', does: 'Security guidance and checklists: threat modeling, hardening controls, red flags.', by: 'aw-review (its Security axis)', leaves: 'Security findings under the review\'s rules.' },
+  { n: 'aw-grilling', o: 'pocock', k: 'copy', does: 'Interviews you relentlessly, one round of questions at a time, until the plan is shared.', by: 'aw-spec, aw-wayfinder', leaves: 'Settled decisions.' },
+  { n: 'aw-grill-with-docs', o: 'pocock', k: 'copy', does: 'The same interview, writing the glossary and ADRs as terms and decisions settle.', by: 'aw-setup', leaves: 'GLOSSARY.md entries and ADRs.' },
+  { n: 'aw-domain-modeling', o: 'pocock', k: 'copy', does: 'Builds and sharpens the domain model: challenges terms, invents edge cases, writes the glossary and ADRs.', by: 'aw-spec, aw-wayfinder, aw-setup', leaves: 'GLOSSARY.md and docs/adr/ updates.' },
+  { n: 'aw-research', o: 'pocock', k: 'copy', does: 'Investigates a question against high-trust primary sources.', by: 'aw-intake, aw-wayfinder', leaves: 'A Markdown file of findings in the repo.' },
+  { n: 'aw-prototype', o: 'pocock', k: 'copy', does: 'Builds throwaway code that answers one design question: a logic demo or UI variants.', by: 'aw-wayfinder', leaves: 'A prototype on a throwaway branch, and the answer.' },
+  { n: 'aw-diagnosing-bugs', o: 'pocock', k: 'copy', does: 'A diagnosis loop for hard bugs and performance regressions.', by: 'aw-intake', leaves: 'A diagnosed cause.' },
+  { n: 'aw-source-driven-development', o: 'addy', k: 'copy', does: 'Grounds implementation decisions in official documentation, with citations.', by: 'aw-build', leaves: 'Source-cited code.' },
+  { n: 'aw-codebase-design', o: 'pocock', k: 'copy', does: 'Shared vocabulary for designing deep modules and placing seams.', by: 'aw-tdd, aw-improve-codebase-architecture', leaves: 'A shared language for the design.' },
+  { n: 'aw-improve-codebase-architecture', o: 'pocock', k: 'copy', does: 'Scans the codebase for deepening opportunities, reports them visually, then grills through the one you pick.', by: 'aw-retro (architecture findings), aw-setup', leaves: 'An HTML report and a chosen refactor.' },
+  { n: 'aw-writing-for-agents', o: 'pocock', k: 'copy', does: 'How to write documents agents read: skills, AGENTS.md and CLAUDE.md.', by: 'aw-retro', leaves: 'Agent-facing docs that follow the guide.' },
+  { g: 'Optional skills', sub: 'Nothing obliges them. They run when a task calls for one or you invoke it.' },
+  { n: 'aw-blast-radius', o: 'pstack', k: 'adaptation', does: 'Finds what a change can break outside its diff, and proves its safety fact by running real code in a detached worktree.', needs: 'Commits to examine.', leaves: 'A report under .aw/blast-radius/ with its proof script.' },
+  { n: 'aw-benchmark-checklist', o: 'pstack', k: 'adaptation', does: 'Vets a performance number before you report it or act on it.', needs: 'A benchmark you ran.', leaves: 'A vetted number, or what is wrong with it.' },
+  { n: 'aw-unslop', o: 'pstack', k: 'adaptation', does: 'Cuts AI tells from prose a person or an agent reads, leaving glossary terms and code as they are.', needs: 'A file or text, or the last document of the conversation.', leaves: 'The rewritten prose.' },
+  { n: 'aw-observability-and-instrumentation', o: 'addy', k: 'adaptation', does: 'Guidance on permanent logs, metrics, traces and alerts.', needs: 'A telemetry change, or an incident the telemetry could not explain.', leaves: 'Instrumented code.' },
+  { n: 'aw-wizard', o: 'pocock', k: 'adaptation', does: 'Generates an interactive bash wizard that walks you through steps only you can perform.', needs: 'Steps the agent cannot do itself.', leaves: 'A bash wizard script.' },
+  { n: 'aw-handoff', o: 'pocock', k: 'copy', does: 'Compacts the conversation into a handoff document for another agent.', needs: 'A conversation to hand over.', leaves: 'A handoff document.' },
+  { n: 'aw-to-questionnaire', o: 'pocock', k: 'copy', does: 'Turns a decision you cannot fully answer into a questionnaire for someone else.', needs: 'An open decision.', leaves: 'A questionnaire.' },
+  { n: 'aw-wait-what', o: 'pocock', k: 'copy', does: 'Re-pitches the last message when it did not land.', needs: 'A message that confused you.', leaves: 'A clearer version.' },
+];
+let skIdx = 1;
+const ON = { kit: 'kit', pocock: 'Pocock', addy: 'Addy', pstack: 'pstack' };
+function drawSkills() {
+  document.getElementById('skilllist').innerHTML = SKILLS.map((s, i) => s.g ? `<li class="gl">${s.g}<small>${s.sub}</small></li>` : `<li><button data-i="${i}" ${i === skIdx ? 'aria-current="true"' : ''}><span>${s.n}</span><span class="pill ${s.o}">${ON[s.o]}</span>${s.o2 ? `<span class="pill ${s.o2}">${ON[s.o2]}</span>` : ''}<span class="pill kind">${s.k}</span></button></li>`).join('');
+  const s = SKILLS[skIdx];
+  const first = s.by ? `<dt>Called by</dt><dd>${s.by}</dd>` : `<dt>Needs</dt><dd>${s.needs}</dd>`;
+  const how = s.inv ? 'By you, as a slash command' : s.proc ? 'Only by its door and the runs' : s.by ? 'By the model when a skill needs it, or by you' : 'By you, or by the model when the task calls for it';
+  document.getElementById('skilldetail').innerHTML = `<h3>${s.inv ? '/' : ''}${s.n}</h3><p>${s.does}</p><dl class="kv">${first}<dt>Leaves</dt><dd>${s.leaves}</dd><dt>Origin</dt><dd><span class="pill ${s.o}">${ON[s.o]}</span>${s.o2 ? ` <span class="pill ${s.o2}">${ON[s.o2]}</span>` : ''} ${s.k}</dd><dt>Invoked</dt><dd>${how}</dd></dl>`;
+}
+document.getElementById('skilllist').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; skIdx = +b.dataset.i; drawSkills(); });
+
+/* Access levels */
+const OPS = { 'start-branch': 'write', commit: 'write', push: 'draft', 'open-review': 'draft', merge: 'draft' };
+function drawSim() {
+  document.getElementById('ops').innerHTML = Object.entries(OPS).map(([op, v]) => `<div class="op"><code>${op}</code><div class="wd" role="group" aria-label="${op}">${['write', 'draft'].map(x => `<button data-op="${op}" data-v="${x}" aria-pressed="${v === x}">${x}</button>`).join('')}</div></div>`).join('');
+  const does = Object.keys(OPS).filter(k => OPS[k] === 'write'), drafts = Object.keys(OPS).filter(k => OPS[k] === 'draft');
+  document.getElementById('simout').innerHTML = `<h3 class="does">The agent does</h3><ul>${does.map(d => `<li><code>${d}</code></li>`).join('') || '<li class="muted">Nothing</li>'}</ul><h3 class="drafts">Left for you in .aw/drafts/</h3><ul>${drafts.map(d => `<li><code>${d}</code></li>`).join('') || '<li class="muted">Nothing</li>'}</ul>${OPS.merge === 'write' ? '<p class="note">Even at write, merge waits for a review with no proven defect and a passing full check.</p>' : ''}`;
+}
+document.getElementById('ops').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; OPS[b.dataset.op] = b.dataset.v; drawSim(); });
+
+drawRoutes(); drawSkills(); drawSim(); render();
+</script>
