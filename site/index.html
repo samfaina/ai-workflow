@@ -1,0 +1,145 @@
+<!doctype html>
+<!--
+  The ai-workflow docs site: hand-written HTML, CSS and JS, with no build step
+  and no dependencies (ADR 0008). .github/workflows/pages.yml publishes this
+  folder to GitHub Pages.
+
+  The page fetches skills.json, which a browser refuses to do for a file
+  opened from disk. To preview locally, serve site/ with any static server,
+  for example `python -m http.server --directory site`, and open the address
+  it prints.
+
+  README.md stays the reference: this page repeats only the install commands
+  and links to the README, GLOSSARY.md and docs/adr/ for everything else.
+  `node scripts/validate-kit.mjs` keeps skills.json in step with the kit.
+-->
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ai-workflow</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='14' width='28' height='4' rx='2' fill='%23ebbcba'/%3E%3Ccircle cx='16' cy='16' r='9' fill='%23eb6f92'/%3E%3C/svg%3E">
+<meta name="description" content="A kit of aw- agent skills that takes a task to a merged change, with a spec when the change deserves one, evidence for every acceptance criterion and a review before anything ships.">
+<script>
+  // Dark is the default whatever the OS prefers; a remembered choice of light
+  // applies before the first paint.
+  try {
+    if (localStorage.getItem('aw-theme') === 'light') document.documentElement.dataset.theme = 'light';
+  } catch {}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<div class="bar">
+  <div class="wrap">
+    <a class="brand" href="#top">ai-workflow</a>
+    <button class="toggle" id="theme-toggle" type="button" aria-pressed="false">Light theme</button>
+  </div>
+</div>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <h1>From a task to a merged change, with one human gate</h1>
+    <p class="lead">A kit of agent skills that writes a spec when the change deserves one, proves every acceptance criterion with evidence, and reviews the diff before anything ships. It works with or without a tracker, on any VCS host.</p>
+    <div class="actions">
+      <a class="btn primary" href="#install">Install the kit</a>
+      <a class="btn" href="#skills">Browse the skills</a>
+    </div>
+    <ol class="miniline" aria-label="The standard route, with spec approval as its human gate">
+      <li>intake</li><li>spec</li><li class="gate">Spec approval</li><li>slices</li><li>build</li><li>verify</li><li>review</li><li>ship</li><li class="opt">retro</li>
+    </ol>
+  </div>
+</header>
+
+<main>
+<section id="routes" aria-labelledby="routes-h">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 id="routes-h">Three routes, one gate</h2>
+      <p class="lead">Coming soon: how <code>/aw-intake</code> sends each task down the fast, standard or epic route, phase by phase.</p>
+    </div>
+  </div>
+</section>
+
+<section id="upstreams" aria-labelledby="upstreams-h">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 id="upstreams-h">Where the skills come from</h2>
+      <p class="lead">Coming soon: the upstreams the kit copies and adapts from. Until then, <a href="https://github.com/samfaina/ai-workflow/blob/main/NOTICE.md"><code>NOTICE.md</code></a> lists them.</p>
+    </div>
+  </div>
+</section>
+
+<section id="skills" aria-labelledby="skills-h">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 id="skills-h">What each skill does</h2>
+      <p class="lead">Every skill of the kit, grouped by the part it plays. Pick one to see what it needs, what refers to it, and what it leaves.</p>
+    </div>
+    <div class="filters">
+      <div class="ctrl">
+        <span class="label" id="origin-label">Origin</span>
+        <div class="seg" id="origin-filter" role="group" aria-labelledby="origin-label"></div>
+      </div>
+      <div class="ctrl">
+        <span class="label" id="group-label">Group</span>
+        <div class="seg" id="group-filter" role="group" aria-labelledby="group-label"></div>
+      </div>
+    </div>
+    <div class="explorer">
+      <ul class="tree" id="skill-list" aria-label="Skills"></ul>
+      <aside class="detail" id="skill-detail" aria-live="polite" aria-label="Selected skill"></aside>
+    </div>
+  </div>
+</section>
+
+<section id="access" aria-labelledby="access-h">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 id="access-h">What the agent may do</h2>
+      <p class="lead">Coming soon: adapters, canonical operations and access levels. Until then, see the <a href="https://github.com/samfaina/ai-workflow/blob/main/README.md">README</a>.</p>
+    </div>
+  </div>
+</section>
+
+<section id="install" aria-labelledby="install-h">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 id="install-h">Install the kit</h2>
+      <p class="lead">The <a href="https://github.com/samfaina/ai-workflow/blob/main/README.md#install">README</a> explains each route and what it writes to your repo.</p>
+    </div>
+    <div class="install">
+      <article>
+        <h3>As a Claude Code plugin</h3>
+        <p class="muted">Recommended. Install with project scope in each repo that uses the workflow.</p>
+<pre class="block"><code>claude plugin marketplace add samfaina/ai-workflow
+claude plugin install ai-workflow@samfaina-labs --scope project</code></pre>
+      </article>
+      <article>
+        <h3>With <code>npx skills</code></h3>
+        <p class="muted">For harnesses without Claude Code's plugin system. Name a skill to install only that one.</p>
+<pre class="block"><code>npx skills add samfaina/ai-workflow
+npx skills add samfaina/ai-workflow --skill aw-&lt;name&gt;</code></pre>
+      </article>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <ul aria-label="Reference">
+      <li><a href="https://github.com/samfaina/ai-workflow/blob/main/README.md">README</a></li>
+      <li><a href="https://github.com/samfaina/ai-workflow/blob/main/GLOSSARY.md">Glossary</a></li>
+      <li><a href="https://github.com/samfaina/ai-workflow/tree/main/docs/adr">Decisions (ADRs)</a></li>
+      <li><a href="https://github.com/samfaina/ai-workflow">Source on GitHub</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="site.js"></script>
+</body>
+</html>

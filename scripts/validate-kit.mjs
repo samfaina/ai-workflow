@@ -377,6 +377,18 @@ function checkLineEndings(dir) {
   return findings;
 }
 
+// The table rows of NOTICE.md, as trimmed cells, or null when there is no
+// NOTICE.md. A skill's row is the one whose first cell is its name.
+function noticeRows(dir) {
+  const full = join(dir, 'NOTICE.md');
+  if (!existsSync(full)) return null;
+  return readFileSync(full, 'utf8')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith('|'))
+    .map(tableCells);
+}
+
 // NOTICE.md lists every copy with its upstream, pin and kind (ADR 0004).
 // An entry is a table row whose first cell is the copy's name, whose upstream
 // cell holds the upstream's `repo` from upstreams.json (usually as a link),
@@ -385,13 +397,8 @@ function checkLineEndings(dir) {
 function checkNotice(dir) {
   const { copies } = readUpstreams(dir);
   if (copies.length === 0) return [];
-  const full = join(dir, 'NOTICE.md');
-  if (!existsSync(full)) return ['NOTICE.md: file is missing; it must list every copy (ADR 0004)'];
-  const rows = readFileSync(full, 'utf8')
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line.startsWith('|'))
-    .map(tableCells);
+  const rows = noticeRows(dir);
+  if (rows === null) return ['NOTICE.md: file is missing; it must list every copy (ADR 0004)'];
   const findings = [];
   for (const copy of copies) {
     const row = rows.find((cells) => unbacktick(cells[0]) === copy.folder);
@@ -610,6 +617,97 @@ function checkRestatedSections(dir) {
   return RESTATED_SECTIONS.flatMap((heading) => checkRestatedSection(dir, skillFiles, heading));
 }
 
+const SITE_DIR = 'site';
+const SITE_SKILLS = 'site/skills.json';
+
+// NOTICE.md credits every copy and adaptation, so a skill it does not credit
+// is a kit skill written from scratch or an inspired skill (ADR 0004).
+const UNCREDITED_KINDS = ['kit', 'inspired'];
+
+// The origin the site gives each upstream a NOTICE.md row can credit, by the
+// name the row's upstream cell credits it under.
+const UPSTREAM_ORIGINS = { 'Matt Pocock': 'pocock', 'Addy Osmani': 'addy', pstack: 'pstack' };
+
+// An entry's `invoked` is `user` exactly when its skill's frontmatter sets
+// `disable-model-invocation: true`. An entry with no skill folder has its
+// finding from the manifest listing.
+function checkSiteInvocation(dir, entry) {
+  const at = `skills/${entry?.name}/SKILL.md`;
+  const file = join(dir, at);
+  if (typeof entry?.name !== 'string' || !existsSync(file)) return [];
+  const userInvoked = frontmatter(readFileSync(file, 'utf8'))?.['disable-model-invocation'] === 'true';
+  const expected = userInvoked ? 'user' : 'model';
+  if (entry.invoked === expected) return [];
+  const flag = userInvoked ? 'sets "disable-model-invocation: true"' : 'does not set "disable-model-invocation: true"';
+  return [`${SITE_SKILLS}: entry "${entry.name}" has invoked "${entry.invoked}" but ${at} ${flag}, so it must be "${expected}"`];
+}
+
+// An origin as a finding shows it: ['pocock', 'addy'] → `[pocock, addy]`.
+const formatOrigin = (origin) => `[${origin.join(', ')}]`;
+
+// An entry for a skill NOTICE.md credits has the row's kind, and an origin
+// that names the row's upstreams, in any order.
+function checkSiteCredit(entry, row) {
+  const findings = [];
+  const kind = unbacktick(row[3] ?? '').toLowerCase();
+  if (entry.kind !== kind) {
+    findings.push(`${SITE_SKILLS}: entry "${entry.name}" has kind "${entry.kind}" but its NOTICE.md row has "${kind}"`);
+  }
+  const credited = Object.entries(UPSTREAM_ORIGINS)
+    .filter(([upstream]) => (row[1] ?? '').includes(upstream))
+    .map(([, origin]) => origin);
+  const origin = Array.isArray(entry.origin) ? entry.origin : [];
+  if (origin.length !== credited.length || !credited.every((name) => origin.includes(name))) {
+    findings.push(`${SITE_SKILLS}: entry "${entry.name}" has origin ${formatOrigin(origin)} but its NOTICE.md row credits ${formatOrigin(credited)}`);
+  }
+  return findings;
+}
+
+// The skill names the plugin manifest lists, `./skills/aw-x` → `aw-x`.
+function listedSkills(plugin) {
+  const entries = Array.isArray(plugin.skills) ? plugin.skills : [];
+  return entries
+    .filter((entry) => typeof entry === 'string')
+    .map((entry) => normalizeSkillPath(entry).replace(/^skills\//, ''));
+}
+
+// Every skill the manifest lists has one entry, and no entry names another.
+function checkSiteListing(entries, plugin) {
+  const listed = listedSkills(plugin);
+  const names = entries.map((entry) => entry?.name);
+  return [
+    ...listed
+      .filter((name) => !names.includes(name))
+      .map((name) => `${SITE_SKILLS}: no entry for skill "${name}", which ${PLUGIN_MANIFEST} lists`),
+    ...names
+      .filter((name) => !listed.includes(name))
+      .map((name) => `${SITE_SKILLS}: entry "${name}" names a skill ${PLUGIN_MANIFEST} does not list`),
+  ];
+}
+
+// The docs site under `site/` shows every skill of the kit from
+// `site/skills.json`, written by hand, so the data must stay in step with the
+// kit. A kit without `site/` has no site to check.
+function checkSiteSkills(dir, plugin) {
+  if (!existsSync(join(dir, SITE_DIR))) return [];
+  const skills = readJson(dir, SITE_SKILLS);
+  if (skills.finding) return [skills.finding];
+  const entries = skills.value;
+  if (!Array.isArray(entries)) return [`${SITE_SKILLS}: must be an array of skill entries`];
+  const findings = [];
+  if (!plugin.finding) findings.push(...checkSiteListing(entries, plugin.value));
+  const rows = noticeRows(dir) ?? [];
+  for (const entry of entries) {
+    const row = rows.find((cells) => unbacktick(cells[0]) === entry?.name);
+    if (row) findings.push(...checkSiteCredit(entry, row));
+    else if (!UNCREDITED_KINDS.includes(entry?.kind)) {
+      findings.push(`${SITE_SKILLS}: entry "${entry?.name}" has kind "${entry?.kind}" but no NOTICE.md row, so its kind must be "kit" or "inspired"`);
+    }
+    findings.push(...checkSiteInvocation(dir, entry));
+  }
+  return findings;
+}
+
 function validate(dir) {
   const findings = checkSkills(dir);
   findings.push(...checkSkillToolCalls(dir));
@@ -629,6 +727,7 @@ function validate(dir) {
   findings.push(...checkCopies(dir));
   findings.push(...checkReplacedFolders(dir));
   findings.push(...checkNotice(dir));
+  findings.push(...checkSiteSkills(dir, plugin));
   findings.push(...checkLineEndings(dir));
   return findings;
 }

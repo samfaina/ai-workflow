@@ -14,4 +14,4 @@ Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/ag
 
 ## Changing a rule
 
-Skills are self-contained, so a rule is often restated word for word in several skills. When a change alters a rule, `git grep` its wording under `skills/` and treat every copy as part of the change, in the ticket's scope and in its diff.
+Skills are self-contained, so a rule is often restated word for word in several skills, and the docs site under `site/` restates rules too. When a change alters a rule, `git grep` its wording under `skills/` and `site/` and treat every copy as part of the change, in the ticket's scope and in its diff.
