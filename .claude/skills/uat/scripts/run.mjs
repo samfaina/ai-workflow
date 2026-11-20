@@ -17,7 +17,7 @@
 //
 // Each command takes only the options on its line, and any other option is a
 // usage error that names it. These lines copy the usage lines of COMMANDS,
-// which the check reads, and a test holds the two the same.
+// which parseArgs reads, and a test holds the two the same.
 //
 // --source defaults to UAT_SOURCE. For init and auto only, --run defaults to
 // <UAT_TARGET>/<yyyymmdd>; every other command needs the run folder by name,
