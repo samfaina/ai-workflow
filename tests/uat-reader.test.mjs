@@ -265,6 +265,19 @@ test('summary gives the command, the questions with answers, turns, tools, error
   assert.equal(output.lastAgentText, 'All done');
 });
 
+test('summary keeps the start and the end of a long turn, where a report puts its Next: line, and says how much it cut', (t) => {
+  const step = makeStep(t);
+  const report = `**Route:** fast\n${'x'.repeat(5000)}\n**Next:** \`/aw-build\``;
+  step.writeSession('s1', lines(log.command('aw-intake'), log.endTurn('m1', report), log.userText('go on'), log.endTurn('m2', 'Built')));
+
+  const [turn] = reader(step, 'summary', '--step', step.stepDir).output.agentTurns;
+
+  assert.ok(turn.startsWith('**Route:** fast'), turn.slice(0, 40));
+  assert.ok(turn.endsWith('**Next:** `/aw-build`'), turn.slice(-40));
+  assert.match(turn, /\[… \d+ characters cut: the full turn is in the session log …\]/);
+  assert.ok(turn.length < report.length);
+});
+
 test('summary leaves subagent work out', (t) => {
   const step = makeStep(t);
   step.writeSession('s1', lines(log.command('aw-review'), { ...log.tool('s', 'Grep', { pattern: 'x' }), isSidechain: true }, log.endTurn('m1', 'Done')));

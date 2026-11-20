@@ -24,7 +24,8 @@ import { logFolder } from './log-folder.mjs';
 
 const EXIT_USAGE = 2;
 const EXIT_UNRECOGNIZED = 3;
-const AGENT_TURN_LIMIT = 2000;
+const AGENT_TURN_HEAD = 1500;
+const AGENT_TURN_TAIL = 1500;
 const TOOL_ERROR_LIMIT = 300;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -168,6 +169,15 @@ function waitingTurn(entries) {
   return { id: last.message.id, text: messageText(entries, last.message.id) };
 }
 
+// A long turn keeps its start and its end, and says what it cut: a skill's
+// report opens with what it found and ends with its `Next:` line, and the
+// grade needs both.
+function clipTurn(text) {
+  const cut = text.length - AGENT_TURN_HEAD - AGENT_TURN_TAIL;
+  if (cut <= 0) return text;
+  return `${text.slice(0, AGENT_TURN_HEAD)}\n[… ${cut} characters cut: the full turn is in the session log …]\n${text.slice(-AGENT_TURN_TAIL)}`;
+}
+
 function messageText(entries, messageId) {
   return entries
     .filter((e) => e.type === 'assistant' && e.message.id === messageId)
@@ -293,7 +303,7 @@ function summarize(id, entries) {
       };
     }),
   );
-  const agentTurns = agentTurnIds.map((messageId) => messageText(entries, messageId).slice(0, AGENT_TURN_LIMIT));
+  const agentTurns = agentTurnIds.map((messageId) => clipTurn(messageText(entries, messageId)));
   return { session: id, command, questions, userTurns, toolCalls, toolErrors, agentTurns, lastAgentText };
 }
 
