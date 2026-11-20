@@ -697,7 +697,10 @@ function clean(options) {
   if (pending.length > 0) throw new Refused(`cases without a result: ${pending.join(', ')}`);
   const { steps, store, points } = paths(runDir);
   const logs = state.cases.map((id) => logFolder(join(realpathSync(runDir), 'steps', id, 'repo')));
-  const failed = deleteAll([...logs, steps, store, points]);
+  // What auto's liveness check left: its folder, and the session log of its working copy.
+  const liveness = join(runDir, 'liveness');
+  const livenessLogs = logFolder(join(realpathSync(runDir), 'liveness', 'repo'));
+  const failed = deleteAll([...logs, livenessLogs, liveness, steps, store, points]);
   if (failed.length > 0) throw new Refused(`could not delete: ${failed.join(', ')}`);
   print({ status: 'cleaned', run: runDir });
 }
@@ -722,7 +725,7 @@ const COMMANDS = {
   report: { action: report, usage: '--run <dir> [--issue <n>]' },
   clean: { action: clean, usage: '--run <dir>' },
   due: { action: due, usage: '[--cases-dir <dir>] [--release]' },
-  auto: { action: (options) => print(auto(options)), usage: '--run <dir> [--source <repo>] [--cases a,b] [--cases-dir <dir>] [--judge-model <m>] [--max-five-hour <pct>] [--max-weekly <pct>]' },
+  auto: { action: async (options) => print(await auto(options)), usage: '--run <dir> [--source <repo>] [--cases a,b] [--cases-dir <dir>] [--judge-model <m>] [--max-five-hour <pct>] [--max-weekly <pct>]' },
 };
 const usageLine = (command) => `node run.mjs ${command} ${COMMANDS[command].usage}`;
 const optionsOf = (command) => [...COMMANDS[command].usage.matchAll(/--([a-z-]+)/g)].map(([, name]) => name);
@@ -735,7 +738,7 @@ try {
   if (startsRuns && !options.run && process.env.UAT_TARGET) options.run = join(process.env.UAT_TARGET, today());
   if (!options.run && command !== 'due') usage(startsRuns ? '--run <dir> is required, or the UAT_TARGET environment variable' : '--run <dir> is required');
   options.source ??= process.env.UAT_SOURCE;
-  COMMANDS[command].action(options);
+  await COMMANDS[command].action(options);
 } catch (error) {
   if (!(error instanceof Refused)) throw error;
   print({ status: 'refused', message: error.message });
