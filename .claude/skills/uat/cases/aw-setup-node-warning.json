@@ -5,7 +5,7 @@
   "order": 6,
   "source": "aw-setup: Node warning with a fake node reporting v16",
   "from": {
-    "ref": "eb1d0dc"
+    "ref": "7283839"
   },
   "setup": [
     {

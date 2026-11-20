@@ -5,7 +5,7 @@
   "order": 3,
   "source": "aw-setup: GitLab without glab or a GitLab remote",
   "from": {
-    "ref": "b0c28c8"
+    "ref": "5168747"
   },
   "shell": [],
   "command": "/ai-workflow:aw-setup",

@@ -5,7 +5,7 @@
   "order": 4,
   "source": "aw-setup: other (Jira, web only, draft)",
   "from": {
-    "ref": "3aa97fa"
+    "ref": "f08f772"
   },
   "shell": [],
   "command": "/ai-workflow:aw-setup",

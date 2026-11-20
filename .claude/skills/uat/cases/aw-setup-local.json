@@ -5,7 +5,7 @@
   "order": 2,
   "source": "aw-setup: local markdown, re-run on top of none",
   "from": {
-    "ref": "908296b"
+    "ref": "deee0f7"
   },
   "shell": [],
   "command": "/ai-workflow:aw-setup",

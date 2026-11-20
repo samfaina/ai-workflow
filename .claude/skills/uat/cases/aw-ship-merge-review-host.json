@@ -5,9 +5,9 @@
   "order": 30,
   "source": "#132: at merge: write with GitHub as the review host, aw-ship merges the review request on the host and leaves its body as step 5 wrote it (#128, #129). It pushes to the GitHub scratch repo and merges into uat/ship-review-host there, a base of its own: the shell force-pushes it back to the restore point's main, then pushes the work branch and deletes it, so that the delete never fails, the run's own push is never rejected, and a request an earlier run left open is closed. A rerun starts clean that way; a request an earlier run merged stays on the host, so the first assertion checks that the request it reads is this run's",
   "from": {
-    "ref": "49d218e",
+    "ref": "04a4004",
     "branch": "feat/renew-loan",
-    "base": "ef0ddf0"
+    "base": "515cf39"
   },
   "setup": [
     {
