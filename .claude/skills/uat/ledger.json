@@ -76,6 +76,13 @@
     "date": "2026-11-10T18:16:44.000Z",
     "issue": 105
   },
+  "aw-ship-merge-review-host": {
+    "verdict": "Pass",
+    "fingerprint": "b57f8b632d330571771d2de0988991b45cb4563f13f974e3fc812085bf05adaa",
+    "kitCommit": "d7c6f54411b86219de5543ca0d64f569e91e85f9",
+    "date": "2026-11-20T21:19:41.064Z",
+    "issue": 144
+  },
   "aw-spec-change-contradicted": {
     "verdict": "Pass",
     "fingerprint": "b36f3afea6556e7839ae85feb2e3034de729587fd51af57d43088b3dabf0cb8c",
