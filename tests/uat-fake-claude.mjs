@@ -58,7 +58,9 @@
 // `version` init names, `hooks: false` for one that runs no hook from
 // --settings (as `--bare` does), and the init event's `tools`, host `mcp`
 // status and `plugins`. A judgement entry `fail` makes that call exit 1 with
-// that text on stderr, whatever its kind.
+// that text on stderr, whatever its kind. A tool with `hookFails: true` stands
+// for a PreToolUse hook that crashed: each hook that fits it is taken to have
+// exited 1 without running.
 //
 // Each case-session call takes the next entry of `turns`, and each judgement
 // call the next entry of `judgements`, whose key must be the kind of call the
@@ -195,7 +197,7 @@ for (const [index, tool] of (turn.tools ?? []).entries()) {
   const input = JSON.parse(JSON.stringify(tool.input).replaceAll('{{CWD}}', cwd.replaceAll('\\', '\\\\')));
   const id = `toolu_${index}_${randomUUID().slice(0, 8)}`;
   record('assistant', { id: `msg_${id}`, role: 'assistant', stop_reason: 'tool_use', content: [{ type: 'tool_use', id, name: tool.name, input }] });
-  const hooked = await preToolUse(tool.name, input, id);
+  const hooked = await preToolUse(tool.name, input, id, tool.hookFails === true);
   if (hooked.stop !== undefined) {
     stopped = hooked.stop;
     break;
@@ -258,10 +260,10 @@ function runHook(hook, input) {
 
 // What the PreToolUse hooks decide for a tool call: `{ stop }` to end the
 // turn, `{ decision }` to allow or deny it, or `{}` to leave it to the host.
-async function preToolUse(name, input, id) {
+async function preToolUse(name, input, id, crashes) {
   for (const hook of hooksFor('PreToolUse', name)) {
     const event = { session_id: sessionId, cwd, permission_mode: 'default', hook_event_name: 'PreToolUse', tool_name: name, tool_input: input, tool_use_id: id };
-    const ran = await runHook(hook, event);
+    const ran = crashes ? { status: 1, stdout: '', stderr: 'Error: the hook crashed', timedOut: false } : await runHook(hook, event);
     if (ran.timedOut || ran.status !== 0) {
       if (hook.onFailure !== 'block') continue;
       const what = ran.timedOut ? 'timed out' : 'failed';

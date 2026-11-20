@@ -58,6 +58,8 @@ export const DEFAULT_JUDGE_MODEL = 'sonnet';
 const ASKS_FILE = 'asks.jsonl';
 // Long enough for the hook's judgement call and its one retry.
 const ASK_HOOK_TIMEOUT_S = 300;
+// The liveness check's SessionStart hook only writes a file.
+const LIVE_HOOK_TIMEOUT_S = 30;
 
 const readJson = (file) => JSON.parse(readFileSync(file, 'utf8'));
 const writeJson = (file, value) => writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`);
@@ -296,7 +298,7 @@ const hookCommand = (...words) => words.map((word) => `"${word.replaceAll('\\', 
 function hookSettings({ runDir, judgeModel }, caseId, marker) {
   const ask = { type: 'command', command: hookCommand(process.execPath, askHookScript, '--run', runDir, '--case', caseId, '--judge-model', judgeModel), timeout: ASK_HOOK_TIMEOUT_S, onFailure: 'block' };
   const hooks = { PreToolUse: [{ matcher: 'AskUserQuestion', hooks: [ask] }] };
-  if (marker) hooks.SessionStart = [{ hooks: [{ type: 'command', command: hookCommand(process.execPath, askHookScript, '--live', marker), timeout: 30 }] }];
+  if (marker) hooks.SessionStart = [{ hooks: [{ type: 'command', command: hookCommand(process.execPath, askHookScript, '--live', marker), timeout: LIVE_HOOK_TIMEOUT_S }] }];
   return { hooks };
 }
 

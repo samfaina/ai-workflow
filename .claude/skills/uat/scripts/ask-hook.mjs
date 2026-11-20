@@ -100,9 +100,9 @@ function refusalOf(value, questions, entries) {
     const drift = answer.entry === null;
     if (!drift && !(Number.isInteger(answer.entry) && answer.entry >= 0 && answer.entry < entries)) return `${answer.entry} is not the index of an answers entry, nor null for a drift answer`;
     if (typeof answer.reason !== 'string' || !answer.reason.trim()) return `the answer to "${q.question}" needs its reason`;
-    const options = labelsOf(q).map((label) => `"${label}"`).join(', ');
+    const choices = labelsOf(q).map((label) => `"${label}"`).join(', ');
     if (answer.other !== undefined) {
-      if (drift) return `the drift answer to "${q.question}" must be among its options, ${options}, not free text`;
+      if (drift) return `the drift answer to "${q.question}" must be among its options, ${choices}, not free text`;
       if (typeof answer.other !== 'string' || !answer.other.trim()) return `the free text answering "${q.question}" is empty`;
       if (answer.labels !== undefined) return `the answer to "${q.question}" gives labels or free text, not both`;
       continue;
@@ -110,7 +110,7 @@ function refusalOf(value, questions, entries) {
     if (!Array.isArray(answer.labels) || answer.labels.length === 0) return `the answer to "${q.question}" needs its labels`;
     if (!q.multiSelect && answer.labels.length !== 1) return `"${q.question}" takes one label, not ${answer.labels.length}`;
     const unknown = answer.labels.find((label) => !labelsOf(q).includes(label));
-    if (unknown !== undefined) return `"${unknown}" is not an option of "${q.question}": this run's options are ${options}`;
+    if (unknown !== undefined) return `"${unknown}" is not an option of "${q.question}": this run's options are ${choices}`;
   }
   return null;
 }

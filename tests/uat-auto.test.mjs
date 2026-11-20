@@ -295,6 +295,25 @@ test('a label that is not one of this run\'s options is refused and asked again 
   assert.equal(run.state().results.denied.verdict, 'Not proven');
 });
 
+test('a question the answering hook fails on is refused by Claude Code, since the hook blocks on failure, and that refusal keeps the step from a Pass', (t) => {
+  const run = makeRun(t, [caseFile('a', { answers: [setupAnswers[0]] })]);
+  const notProven = { verdict: 'Not proven', line: 'The setup skill asked where tickets live, and the driver\'s answering hook failed, so the setup never ran.', judge: [], findings: [{ kind: 'environment', text: 'The answering hook failed.' }] };
+  const fake = fakeClaude(run, {
+    turns: [{ tools: [{ ...askTool(tracker), hookFails: true }], text: 'I got no answer.' }],
+    judgements: [{ reply: { action: 'end', reason: 'not waiting' } }, { grade: pass() }, { grade: notProven }],
+  });
+
+  const result = auto(run, fake);
+  assert.equal(result.status, 0, result.report);
+
+  const [blocked] = toolResults(run, 'a');
+  assert.equal(blocked.is_error, true);
+  assert.match(blocked.content, /blocking because onFailure is "block"/);
+  const [first, retry] = gradeCalls(fake);
+  assert.match(retry.prompt.slice(first.prompt.length), /was refused[\s\S]*AskUserQuestion: the answering hook gave no answer[\s\S]*the hook crashed[\s\S]*never a Pass/);
+  assert.equal(run.state().results.a.verdict, 'Not proven');
+});
+
 test('a question no entry fits gets a drift answer among its options, written to the case file with drift: true, and a drift answer in free text is refused', (t) => {
   const run = makeRun(t, [caseFile('a', { answers: [setupAnswers[0]] })]);
   const colour = choice('Which colour does the app use?', ['Blue', 'Green']);
@@ -926,7 +945,7 @@ test('auto given --source starts a run of the chosen cases in a new run folder, 
   assert.equal(existsSync(unknownDir), false);
 });
 
-test('the driver, the permission host and the answering hook are dependency-free Node ESM', () => {
+test('the driver, the permission host, the answering hook and the Claude Code launcher are dependency-free Node ESM', () => {
   for (const name of ['driver.mjs', 'permission-host.mjs', 'ask-hook.mjs', 'claude.mjs']) {
     const text = readText(join(repoRoot, '.claude', 'skills', 'uat', 'scripts', name));
     const imports = [...text.matchAll(/^import [^;]* from '([^']+)';$/gm)].map(([, from]) => from);
