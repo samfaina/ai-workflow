@@ -651,6 +651,153 @@ test('aw-converge declaring neither invocation flag is reported', () => {
   assertOneFinding(runOn(kit), /^skills\/aw-converge\/SKILL\.md: .*user-invoked.*disable-model-invocation: true/);
 });
 
+// The docs site under `site/` shows every skill from `site/skills.json`, which
+// must stay in step with the kit: the plugin manifest, NOTICE.md and each
+// skill's frontmatter. A kit without `site/` has nothing to check.
+
+const ALPHA_ENTRY = {
+  name: 'aw-alpha',
+  group: 'Skills the phases call',
+  origin: ['kit'],
+  kind: 'kit',
+  invoked: 'model',
+  does: 'Alpha things.',
+  calledBy: ['aw-beta'],
+  leaves: 'Alpha output.',
+};
+
+const BETA_ENTRY = {
+  name: 'aw-beta',
+  group: 'Phases',
+  origin: ['kit'],
+  kind: 'kit',
+  invoked: 'user',
+  does: 'Beta things.',
+  needs: 'A task.',
+  leaves: 'Beta output.',
+};
+
+function kitWithSite(entries = [ALPHA_ENTRY, BETA_ENTRY]) {
+  const kit = validKit();
+  kit['site/index.html'] = '<!doctype html>\n<title>Fixture</title>\n';
+  kit['site/skills.json'] = entries;
+  return kit;
+}
+
+test('a site whose skills.json is in step with the kit passes', () => {
+  assertNoFindings(runOn(kitWithSite()));
+});
+
+test('a skills.json that is not an array of entries is reported', () => {
+  const kit = kitWithSite();
+  kit['site/skills.json'] = { skills: [ALPHA_ENTRY, BETA_ENTRY] };
+
+  assertOneFinding(runOn(kit), /^site\/skills\.json: must be an array of skill entries/);
+});
+
+test('a site with no skills.json is reported', () => {
+  const kit = kitWithSite();
+  delete kit['site/skills.json'];
+
+  assertOneFinding(runOn(kit), /^site\/skills\.json: file is missing/);
+});
+
+test('a site whose skills.json is not valid JSON is reported', () => {
+  const kit = kitWithSite();
+  kit['site/skills.json'] = '[{ "name": "aw-alpha", }]\n';
+
+  assertOneFinding(runOn(kit), /^site\/skills\.json: invalid JSON/);
+});
+
+test('a skill the plugin manifest lists with no entry in skills.json is reported', () => {
+  assertOneFinding(runOn(kitWithSite([ALPHA_ENTRY])), /^site\/skills\.json: no entry for skill "aw-beta".*plugin\.json/);
+});
+
+test('an entry in skills.json for a skill the plugin manifest does not list is reported', () => {
+  const kit = kitWithSite([ALPHA_ENTRY, BETA_ENTRY, { ...ALPHA_ENTRY, name: 'aw-ghost' }]);
+
+  assertOneFinding(runOn(kit), /^site\/skills\.json: entry "aw-ghost" names a skill .*plugin\.json does not list/);
+});
+
+// NOTICE.md credits each copy and adaptation with its upstreams and kind. An
+// entry for a skill with a row must agree with it.
+
+function noticeWithRow(skill, upstream, kind) {
+  return [
+    '# Notice',
+    '',
+    '| Skill | Upstream | Pin | Kind |',
+    '| ----- | -------- | --- | ---- |',
+    `| \`${skill}\` | ${upstream} | [\`d1478fc\`](https://example.com) | ${kind} |`,
+    '',
+  ].join('\n');
+}
+
+const POCOCK_AND_ADDY =
+  'Matt Pocock, [`mattpocock/skills`](https://github.com/mattpocock/skills) `skills/engineering/pr`: the body. ' +
+  'Addy Osmani, [`addyosmani/agent-skills`](https://github.com/addyosmani/agent-skills) `skills/shipping-and-launch`: the checklist';
+
+function kitWithNoticedAlpha(entry) {
+  const kit = kitWithSite([{ ...ALPHA_ENTRY, ...entry }, BETA_ENTRY]);
+  kit['NOTICE.md'] = noticeWithRow('aw-alpha', POCOCK_AND_ADDY, 'adaptation');
+  return kit;
+}
+
+test('a kit without site/ reports nothing about skills.json', () => {
+  const kit = validKit();
+  kit['NOTICE.md'] = noticeWithRow('aw-alpha', POCOCK_AND_ADDY, 'adaptation');
+
+  assertNoFindings(runOn(kit));
+});
+
+test('an entry whose kind and upstreams match its NOTICE.md row passes, in any order', () => {
+  assertNoFindings(runOn(kitWithNoticedAlpha({ kind: 'adaptation', origin: ['addy', 'pocock'] })));
+});
+
+test('an entry whose kind differs from its NOTICE.md row is reported', () => {
+  const kit = kitWithNoticedAlpha({ kind: 'copy', origin: ['pocock', 'addy'] });
+
+  assertOneFinding(runOn(kit), /^site\/skills\.json: entry "aw-alpha" has kind "copy".*NOTICE\.md.*"adaptation"/);
+});
+
+test('an entry whose origin leaves out an upstream of its NOTICE.md row is reported', () => {
+  const kit = kitWithNoticedAlpha({ kind: 'adaptation', origin: ['pocock'] });
+
+  assertOneFinding(runOn(kit), /^site\/skills\.json: entry "aw-alpha" has origin \[pocock\].*NOTICE\.md.*\[pocock, addy\]/);
+});
+
+test('a pstack row maps to the origin pstack', () => {
+  const kit = kitWithSite([{ ...ALPHA_ENTRY, kind: 'adaptation', origin: ['pstack'] }, BETA_ENTRY]);
+  kit['NOTICE.md'] = noticeWithRow('aw-alpha', 'Lauren Tan, pstack: [`cursor/plugins`](https://github.com/cursor/plugins)', 'adaptation');
+
+  assertNoFindings(runOn(kit));
+});
+
+test('an entry with no NOTICE.md row may be an inspired skill', () => {
+  assertNoFindings(runOn(kitWithSite([{ ...ALPHA_ENTRY, kind: 'inspired', origin: ['pstack'] }, BETA_ENTRY])));
+});
+
+test('an entry with no NOTICE.md row whose kind is neither kit nor inspired is reported', () => {
+  const kit = kitWithSite([{ ...ALPHA_ENTRY, kind: 'adaptation', origin: ['pocock'] }, BETA_ENTRY]);
+
+  assertOneFinding(runOn(kit), /^site\/skills\.json: entry "aw-alpha" has kind "adaptation".*no NOTICE\.md row.*"kit" or "inspired"/);
+});
+
+// `invoked` is `user` exactly when the skill's frontmatter sets
+// `disable-model-invocation: true`.
+
+test('an entry that calls a model-invoked skill user-invoked is reported', () => {
+  const kit = kitWithSite([{ ...ALPHA_ENTRY, invoked: 'user' }, BETA_ENTRY]);
+
+  assertOneFinding(runOn(kit), /^site\/skills\.json: entry "aw-alpha" has invoked "user".*skills\/aw-alpha\/SKILL\.md.*disable-model-invocation/);
+});
+
+test('an entry that calls a user-invoked skill model-invoked is reported', () => {
+  const kit = kitWithSite([ALPHA_ENTRY, { ...BETA_ENTRY, invoked: 'model' }]);
+
+  assertOneFinding(runOn(kit), /^site\/skills\.json: entry "aw-beta" has invoked "model".*skills\/aw-beta\/SKILL\.md.*disable-model-invocation: true/);
+});
+
 test('a defaults restatement that matches the configuration page up to whitespace passes', () => {
   const kit = validKit();
   kit['docs/configuration.md'] = configurationPage();

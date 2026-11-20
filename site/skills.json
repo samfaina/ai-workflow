@@ -1,0 +1,382 @@
+[
+  {
+    "name": "aw-setup",
+    "group": "Setup",
+    "origin": ["pocock"],
+    "kind": "adaptation",
+    "invoked": "user",
+    "does": "Configures the repo for the workflow in one interview: the tracker, VCS and checks adapters, the domain doc, the Agent skills pointer block, and repo housekeeping.",
+    "needs": "A repo. It also works with nothing configured yet.",
+    "leaves": "docs/agents/tracker.md, vcs.md, checks.md and domain.md, and the Agent skills block in AGENTS.md or CLAUDE.md."
+  },
+  {
+    "name": "aw-intake",
+    "group": "Phases",
+    "origin": ["kit"],
+    "kind": "kit",
+    "invoked": "user",
+    "does": "Starts every task: classifies its type and route with reasons, runs the type's pre-step, and names the next skill.",
+    "needs": "A ticket or free text.",
+    "leaves": "A route and a pre-step result, and on the fast route 1 to 3 done-when criteria."
+  },
+  {
+    "name": "aw-wayfinder",
+    "group": "Phases",
+    "origin": ["pocock"],
+    "kind": "adaptation",
+    "invoked": "user",
+    "does": "Charts an epic-route effort as a map of decision tickets, resolves them one per session, then hands each deliverable to /aw-spec. Plans and never builds.",
+    "needs": "An epic-route task, and a tracker. With none, it offers to create a local-markdown one.",
+    "leaves": "A map, its decision tickets, and the list of deliverables."
+  },
+  {
+    "name": "aw-spec",
+    "group": "Phases",
+    "origin": ["pocock"],
+    "kind": "adaptation",
+    "invoked": "user",
+    "does": "Grills you, explores the repo, and writes the spec as a draft. Sets it to approved only on your explicit approval.",
+    "needs": "A standard-route task, or one deliverable of a cleared map.",
+    "leaves": "docs/specs/<slug>/spec.md, at draft and then approved."
+  },
+  {
+    "name": "aw-slices",
+    "group": "Phases",
+    "origin": ["pocock"],
+    "kind": "adaptation",
+    "invoked": "user",
+    "does": "Plans an approved spec as vertical tracer-bullet slices covering every AC-n, riskiest first, and agrees the test seams with you.",
+    "needs": "An approved spec.",
+    "leaves": "The slice plan and Test strategy in the spec, and mirror tickets where the tracker allows."
+  },
+  {
+    "name": "aw-build",
+    "group": "Phases",
+    "origin": ["kit"],
+    "kind": "kit",
+    "invoked": "user",
+    "does": "Builds one slice per call, test-first. On the fast route it builds the whole task. In a fix run it fixes the introduced defects of the latest review report.",
+    "needs": "A slice plan, done-when criteria, or a review report with introduced defects.",
+    "leaves": "One local commit, a ticked done marker and updated Traceability."
+  },
+  {
+    "name": "aw-create-verify",
+    "group": "Phases",
+    "origin": ["kit"],
+    "kind": "kit",
+    "invoked": "user",
+    "does": "Writes the repo's verify skill: how to start, diagnose, drive, observe and clean up the real app, with a feature map. Runs it once end to end.",
+    "needs": "A repo with an app to run. Run it once per app, before the first /aw-verify.",
+    "leaves": ".claude/skills/verify-<app>/"
+  },
+  {
+    "name": "aw-verify",
+    "group": "Phases",
+    "origin": ["pstack"],
+    "kind": "inspired",
+    "invoked": "user",
+    "does": "Proves each acceptance criterion on the real app through the verify skill. Without one, it says which criteria need test: or manual: evidence.",
+    "needs": "A built spec, or fast-route done-when criteria, and a verify skill.",
+    "leaves": "Verify results named in Traceability, in a local commit."
+  },
+  {
+    "name": "aw-review",
+    "group": "Phases",
+    "origin": ["kit"],
+    "kind": "kit",
+    "invoked": "user",
+    "does": "Reviews the diff on the Spec, Standards and Security axes, each in its own subagent. A defect counts only when a run proves it.",
+    "needs": "A work branch with commits since the diff base.",
+    "leaves": "A local review report. Nothing is posted to the review host."
+  },
+  {
+    "name": "aw-ship",
+    "group": "Phases",
+    "origin": ["pocock", "addy"],
+    "kind": "adaptation",
+    "invoked": "user",
+    "does": "Runs the full check level, sets the spec to implemented, writes the review request body, then pushes, opens the review request and merges as far as the VCS adapter's access levels allow.",
+    "needs": "A review report with no introduced defect.",
+    "leaves": "A review request, or drafts in .aw/drafts/."
+  },
+  {
+    "name": "aw-retro",
+    "group": "Phases",
+    "origin": ["pocock"],
+    "kind": "adaptation",
+    "invoked": "user",
+    "does": "Turns every error class the session repeated into the highest control on its ladder that works, proven to fail on the real case and pass on a correct one.",
+    "needs": "A finished session.",
+    "leaves": "A retro report under .aw/retros/. It changes nothing until you approve."
+  },
+  {
+    "name": "aw-converge",
+    "group": "Runs across phases",
+    "origin": ["kit"],
+    "kind": "kit",
+    "invoked": "user",
+    "does": "Repeats rounds of a fix run, /aw-verify when the fix calls for it, and /aw-review until no introduced defect is left, up to 3 rounds by default. Never ships.",
+    "needs": "A review report with introduced defects.",
+    "leaves": "A review report with none, or the defects left at the limit and why it stopped."
+  },
+  {
+    "name": "aw-implement",
+    "group": "Runs across phases",
+    "origin": ["kit"],
+    "kind": "kit",
+    "invoked": "user",
+    "does": "Takes an approved spec or a fast-route task from what is left to build to a clean review: builds each slice, verifies, reviews, and runs rounds as needed. Never ships.",
+    "needs": "An approved spec with a slice plan, or a fast-route task.",
+    "leaves": "Built slices and a review report with no introduced defect. It asks only during a HITL slice or to agree a test seam."
+  },
+  {
+    "name": "aw-build-steps",
+    "group": "Phase procedures",
+    "origin": ["kit"],
+    "kind": "kit",
+    "invoked": "model",
+    "does": "The steps of /aw-build: one slice, the fast route, or a fix run.",
+    "needs": "A call from /aw-build, aw-converge-steps or /aw-implement.",
+    "leaves": "What /aw-build leaves."
+  },
+  {
+    "name": "aw-verify-steps",
+    "group": "Phase procedures",
+    "origin": ["kit"],
+    "kind": "kit",
+    "invoked": "model",
+    "does": "The steps of /aw-verify: prove each criterion on the real app and record the results.",
+    "needs": "A call from /aw-verify, aw-converge-steps or /aw-implement.",
+    "leaves": "What /aw-verify leaves."
+  },
+  {
+    "name": "aw-review-steps",
+    "group": "Phase procedures",
+    "origin": ["pocock"],
+    "kind": "adaptation",
+    "invoked": "model",
+    "does": "The steps of /aw-review: review the diff on the three axes and write the review report.",
+    "needs": "A call from /aw-review, aw-converge-steps or /aw-implement.",
+    "leaves": "What /aw-review leaves."
+  },
+  {
+    "name": "aw-converge-steps",
+    "group": "Phase procedures",
+    "origin": ["kit"],
+    "kind": "kit",
+    "invoked": "model",
+    "does": "The rounds of /aw-converge: the convergence procedure.",
+    "needs": "A call from /aw-converge or /aw-implement.",
+    "leaves": "What /aw-converge leaves."
+  },
+  {
+    "name": "aw-tdd",
+    "group": "Skills the phases call",
+    "origin": ["pocock"],
+    "kind": "adaptation",
+    "invoked": "model",
+    "does": "The red-to-green loop, with what a good test is, where tests go and the anti-patterns. It shows you the seams under test, and writes no test at a seam you have not confirmed.",
+    "calledBy": ["aw-build", "aw-build-steps"],
+    "leaves": "Tests at the agreed seams."
+  },
+  {
+    "name": "aw-check-spec",
+    "group": "Skills the phases call",
+    "origin": ["addy"],
+    "kind": "adaptation",
+    "invoked": "model",
+    "does": "Checks the specs under docs/specs/ with a script: format, statuses and traceability.",
+    "calledBy": ["aw-spec", "aw-slices", "aw-build-steps", "aw-verify-steps", "aw-ship", "aw-setup", "aw-unslop"],
+    "leaves": "A pass, or the findings to fix."
+  },
+  {
+    "name": "aw-security-and-hardening",
+    "group": "Skills the phases call",
+    "origin": ["addy"],
+    "kind": "adaptation",
+    "invoked": "model",
+    "does": "Security guidance and checklists: threat modeling, hardening controls, red flags. The review's Security axis judges with it.",
+    "calledBy": ["aw-review-steps", "aw-observability-and-instrumentation", "aw-source-driven-development"],
+    "leaves": "Security findings under the review's rules."
+  },
+  {
+    "name": "aw-grilling",
+    "group": "Skills the phases call",
+    "origin": ["pocock"],
+    "kind": "copy",
+    "invoked": "model",
+    "does": "Interviews you relentlessly about a plan, decision or idea until it holds up.",
+    "calledBy": ["aw-spec", "aw-wayfinder", "aw-grill-with-docs", "aw-improve-codebase-architecture"],
+    "leaves": "Settled decisions."
+  },
+  {
+    "name": "aw-grill-with-docs",
+    "group": "Skills the phases call",
+    "origin": ["pocock"],
+    "kind": "copy",
+    "invoked": "user",
+    "does": "The same interview, writing the glossary and ADRs as terms and decisions settle.",
+    "calledBy": ["aw-setup"],
+    "leaves": "GLOSSARY.md entries and ADRs."
+  },
+  {
+    "name": "aw-domain-modeling",
+    "group": "Skills the phases call",
+    "origin": ["pocock"],
+    "kind": "copy",
+    "invoked": "model",
+    "does": "Builds and sharpens the domain model: challenges terms, invents edge cases, writes the glossary and ADRs.",
+    "calledBy": ["aw-spec", "aw-wayfinder", "aw-setup", "aw-grill-with-docs", "aw-improve-codebase-architecture"],
+    "leaves": "GLOSSARY.md and docs/adr/ updates."
+  },
+  {
+    "name": "aw-research",
+    "group": "Skills the phases call",
+    "origin": ["pocock"],
+    "kind": "copy",
+    "invoked": "model",
+    "does": "Investigates a question against high-trust primary sources.",
+    "calledBy": ["aw-intake", "aw-wayfinder"],
+    "leaves": "A Markdown file of findings in the repo."
+  },
+  {
+    "name": "aw-prototype",
+    "group": "Skills the phases call",
+    "origin": ["pocock"],
+    "kind": "copy",
+    "invoked": "model",
+    "does": "Builds throwaway code that answers one design question: a logic demo or UI variants.",
+    "calledBy": ["aw-wayfinder"],
+    "leaves": "A throwaway prototype, and the answer."
+  },
+  {
+    "name": "aw-diagnosing-bugs",
+    "group": "Skills the phases call",
+    "origin": ["pocock"],
+    "kind": "copy",
+    "invoked": "model",
+    "does": "A diagnosis loop for hard bugs and performance regressions.",
+    "calledBy": ["aw-intake", "aw-observability-and-instrumentation"],
+    "leaves": "A diagnosed cause."
+  },
+  {
+    "name": "aw-source-driven-development",
+    "group": "Skills the phases call",
+    "origin": ["addy"],
+    "kind": "copy",
+    "invoked": "model",
+    "does": "Grounds implementation decisions in official documentation, with citations.",
+    "calledBy": ["aw-build-steps"],
+    "leaves": "Source-cited code."
+  },
+  {
+    "name": "aw-codebase-design",
+    "group": "Skills the phases call",
+    "origin": ["pocock"],
+    "kind": "copy",
+    "invoked": "model",
+    "does": "Shared vocabulary for designing deep modules and placing seams.",
+    "calledBy": ["aw-tdd", "aw-improve-codebase-architecture"],
+    "leaves": "A shared language for the design."
+  },
+  {
+    "name": "aw-improve-codebase-architecture",
+    "group": "Skills the phases call",
+    "origin": ["pocock"],
+    "kind": "copy",
+    "invoked": "user",
+    "does": "Scans the codebase for deepening opportunities, reports them as a visual HTML report, then grills through the one you pick.",
+    "calledBy": ["aw-retro", "aw-setup"],
+    "leaves": "An HTML report and a chosen refactor."
+  },
+  {
+    "name": "aw-writing-for-agents",
+    "group": "Skills the phases call",
+    "origin": ["pocock"],
+    "kind": "copy",
+    "invoked": "model",
+    "does": "How to write documents agents read: skills, AGENTS.md and CLAUDE.md.",
+    "calledBy": ["aw-retro"],
+    "leaves": "Agent-facing docs that follow the guide."
+  },
+  {
+    "name": "aw-blast-radius",
+    "group": "Optional skills",
+    "origin": ["pstack"],
+    "kind": "adaptation",
+    "invoked": "model",
+    "does": "Finds what a change can break outside its diff, and proves its safety fact by running real code in a detached worktree.",
+    "needs": "Commits to examine.",
+    "leaves": "A report under .aw/blast-radius/ with its proof script."
+  },
+  {
+    "name": "aw-benchmark-checklist",
+    "group": "Optional skills",
+    "origin": ["pstack"],
+    "kind": "adaptation",
+    "invoked": "model",
+    "does": "Vets a performance number before you report it or act on it.",
+    "needs": "A benchmark you ran.",
+    "leaves": "A vetted number, or what is wrong with it."
+  },
+  {
+    "name": "aw-unslop",
+    "group": "Optional skills",
+    "origin": ["pstack"],
+    "kind": "adaptation",
+    "invoked": "user",
+    "does": "Cuts AI tells from prose a person or an agent reads, leaving glossary terms and code as they are.",
+    "needs": "A file or text, or else the last document of the conversation.",
+    "leaves": "The rewritten prose."
+  },
+  {
+    "name": "aw-observability-and-instrumentation",
+    "group": "Optional skills",
+    "origin": ["addy"],
+    "kind": "adaptation",
+    "invoked": "model",
+    "does": "Guidance on permanent logs, metrics, traces and alerts.",
+    "needs": "A telemetry change, or an incident the telemetry could not explain.",
+    "leaves": "Instrumented code."
+  },
+  {
+    "name": "aw-wizard",
+    "group": "Optional skills",
+    "origin": ["pocock"],
+    "kind": "adaptation",
+    "invoked": "model",
+    "does": "Generates an interactive bash wizard that walks you through steps only you can perform.",
+    "needs": "Steps the agent cannot do itself.",
+    "leaves": "A bash wizard script."
+  },
+  {
+    "name": "aw-handoff",
+    "group": "Optional skills",
+    "origin": ["pocock"],
+    "kind": "copy",
+    "invoked": "user",
+    "does": "Compacts the conversation into a handoff document for another agent to pick up.",
+    "needs": "A conversation to hand over.",
+    "leaves": "A handoff document."
+  },
+  {
+    "name": "aw-to-questionnaire",
+    "group": "Optional skills",
+    "origin": ["pocock"],
+    "kind": "copy",
+    "invoked": "user",
+    "does": "Turns a decision you cannot fully answer into a questionnaire for someone else to fill in.",
+    "needs": "An open decision.",
+    "leaves": "A questionnaire."
+  },
+  {
+    "name": "aw-wait-what",
+    "group": "Optional skills",
+    "origin": ["pocock"],
+    "kind": "copy",
+    "invoked": "user",
+    "does": "Re-pitches the last message when it did not land.",
+    "needs": "A message that did not land.",
+    "leaves": "A clearer version."
+  }
+]
