@@ -14,7 +14,9 @@
 // which answers each question with options by ANSWERING.md, records a drift
 // answer, or ends the step at a stop point. A turn that ends in prose gets one
 // judgement call by ANSWERING.md, unless no `turns` or `answers` entry is
-// left, and each step one by GRADING.md. Before the first case, a liveness
+// left: it answers each question of the turn, from an entry or by taking the
+// agent's recommendation as a recorded drift answer, and the replies sent are
+// logged for grading. Each step gets one judgement call by GRADING.md. Before the first case, a liveness
 // check confirms that the hook and the permission host are live.
 //
 // A case writes to GitHub only on the scratch repo, the source clone's GitHub
@@ -56,6 +58,8 @@ const HOST_TOOL = `mcp__${HOST_SERVER}__approve`;
 export const DEFAULT_JUDGE_MODEL = 'sonnet';
 // The answering hook's log in the step folder, as ask-hook.mjs names it.
 const ASKS_FILE = 'asks.jsonl';
+// The replies the driver sent to prose turns, one line per turn.
+const REPLIES_FILE = 'replies.jsonl';
 // Long enough for the hook's judgement call and its one retry.
 const ASK_HOOK_TIMEOUT_S = 300;
 // The liveness check's SessionStart hook only writes a file.
@@ -373,30 +377,53 @@ function replyPrompt(step, text) {
       [
         'One JSON object and nothing else, either:',
         '',
-        '- `{ "action": "reply", "entry": "turn", "message": "...", "reason": "..." }` to send the next `turns` entry,',
-        '- `{ "action": "reply", "entry": "answer", "index": <n>, "message": "...", "reason": "..." }` to answer from an `answers` entry, or',
-        '- `{ "action": "end", "reason": "..." }` when the agent is not waiting, at a stop point, or when no entry fits.',
+        '- `{ "action": "reply", "questions": [...], "message": "..." }`, with one item per question the agent asked in this turn, each `{ "question": "<its text>", "entry": <n> | "turn" | null, "answer": "...", "reason": "..." }`. `entry` is the index of the `answers` entry that fits, `"turn"` for the next `turns` entry, or `null` for a drift answer, which takes the answer the agent recommended for that question: quote it, as the agent wrote it, in `"recommended": "..."`. Each entry answers one question at most.',
+        '- `{ "action": "end", "reason": "..." }` when the agent is not waiting, at a stop point, or when a question has no entry that fits and no recommended answer.',
         '',
-        '`message` is what the person types: the entry\'s intent, written for this turn.',
+        '`message` is what the person types: the answer to each question, written for this turn, and nothing else.',
       ].join('\n'),
     ),
   ].join('\n');
 }
 
-function acceptReply(step) {
+// Collapses whitespace, so that a quoted recommendation matches the turn's text
+// across line breaks.
+const squeezed = (text) => text.replace(/\s+/g, ' ').trim();
+const filled = (value) => typeof value === 'string' && value.trim() !== '';
+
+// Why a reply judgement is refused, or null. `text` is the agent's turn.
+function acceptReply(step, text) {
   return (value) => {
-    if (value.action === 'end') return typeof value.reason === 'string' && value.reason.trim() ? null : 'an end needs its reason';
+    if (value.action === 'end') return filled(value.reason) ? null : 'an end needs its reason';
     if (value.action !== 'reply') return '"action" must be "reply" or "end"';
-    if (typeof value.message !== 'string' || !value.message.trim()) return 'a reply needs the message the person types';
-    if (value.entry === 'turn') return step.turnsSent < (step.uatCase.turns ?? []).length ? null : 'every turn has been sent';
-    if (value.entry === 'answer') return step.unusedAnswers().includes(value.index) ? null : `answers entry ${value.index} is not one left`;
-    return '"entry" must be "turn" or "answer"';
+    if (!filled(value.message)) return 'a reply needs the message the person types';
+    if (!Array.isArray(value.questions) || value.questions.length === 0) return '"questions" must list each question of the turn, with its answer';
+    const left = step.unusedAnswers();
+    const seen = new Set();
+    for (const item of value.questions) {
+      if (!filled(item?.question)) return 'each item of "questions" needs the question as the agent asked it';
+      const name = `"${item.question}"`;
+      if (!filled(item.answer)) return `the answer to ${name} is empty`;
+      if (!filled(item.reason)) return `the answer to ${name} needs its reason`;
+      if (item.entry === null) {
+        if (!filled(item.recommended)) return `the drift answer to ${name} needs the answer the agent recommended, quoted in "recommended"`;
+        if (!squeezed(text).includes(squeezed(item.recommended))) return `"${item.recommended}", the recommendation quoted for ${name}, is not in the agent's turn: a drift answer in prose takes only an answer the agent recommended`;
+        continue;
+      }
+      if (seen.has(item.entry)) return `${item.entry === 'turn' ? 'the next turns entry' : `answers entry ${item.entry}`} answers two questions`;
+      seen.add(item.entry);
+      if (item.entry === 'turn') {
+        if (step.turnsSent >= (step.uatCase.turns ?? []).length) return 'every turn has been sent';
+      } else if (!left.includes(item.entry)) return `answers entry ${item.entry} is not one left`;
+    }
+    return null;
   };
 }
 
 function gradePrompt(step, ended, checks, summary) {
   const hostLog = existsSync(step.hostLog) ? readFileSync(step.hostLog, 'utf8').trim() : '';
   const asks = existsSync(step.asksLog) ? readFileSync(step.asksLog, 'utf8').trim() : '';
+  const replies = existsSync(step.repliesLog) ? readFileSync(step.repliesLog, 'utf8').trim() : '';
   return [
     '# UAT judgement: grade\n',
     'You grade one step of an unattended run of a UAT case, by the rules below. Your working directory is the working copy the step ran in: read it with your tools when the evidence needs it. Reply with the grades file, one JSON object and nothing else.\n',
@@ -412,6 +439,10 @@ function gradePrompt(step, ended, checks, summary) {
     section(
       'Answering hook log',
       `Each AskUserQuestion call of the case session and how the driver answered it, by ANSWERING.md: \`allow\` with the answers given, \`drift\` naming the questions no entry fitted, \`stop\` at a stop point, or \`deny\` when it could not answer.\n\n${asks ? `\`\`\`\n${asks}\n\`\`\`` : 'The agent asked no question with options.'}`,
+    ),
+    section(
+      'Replies the driver sent',
+      `Each message the driver typed for the person after a turn that ended in prose, with \`turn\`, the number of the turn it started, and how it answered each question: \`entry\` is the \`answers\` index, \`"turn"\` for a \`turns\` entry, or \`null\` for a drift answer that took the agent's recommendation. Read what the person said from here, not from the agent's account of it.\n\n${replies ? `\`\`\`\n${replies}\n\`\`\`` : 'The driver sent no reply: the first prompt was the only one.'}`,
     ),
   ].join('\n');
 }
@@ -598,6 +629,7 @@ function runStep(run, uatCase, brief) {
     mcpConfig: join(stepDir, 'permission-host.json'),
     settings: join(stepDir, 'settings.json'),
     asksLog: join(stepDir, ASKS_FILE),
+    repliesLog: join(stepDir, REPLIES_FILE),
     asksSeen: 0,
     turnsRun: 0,
     turnsSent: 0,
@@ -625,16 +657,21 @@ function runStep(run, uatCase, brief) {
     // The next turn starts with the call that judges the reply, so the quota is
     // paced before it.
     paceOnQuota(run, `turn ${step.turnsRun + 1} of ${uatCase.id}`);
-    const reply = judgement(step, 'reply', replyPrompt(step, text), acceptReply(step));
+    const reply = judgement(step, 'reply', replyPrompt(step, text), acceptReply(step, text));
     if (reply.action === 'end') {
       ended = `The agent ended its turn and the step ended there, unanswered: ${reply.reason}`;
       break;
     }
-    if (reply.entry === 'turn') step.turnsSent += 1;
-    else step.used.add(reply.index);
+    const sentTurn = reply.questions.some((item) => item.entry === 'turn');
+    if (sentTurn) step.turnsSent += 1;
+    for (const item of reply.questions) {
+      if (Number.isInteger(item.entry)) step.used.add(item.entry);
+      if (item.entry === null) runMjs('drift', runDir, '--when', item.question, '--intent', item.answer, '--reason', item.reason);
+    }
+    appendFileSync(step.repliesLog, `${JSON.stringify({ at: new Date().toISOString(), turn: step.turnsRun + 1, message: reply.message, questions: reply.questions })}\n`);
     ({ sessionId, text, stopped } = sessionTurn(step, reply.message, sessionId));
     const turn = step.turnsSent;
-    if (reply.entry === 'turn' && (uatCase.turns[turn - 1].assertions ?? []).length > 0) runMjs('check', runDir, '--turn', String(turn));
+    if (sentTurn && (uatCase.turns[turn - 1].assertions ?? []).length > 0) runMjs('check', runDir, '--turn', String(turn));
   }
 
   runMjs('check', runDir);

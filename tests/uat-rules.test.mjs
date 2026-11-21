@@ -143,10 +143,13 @@ describe('ANSWERING.md', () => {
     assert.doesNotMatch(conductor, /drift: true|the step ends/);
   });
 
-  test('in an unattended run, a question with options gets a drift answer among them recorded with drift: true, and a prose question ends the step', () => {
+  test('in an unattended run, a question with options gets a drift answer among them recorded with drift: true, and a prose question takes an entry, the agent\'s recommendation as drift, or ends the step', () => {
     const unattended = textSection(answering, UNATTENDED_SECTION);
     assert.match(unattended, /\*\*A question asked with options:\*\* choose a drift answer among its options[^\n]*recorded with `drift: true`/);
-    assert.match(unattended, /\*\*A question in prose:\*\* the step ends[^\n]*an invented reply can take the agent past the case/);
+    assert.match(unattended, /\*\*A question in prose:\*\*[^\n]*answers each question of the turn, and nothing else/);
+    assert.match(unattended, /one an entry fits is answered from that entry, even where the agent recommends otherwise/);
+    assert.match(unattended, /recommended answer, takes that recommendation as its drift answer[^\n]*recorded with `drift: true`/);
+    assert.match(unattended, /with no recommendation ends the step[^\n]*an invented reply can take the agent past the case/);
     assert.doesNotMatch(unattended, /\bperson\b|confirm/);
   });
 
