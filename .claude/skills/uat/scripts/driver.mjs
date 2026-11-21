@@ -377,7 +377,7 @@ function replyPrompt(step, text) {
       [
         'One JSON object and nothing else, either:',
         '',
-        '- `{ "action": "reply", "questions": [...], "message": "..." }`, with one item per question the agent asked in this turn, each `{ "question": "<its text>", "entry": <n> | "turn" | null, "answer": "...", "reason": "..." }`. `entry` is the index of the `answers` entry that fits, `"turn"` for the next `turns` entry, or `null` for a drift answer, which takes the answer the agent recommended for that question: quote it, as the agent wrote it, in `"recommended": "..."`. Each entry answers one question at most.',
+        '- `{ "action": "reply", "questions": [...], "message": "..." }`, with one item per question the agent asked in this turn, each `{ "question": "<its text>", "entry": <n> | "turn" | null, "answer": "...", "reason": "..." }`. `entry` is the index of the `answers` entry that fits, `"turn"` for the next `turns` entry when no `answers` entry fits, or `null` for a drift answer, which takes the answer the agent recommended for that question: quote it, as the agent wrote it, in `"recommended": "..."`. Each entry answers one question at most.',
         '- `{ "action": "end", "reason": "..." }` when the agent is not waiting, at a stop point, or when a question has no entry that fits and no recommended answer.',
         '',
         '`message` is what the person types: the answer to each question, written for this turn, and nothing else.',

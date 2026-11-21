@@ -14,7 +14,7 @@ These rules hold in both flows: a run with the **UAT conductor**, and an **Unatt
 
 Answers and turns are intents, and option labels change between runs. Match each question, whether the agent asked it with options or in prose, to an entry's `when`, then pick the option of **this run** that fulfils its `intent`. Give the reason with the answer. When the entry's `intent` says to type the answer in and no option of this run fulfils it, the answer is that text, given through the question's free-text choice, "Other".
 
-A turn that ends with the agent waiting is often a question in plain prose. Treat its text like a question, and take the reply from the first entry of `turns` not sent yet.
+A turn that ends with the agent waiting is often a question in plain prose. Treat its text like a question. An `answers` entry that fits it comes first, even when the next `turns` entry would also do; the reply to what no `answers` entry fits comes from the first entry of `turns` not sent yet.
 
 ### Stop points
 
