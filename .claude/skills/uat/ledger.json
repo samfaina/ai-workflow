@@ -13,12 +13,29 @@
     "date": "2026-11-18T21:16:39.000Z",
     "issue": 126
   },
+  "aw-fast-build": {
+    "verdict": "Pass",
+    "fingerprint": "f14a9f9bf19ede5555e3907a572fe74d5904432e479e985302533d3a6f22bb78",
+    "kitCommit": "537bb16f63bd3efda883a71731998e1ebcc3786d",
+    "date": "2026-11-20T23:13:58.583Z"
+  },
   "aw-fast-review": {
     "verdict": "Pass",
     "fingerprint": "2b446beeb351321f687734d4a8bf15d16398649fa576f3b93377059ae0834462",
-    "kitCommit": "52b4471343f8bfb476398a12bc29001b4c025a60",
-    "date": "2026-11-15T21:13:58.000Z",
-    "issue": 103
+    "kitCommit": "537bb16f63bd3efda883a71731998e1ebcc3786d",
+    "date": "2026-11-20T23:13:58.583Z"
+  },
+  "aw-fast-ship": {
+    "verdict": "Pass",
+    "fingerprint": "c6f2c67731d2b6bf8f5b28651152ee958dd87e1f6dbb069318ff4de9281521fe",
+    "kitCommit": "537bb16f63bd3efda883a71731998e1ebcc3786d",
+    "date": "2026-11-20T23:13:58.583Z"
+  },
+  "aw-fast-ship-uncommitted": {
+    "verdict": "Pass",
+    "fingerprint": "8ac7527d22a20c51f7203fcd665a9c290e6951a9e6e2bb06064741d3a6b33e9e",
+    "kitCommit": "537bb16f63bd3efda883a71731998e1ebcc3786d",
+    "date": "2026-11-20T23:13:58.583Z"
   },
   "aw-fast-verified-build": {
     "verdict": "Pass",
@@ -44,9 +61,8 @@
   "aw-fast-verify-skipped": {
     "verdict": "Pass",
     "fingerprint": "c7f6b729b2ac0fa6a7955bf59e10aeb65a2d1df60611d4b84b859034329738da",
-    "kitCommit": "52b4471343f8bfb476398a12bc29001b4c025a60",
-    "date": "2026-11-15T21:13:58.000Z",
-    "issue": 103
+    "kitCommit": "537bb16f63bd3efda883a71731998e1ebcc3786d",
+    "date": "2026-11-20T23:13:58.583Z"
   },
   "aw-intake-contract": {
     "verdict": "Pass",
