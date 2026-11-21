@@ -13,7 +13,14 @@
     "Set-Content .aw/repro/due-day/fees.test.ts 'import { expect, it } from \"vitest\"; import { lateFeeCents } from \"../../../src/fees.js\"; it(\"charges nothing when returned on the due date\", () => { expect(lateFeeCents({ id: 1, bookId: 1, member: \"ada\", loanDate: \"2026-10-01\", dueDate: \"2026-10-15\", returnDate: \"2026-10-15\", renewed: false }, \"2026-11-01\")).toBe(0); });'"
   ],
   "command": "/ai-workflow:aw-ship",
-  "answers": [],
+  "answers": [
+    {
+      "when": "Los tres criterios done-when de 0eb1290 tienen una excepción de test: la respuesta HTTP solo se prueba con evidencia `manual:`. Los tests comprometidos solo cubren `lateFeeCents`. ¿Has comprobado a mano en esta sesión (1) ada vence 2026-10-15 y devuelve 2026-10-15 → `GET /members/ada/fees` da `totalCents: 0`; (2) devuelve 2026-10-16 → `totalCents: 25`; (3) préstamo abierto el día del vencimiento → `GET /loans` da `feeCents: 0`?",
+      "intent": "No lo he comprobado",
+      "reason": "Drift: no entry fits. In an unattended run nobody did a manual check, so claiming one would be invented evidence. The honest option leaves the criteria items unchecked, and the ship goes on to its drafts, which is what the case checks.",
+      "drift": true
+    }
+  ],
   "turns": [],
   "assertions": [
     {

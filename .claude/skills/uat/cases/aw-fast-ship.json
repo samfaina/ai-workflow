@@ -11,7 +11,13 @@
     "npm ci"
   ],
   "command": "/ai-workflow:aw-ship",
-  "answers": [],
+  "answers": [
+    {
+      "when": "Whether the person checked by hand the HTTP responses the done-when criteria leave to a manual check",
+      "intent": "Not checked",
+      "reason": "nobody checks by hand in a run, so claiming a check would be invented evidence; the ship goes on to its drafts with those checks left pending, which is what the case checks"
+    }
+  ],
   "turns": [],
   "assertions": [
     {
