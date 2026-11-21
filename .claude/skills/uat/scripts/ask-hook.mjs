@@ -20,6 +20,8 @@
 //   as a person typing `hecho` ends it.
 // - a denial with the reason, when the judgement call failed, or its answer
 //   was refused twice: a label that is not an option, or a question left out.
+//   The judgement names each question by its index in the call, not its text,
+//   which it can miscopy.
 //
 // Claude Code never checks a value against the options, so the hook does,
 // before it answers. Each decision is appended to asks.jsonl in the step
@@ -72,17 +74,25 @@ function askPrompt(uatCase, questions) {
     section('The case', `${uatCase.title}: the person typed \`${uatCase.command}\`.`),
     section("The case's checks, which say where it expects the agent to stop", asJson(uatCase.assertions ?? [])),
     section('`answers` entries', asJson((uatCase.answers ?? []).map((entry, index) => ({ index, ...entry })))),
-    section('The questions, with the options of this run', asJson(questions)),
+    section('The questions, with the options of this run', asJson(questions.map((q, index) => ({ index, ...q })))),
     section(
       'Your reply',
       [
         'One JSON object and nothing else, either:',
         '',
-        '- `{ "action": "answer", "answers": [...] }` with one answer per question, each `{ "question": "<its text>", "labels": ["<option label>", ...], "entry": <index>, "reason": "..." }`: one label, or one or more for a multiSelect question, each copied exactly from that question\'s options. `entry` is the index of the `answers` entry that fits, or `null` for a drift answer when none fits. When the entry that fits says to type the answer in and no option fulfils it, give `"other": "<the text>"` in place of `labels`; a drift answer is always among the options.',
+        '- `{ "action": "answer", "answers": [...] }` with one answer per question, each `{ "question": <its index above>, "labels": ["<option label>", ...], "entry": <index>, "reason": "..." }`: one label, or one or more for a multiSelect question, each copied exactly from that question\'s options. `entry` is the index of the `answers` entry that fits, or `null` for a drift answer when none fits. When the entry that fits says to type the answer in and no option fulfils it, give `"other": "<the text>"` in place of `labels`; a drift answer is always among the options.',
         '- `{ "action": "end", "reason": "..." }` at a stop point.',
       ].join('\n'),
     ),
   ].join('\n');
+}
+
+// The question an answer is for: its index in the call, which a long question
+// cannot be miscopied into, or else its exact text. -1 when it names none.
+function questionIndex(answer, questions) {
+  const named = answer?.question;
+  if (Number.isInteger(named)) return named >= 0 && named < questions.length ? named : -1;
+  return questions.findIndex((q) => q.question === named);
 }
 
 // Why an ask judgement is refused, or null.
@@ -91,10 +101,10 @@ function refusalOf(value, questions, entries) {
   if (value.action !== 'answer') return '"action" must be "answer" or "end"';
   if (!Array.isArray(value.answers)) return '"answers" must list one answer per question';
   for (const answer of value.answers) {
-    if (!questions.some((q) => q.question === answer?.question)) return `"${answer?.question}" is not a question of this call`;
+    if (questionIndex(answer, questions) === -1) return `${JSON.stringify(answer?.question)} is not the index of a question of this call, from 0 to ${questions.length - 1}`;
   }
-  for (const q of questions) {
-    const given = value.answers.filter((answer) => answer.question === q.question);
+  for (const [index, q] of questions.entries()) {
+    const given = value.answers.filter((answer) => questionIndex(answer, questions) === index);
     if (given.length !== 1) return `the question "${q.question}" needs exactly one answer, not ${given.length}`;
     const [answer] = given;
     const drift = answer.entry === null;
@@ -152,8 +162,8 @@ function answer(options, event) {
 
   const answers = {};
   const drift = [];
-  for (const q of questions) {
-    const given = value.answers.find((a) => a.question === q.question);
+  for (const [index, q] of questions.entries()) {
+    const given = value.answers.find((a) => questionIndex(a, questions) === index);
     answers[q.question] = given.other ?? given.labels.join(', ');
     if (given.entry !== null) continue;
     try {

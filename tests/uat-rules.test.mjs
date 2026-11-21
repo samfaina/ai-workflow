@@ -110,6 +110,7 @@ describe('ANSWERING.md', () => {
   test('takes a turn end\'s reply from the first turn not sent yet, and says it needs that count', () => {
     assert.match(answering, /how many of them have been sent so far/);
     assert.match(answering, /the first entry of `turns` not sent yet/);
+    assert.match(answering, /An `answers` entry that fits it comes first, even when the next `turns` entry would also do/);
   });
 
   test('states the shared matching rule once, for a question asked with options or in prose', () => {

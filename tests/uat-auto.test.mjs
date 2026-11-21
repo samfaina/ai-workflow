@@ -293,6 +293,21 @@ const setupAnswers = [
   { when: 'The labels to apply', intent: 'Bug and documentation', reason: 'the case checks both labels' },
 ];
 
+test('an ask judgement names each question by its index in the call, and one that miscopies a question\'s text is refused and asked again', (t) => {
+  const run = makeRun(t, [caseFile('a', { answers: setupAnswers.slice(0, 2) })]);
+  const miscopied = { action: 'answer', answers: [{ question: 'Which tracker does the app uses?', labels: ['GitLab'], entry: 0, reason: 'GitLab' }, { question: 1, labels: ['fix'], entry: 1, reason: 'fixes' }] };
+  const byIndex = { action: 'answer', answers: [{ question: 0, labels: ['GitLab'], entry: 0, reason: 'GitLab' }, { question: 1, labels: ['fix'], entry: 1, reason: 'fixes' }] };
+  const fake = fakeClaude(run, { turns: [{ tools: [askTool(tracker, prefix)], text: 'Set up.' }], judgements: [{ ask: miscopied }, { ask: byIndex }, { grade: pass() }] });
+
+  const result = auto(run, fake);
+  assert.equal(result.status, 0, result.report);
+
+  const [first, retry] = askCalls(fake);
+  assert.match(first.prompt, /"index": 1,\s*"question": "Which branch prefix does the app use\?"/, 'the call lists each question with its index');
+  assert.match(retry.prompt.slice(first.prompt.length), /was refused[\s\S]*"Which tracker does the app uses\?" is not the index of a question of this call, from 0 to 1/);
+  assert.match(toolResults(run, 'a')[0].content, /"Which tracker does the app use\?"="GitLab", "Which branch prefix does the app use\?"="fix"/);
+});
+
 test('a scripted AskUserQuestion with several questions, one of them multiSelect, is answered in one call with this run\'s labels, in the shape #165 recorded', (t) => {
   const run = makeRun(t, [caseFile('a', { answers: setupAnswers })]);
   const answer = {
