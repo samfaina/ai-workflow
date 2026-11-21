@@ -16,6 +16,29 @@
       "when": "How a reservation is made and answered",
       "intent": "POST /books/:id/reservations with a member: 201 and the queue position when the book is on loan, 409 when it is available",
       "reason": "keeps the deliverable to one small slice"
+    },
+    {
+      "when": "What happens to a reservation when the book comes back, or whether a book is held for the first member",
+      "intent": "Nothing in this deliverable: the map decided there is no hold, and the queue only orders the reservations",
+      "reason": "keeps reserve-book to one small slice: a hold would bring expiry and hand-over rules that the rest of the batch builds in one slice"
+    },
+    {
+      "when": "Q10 - Dónde se lista la cola: ¿movemos el listado a GET /books/:id/reservations?",
+      "intent": "Sí: GET /books/:id/reservations, con 404 si el libro no existe.",
+      "reason": "Ninguna entrada de answers ni el turno de aprobación encaja con esta pregunta de diseño. Se toma la recomendación del agente como respuesta de deriva.",
+      "drift": true
+    },
+    {
+      "when": "Q11 - Cuerpo del 201: ¿devolvemos la reservation completa?",
+      "intent": "Sí: la reservation completa, con position desde 1. 400 si falta member y 404 si el libro no existe.",
+      "reason": "Ninguna entrada encaja. Se toma la recomendación del agente como respuesta de deriva.",
+      "drift": true
+    },
+    {
+      "when": "Q12 - Término \"disponible\": ¿añadimos Available book al glosario y la usamos en el spec?",
+      "intent": "Sí, añade Available book al glosario con free book como término a evitar, y úsalo en el spec.",
+      "reason": "Ninguna entrada encaja. Se toma la recomendación del agente como respuesta de deriva.",
+      "drift": true
     }
   ],
   "turns": [

@@ -33,6 +33,21 @@
       "reason": "a HITL ticket resolves only through the person"
     },
     {
+      "when": "What serving a reservation means: what happens to the first reservation when the book comes back",
+      "intent": "Nothing happens on its own: the queue only orders the reservations, and the listing shows that order. Whoever borrows the book first gets it, as today, with no hold set aside",
+      "reason": "keeps reserve-book to one small slice: a hold would bring expiry and hand-over rules that the rest of the batch builds in one slice"
+    },
+    {
+      "when": "Whether a hold expires, or what happens when the first member in the queue cannot borrow",
+      "intent": "There is no hold, so nothing expires or passes on",
+      "reason": "keeps reserve-book to one small slice: a hold would bring expiry and hand-over rules that the rest of the batch builds in one slice"
+    },
+    {
+      "when": "What happens when a member cancels, or cancels and reserves again",
+      "intent": "The reservation leaves the queue and the ones behind it move up; reserving again joins at the end",
+      "reason": "settles what cancel-reservation needs, so no new ticket opens"
+    },
+    {
       "when": "Whether the answer opens another decision",
       "intent": "No, nothing else is left to decide",
       "reason": "this ticket must clear the map"

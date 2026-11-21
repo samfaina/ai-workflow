@@ -13,9 +13,14 @@
   "command": "/ai-workflow:aw-slices",
   "answers": [
     {
-      "when": "How to split the work",
-      "intent": "One slice: the deliverable is small",
+      "when": "How to split the work, or whether to approve the slice plan it proposes",
+      "intent": "One slice, the whole deliverable, since it is small: approve a plan that already has one slice, and otherwise ask for one, typed in if it is not an option",
       "reason": "keeps the case to one build"
+    },
+    {
+      "when": "Which test seam to use, or whether to accept the one it proposes",
+      "intent": "Accept the seam it proposes",
+      "reason": "the build needs one agreed seam, and the case does not test which"
     }
   ],
   "turns": [
