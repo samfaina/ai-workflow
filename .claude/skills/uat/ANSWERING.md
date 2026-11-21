@@ -31,7 +31,10 @@ The conductor proposes a drift answer for the person to confirm, whether the que
 ### In an unattended run
 
 - **A question asked with options:** choose a drift answer among its options, so the run goes on within what the skill offered. It is recorded with `drift: true`.
-- **A question in prose:** the step ends with the question unanswered, because an invented reply can take the agent past the case.
+- **A question in prose:** a turn may ask several, as a numbered round. The reply answers each question of the turn, and nothing else:
+  - one an entry fits is answered from that entry, even where the agent recommends otherwise;
+  - one no entry fits, which the agent gave a recommended answer, takes that recommendation as its drift answer, as an option the skill offered. It is recorded with `drift: true`;
+  - one no entry fits and with no recommendation ends the step, unanswered, because an invented reply can take the agent past the case.
 
 ## Recording a drift answer
 

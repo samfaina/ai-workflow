@@ -95,6 +95,10 @@ test('auto runs a scripted batch to done and leaves the results, ledger entries 
 const pass = (line = 'The skill did what the case asked.') => ({ verdict: 'Pass', line, judge: [], findings: [] });
 const gradeCalls = (fake) => fake.judgements().filter((call) => kindOf(call) === 'grade');
 const replyCalls = (fake) => fake.judgements().filter((call) => kindOf(call) === 'reply');
+// A reply judgement that answers the turn's one question from the next turns
+// entry, or from an answers entry.
+const sendTurn = (message, reason) => ({ action: 'reply', message, questions: [{ question: "the agent's question", entry: 'turn', answer: message, reason }] });
+const answerFrom = (entry, message, reason) => ({ action: 'reply', message, questions: [{ question: "the agent's question", entry, answer: message, reason }] });
 const kindOf = (call) => call.prompt.match(/^# UAT judgement: (\w+)/)?.[1];
 const withoutResume = (args) => args.filter((arg, i) => arg !== '--resume' && args[i - 1] !== '--resume');
 const resumed = (call) => call.args[call.args.indexOf('--resume') + 1];
@@ -115,7 +119,7 @@ test('a follow-up turn and a continues case resume the same session, with the fl
       { text: 'Sliced.' },
     ],
     judgements: [
-      { reply: { action: 'reply', entry: 'turn', message: 'I approve the spec.', reason: 'the next turn approves it' } },
+      { reply: sendTurn('I approve the spec.', 'the next turn approves it') },
       { grade: pass() },
       { grade: pass() },
     ],
@@ -177,8 +181,8 @@ test('a stop point ends the step with the turn unsent, a prose question no entry
       { grade: pass() },
       { reply: `Here it is: ${JSON.stringify({ action: 'end', reason: noFitReason })}` },
       { grade: pass() },
-      { reply: { action: 'reply', entry: 'turn', message: 'Use SQLite.', reason: 'a turn' } },
-      { reply: { action: 'reply', entry: 'answer', index: 0, message: 'Use SQLite.', reason: 'the database entry fits' } },
+      { reply: sendTurn('Use SQLite.', 'a turn') },
+      { reply: answerFrom(0, 'Use SQLite.', 'the database entry fits') },
       { grade: pass() },
     ],
   });
@@ -200,6 +204,63 @@ test('a stop point ends the step with the turn unsent, a prose question no entry
   assert.ok(stopGrade.prompt.includes(stopReason));
   assert.ok(noFitGrade.prompt.includes(noFitReason));
   assert.deepEqual(Object.keys(run.state().results), ['stop', 'nofit', 'answered']);
+});
+
+test('a prose round is answered question by question: an entry answers one question at most, a drift answer takes only a recommendation the agent wrote and is recorded, and the grade sees the replies sent', (t) => {
+  const answers = [
+    { when: 'In what order reservations are served', intent: 'Oldest first', reason: 'the ticket asks it' },
+    { when: 'Whether the answer opens another decision', intent: 'No', reason: 'this ticket must clear the map' },
+  ];
+  const run = makeRun(t, [caseFile('a', { order: 1, answers }), caseFile('b', { order: 2, answers })]);
+  const round = [
+    '❓ **Q1** - **Serving a reservation**: hold the book for the head of the queue?',
+    '',
+    '➡️ Yes: the returned book is held for the first member in the queue.',
+    '',
+    '❓ **Q2** - **Order**: oldest first?',
+    '',
+    '➡️ Yes.',
+    '',
+    '❓ **Q3** - **How long a hold lasts**: publish it as a new ticket?',
+    '',
+    '➡️ Yes, as a new ticket.',
+  ].join('\n');
+  const hold = { question: 'Serving a reservation', entry: null, recommended: 'the returned book is held for the first member in the queue', answer: 'Yes, hold it for the head of the queue', reason: 'the case does not test how a reservation is served' };
+  const order = { question: 'Order', entry: 0, answer: 'Oldest first', reason: 'entry 0' };
+  const noTicket = { question: 'How long a hold lasts', entry: 1, answer: 'No, nothing else is left to decide', reason: 'entry 1 says no, against the recommendation' };
+  const message = 'Q1: yes. Q2: oldest first. Q3: no, nothing else is left to decide.';
+  const fake = fakeClaude(run, {
+    turns: [{ text: round }, { text: 'Done: the map has cleared.' }, { text: round }, { text: 'Done: the map has cleared.' }],
+    judgements: [
+      { reply: { action: 'reply', message, questions: [{ ...hold, recommended: 'the book is lent to the head of the queue' }, order, noTicket] } },
+      { reply: { action: 'reply', message, questions: [hold, order, noTicket] } },
+      { grade: pass() },
+      { reply: { action: 'reply', message, questions: [hold, order, { ...noTicket, entry: 0 }] } },
+      { reply: { action: 'reply', message, questions: [hold, order, noTicket] } },
+      { grade: pass() },
+    ],
+  });
+
+  const result = auto(run, fake);
+  assert.equal(result.status, 0, result.report);
+
+  const [invented, inventedRetry, twice, twiceRetry] = replyCalls(fake);
+  assert.match(inventedRetry.prompt.slice(invented.prompt.length), /was refused[\s\S]*the book is lent to the head of the queue[\s\S]*is not in the agent's turn/);
+  assert.match(twiceRetry.prompt.slice(twice.prompt.length), /was refused[\s\S]*answers entry 0 answers two questions/);
+  assert.deepEqual(fake.sessions().map((call) => call.prompt), ['/a', message, '/b', message]);
+
+  const saved = JSON.parse(readText(join(run.casesDir, 'a.json')));
+  assert.deepEqual(saved.answers.at(-1), { when: hold.question, intent: hold.answer, reason: hold.reason, drift: true });
+  assert.equal(saved.answers.length, 3, 'only the drift answer is added');
+
+  const [logged] = readText(join(run.runDir, 'steps', 'a', 'replies.jsonl')).trim().split('\n').map((line) => JSON.parse(line));
+  assert.equal(logged.turn, 2);
+  assert.equal(logged.message, message);
+  assert.deepEqual(logged.questions, [hold, order, noTicket]);
+  const [grade] = gradeCalls(fake);
+  assert.match(grade.prompt, /## Replies the driver sent[\s\S]*Q3: no, nothing else is left to decide/);
+  // Both entries were used, so the turn after the reply ends the step with no judgement.
+  assert.match(grade.prompt, /Every `turns` and `answers` entry had been used/);
 });
 
 test('a turn that ends with no turns or answers entry left ends the step without a judgement call', (t) => {
@@ -665,7 +726,7 @@ test('a five-hour reading over its threshold makes auto wait until the window re
       { rateLimit: { five_hour: { utilization: 0.91, resetsIn: 2 } }, text: 'Done.' },
       { text: 'Done.' },
     ],
-    judgements: [{ reply: { action: 'reply', entry: 'turn', message: 'Go on.', reason: 'the next turn' } }, { grade: pass() }, { grade: pass() }],
+    judgements: [{ reply: sendTurn('Go on.', 'the next turn') }, { grade: pass() }, { grade: pass() }],
   });
 
   const result = auto(run, fake);
@@ -717,7 +778,7 @@ test('a weekly reading over its threshold mid-step stops the run before any call
       { text: 'Shall I go on?' },
       { text: 'Done.' },
     ],
-    judgements: [{ reply: { action: 'reply', entry: 'turn', message: 'Go on.', reason: 'the next turn' } }, { grade: pass() }],
+    judgements: [{ reply: sendTurn('Go on.', 'the next turn') }, { grade: pass() }],
   });
 
   const stopped = auto(run, fake);
@@ -735,7 +796,7 @@ test('a weekly reading over its threshold mid-step stops the run before any call
 
 test('a turn that ends in a rate-limit error mid-step stops the run, and the next auto waits for the window, resets that step and runs it from its restore point', (t) => {
   const run = makeRun(t, [caseFile('a', { order: 1, turns: [{ intent: 'Go on', reason: 'the case runs to the end' }] }), caseFile('b', { order: 2 })]);
-  const goOn = { reply: { action: 'reply', entry: 'turn', message: 'Go on.', reason: 'the next turn' } };
+  const goOn = { reply: sendTurn('Go on.', 'the next turn') };
   const fake = fakeClaude(run, {
     turns: [
       { tools: [write('{{CWD}}/first.txt', 'first\n')], text: 'Shall I go on?' },
