@@ -31,9 +31,9 @@
       "matches": "^- \\*\\*Criteria:\\*\\*"
     },
     {
-      "name": "the Checks line notes the uncommitted test",
+      "name": "the Checks line names the uncommitted test",
       "file": ".aw/review-requests/*-review-request.md",
-      "matches": "^- \\*\\*Checks:\\*\\*.*uncommitted.*\\.aw/repro/due-day/fees\\.test\\.ts"
+      "matches": "^- \\*\\*Checks:\\*\\*.*\\.aw/repro/due-day/fees\\.test\\.ts"
     },
     {
       "name": "the Criteria line marks the uncommitted test",

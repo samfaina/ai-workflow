@@ -624,9 +624,11 @@ test('a ship whose full run picks up a test under .aw/repro/ marks it uncommitte
   assert.match(written, /from "vitest"/, 'the file is a test the full check runs');
 
   const matches = (assertion, text) => new RegExp(assertion.matches, 'gm').test(text);
-  const checks = assertionNamed(ship, 'the Checks line notes the uncommitted test');
+  const checks = assertionNamed(ship, 'the Checks line names the uncommitted test');
   assert.equal(checks.file, '.aw/review-requests/*-review-request.md');
   assert.ok(matches(checks, `- **Checks:** \`npm test\` passed at abc1234. The local run included uncommitted test files \`${file}\`.`));
+  // The Checks note is prose in the session's language, unlike the Criteria marking.
+  assert.ok(matches(checks, `- **Checks:** \`npm test\` pasó en abc1234. La ejecución local incluyó el test sin commit \`${file}\`.`));
   assert.ok(!matches(checks, '- **Checks:** `npm test` passed at abc1234.'));
   assert.ok(!matches(checks, `- **Criteria:**\n  - returned on the due date: \`${file}\` (uncommitted, not counted)`), 'only the Checks line counts');
 

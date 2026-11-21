@@ -434,6 +434,8 @@ test('gh reads are allowed, and a gh write or a push or fetch aimed at a repo ot
     ['gh api graphql -f query="query { viewer { login } }"', 'allow'],
     ['git push origin HEAD', 'allow'],
     ['git push ../origin.git HEAD:refs/heads/main', 'allow'],
+    ["cat > notes.md <<'EOF'\ngh issue create -R someone/project --title x\nEOF", 'allow'],
+    ['cat > notes.md <<EOF\n$(gh issue create -R someone/project --title x)\nEOF', 'deny'],
     ['gh issue create -R someone/project --title x', 'deny'],
     ['cd src && gh api -X POST repos/someone/project/issues -f title=x', 'deny'],
     ['gh api repos/someone/project/issues -f title=x', 'deny'],
