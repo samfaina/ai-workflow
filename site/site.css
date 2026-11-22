@@ -116,16 +116,31 @@ html { scroll-padding-top: 76px; }
 .btn { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 16px; border-radius: 6px; font-weight: 600; text-decoration: none; border: 1.5px solid var(--line); color: var(--line); background: transparent; }
 .btn.primary { background: var(--line); color: var(--on-accent); }
 
-/* The standard route as a line. overflow-x: auto scrolls the line, never the
-   page, and the list carries room for the gate's 10px pulse. */
-.miniline { list-style: none; margin: 4px 0 0 -12px; padding: 12px 0 8px 12px; display: flex; overflow-x: auto; }
-.miniline li { position: relative; flex: 1 0 86px; min-width: 86px; padding: 30px 8px 0 0; font: 500 .72rem/1.25 var(--mono); color: var(--soft); }
-.miniline li::before { content: ""; position: absolute; top: 10px; left: 0; right: 0; height: 4px; background: var(--line-mark); }
-.miniline li:last-child::before { right: calc(100% - 20px); }
-.miniline li::after { content: ""; box-sizing: border-box; position: absolute; top: 2px; left: 0; width: 20px; height: 20px; border-radius: 50%; background: var(--panel); border: 4px solid var(--line-mark); }
+/* A line of stations, here and in the routes: each station's circle sits at
+   the middle of its slot, with its label centred under it and wrapping when
+   long, and the rail runs from the first circle to the last. overflow-x: auto
+   scrolls a line that cannot fit, never the page, and the padding leaves room
+   for the gate's 10px pulse.
+
+   An optional station has a dashed circle and a dashed rail into it and out
+   of it. A rail is drawn by the slots on either side of a circle, so the slot
+   before an optional station dashes its right half and the slot after it its
+   left half: a solid half-layer sits over a dashed one. */
+.miniline, .line {
+  --rail: var(--line-mark);
+  --dash: repeating-linear-gradient(90deg, var(--rail) 0 6px, transparent 6px 11px);
+  list-style: none; margin: 0; padding: 12px 0 8px; display: flex; overflow-x: auto;
+}
+.miniline li { position: relative; flex: 1 0 86px; min-width: 86px; padding: 30px 4px 0; text-align: center; font: 500 .72rem/1.25 var(--mono); color: var(--soft); }
+.miniline li::before { content: ""; position: absolute; top: 10px; left: 0; right: 0; height: 4px; background: var(--rail); }
+.miniline li:first-child::before { left: 50%; }
+.miniline li:last-child::before { right: 50%; }
+.miniline li::after { content: ""; box-sizing: border-box; position: absolute; top: 2px; left: 50%; width: 20px; height: 20px; margin-left: -10px; border-radius: 50%; background: var(--panel); border: 4px solid var(--rail); }
 .miniline li.gate { color: var(--gate); font-weight: 600; }
 .miniline li.gate::after { background: var(--gate-mark); border-color: var(--gate-mark); animation: gatepulse 2.2s ease-out infinite; }
-.miniline li.opt::before { background: repeating-linear-gradient(90deg, var(--line-mark) 0 6px, transparent 6px 11px); }
+.miniline li.opt::before { background: var(--dash); }
+.miniline li:has(+ li.opt)::before { background: linear-gradient(90deg, var(--rail) 50%, transparent 50%), var(--dash); }
+.miniline li.opt + li::before { background: linear-gradient(90deg, transparent 50%, var(--rail) 50%), var(--dash); }
 .miniline li.opt::after { border-style: dashed; }
 @keyframes gatepulse {
   0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--gate-mark) 60%, transparent); }
@@ -210,17 +225,21 @@ mark, code.hl { background: none; color: var(--hl); font-weight: 600; }
 .names { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .names code { display: inline-block; font-size: .8rem; }
 
-/* Routes: each route is a line of stations. The line scrolls inside its own
-   box, never the page, with room around it for the gate's 10px pulse. */
-.routes { display: grid; gap: 26px; min-width: 0; }
-.route { display: grid; gap: 6px; min-width: 0; --rail: var(--line-mark); }
-.route.fast { --rail: var(--fast-mark); }
-.line { list-style: none; margin: 0 0 0 -12px; padding: 12px 12px 8px; display: flex; overflow-x: auto; }
-.line li { flex: 1 0 92px; min-width: 92px; display: flex; }
-.line button { position: relative; flex: 1; min-height: 72px; padding: 34px 8px 8px 0; border: 0; border-radius: 4px; background: none; text-align: left; font: 500 .74rem/1.25 var(--mono); color: var(--soft); }
+/* Routes: the three lines take the section's full width, one above the other,
+   so that every station of the longest route shows without scrolling on a
+   desktop; the selected station's detail sits under them. Below 820px the
+   detail pins to the bottom like the skills explorer's. */
+.explorer.stacked { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 821px) { .explorer.stacked .detail { position: static; } }
+.routes { display: grid; gap: 22px; min-width: 0; }
+.route { display: grid; gap: 4px; min-width: 0; }
+.route.fast .line { --rail: var(--fast-mark); }
+.line li { flex: 1 0 72px; min-width: 72px; display: flex; }
+.line button { position: relative; flex: 1; min-height: 72px; padding: 34px 4px 8px; border: 0; border-radius: 4px; background: none; text-align: center; font: 500 .74rem/1.25 var(--mono); color: var(--soft); }
 .line button::before { content: ""; position: absolute; top: 12px; left: 0; right: 0; height: 4px; background: var(--rail); }
-.line li:last-child button::before { right: calc(100% - 20px); }
-.line button::after { content: ""; box-sizing: border-box; position: absolute; top: 4px; left: 0; width: 20px; height: 20px; border-radius: 50%; background: var(--panel); border: 4px solid var(--rail); }
+.line li:first-child button::before { left: 50%; }
+.line li:last-child button::before { right: 50%; }
+.line button::after { content: ""; box-sizing: border-box; position: absolute; top: 4px; left: 50%; width: 20px; height: 20px; margin-left: -10px; border-radius: 50%; background: var(--panel); border: 4px solid var(--rail); }
 .line button:hover { color: var(--ink); }
 /* The selected station: no background, and a ring around its circle in the
    route's own colour. A plain station's label also turns ink; a gate keeps
@@ -230,12 +249,12 @@ mark, code.hl { background: none; color: var(--hl); font-weight: 600; }
 .line .gate button { color: var(--gate); font-weight: 600; }
 .line .gate button::after { background: var(--gate-mark); border-color: var(--gate-mark); animation: gatepulse 2.2s ease-out infinite; }
 .line .gate button[aria-current="true"]::after { outline-color: var(--gate-mark); }
-/* An optional station: dashed rail into it and out of it, and a dashed circle. */
-.line li.opt button::before,
-.line li:has(+ li.opt) button::before { background: repeating-linear-gradient(90deg, var(--rail) 0 6px, transparent 6px 11px); }
+/* An optional station: dashed, as on .miniline above. */
+.line li.opt button::before { background: var(--dash); }
+.line li:has(+ li.opt) button::before { background: linear-gradient(90deg, var(--rail) 50%, transparent 50%), var(--dash); }
+.line li.opt + li button::before { background: linear-gradient(90deg, transparent 50%, var(--rail) 50%), var(--dash); }
 .line li.opt button::after { border-style: dashed; }
 .line li.opt button[aria-current="true"]::after { background: var(--panel); }
-.miniline li:has(+ li.opt)::before { background: repeating-linear-gradient(90deg, var(--line-mark) 0 6px, transparent 6px 11px); }
 
 /* Which route? */
 .wizard { background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; padding: 20px; display: grid; gap: 14px; min-width: 0; }
