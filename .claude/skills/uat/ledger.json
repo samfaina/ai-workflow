@@ -13,6 +13,48 @@
     "date": "2026-11-18T21:16:39.000Z",
     "issue": 126
   },
+  "aw-epic-build": {
+    "verdict": "Pass",
+    "fingerprint": "a2250328882def09f05ea731226ed68eb869f5bfb74815afe966b3e935dd9544",
+    "kitCommit": "ecb961f5365ed7987db6a28e7aca2bde46964b13",
+    "date": "2026-11-22T10:39:47.755Z",
+    "issue": 107
+  },
+  "aw-epic-converge": {
+    "verdict": "Pass",
+    "fingerprint": "e256f8d49e491eec0ff5295761a933e049bce1f25e72c67ea66aaccc2bcadf71",
+    "kitCommit": "ecb961f5365ed7987db6a28e7aca2bde46964b13",
+    "date": "2026-11-22T10:39:47.755Z",
+    "issue": 107
+  },
+  "aw-epic-review": {
+    "verdict": "Pass",
+    "fingerprint": "d3f4a712c3d6819f7dbc5098616efc5655108aed8d149b1f28f3e7e926a6947f",
+    "kitCommit": "ecb961f5365ed7987db6a28e7aca2bde46964b13",
+    "date": "2026-11-22T10:39:47.755Z",
+    "issue": 107
+  },
+  "aw-epic-ship": {
+    "verdict": "Pass",
+    "fingerprint": "6b6a1832b1902a64cf93d6ed887e2b245121335802cf05c41bdd1f7640577361",
+    "kitCommit": "ecb961f5365ed7987db6a28e7aca2bde46964b13",
+    "date": "2026-11-22T10:39:47.755Z",
+    "issue": 107
+  },
+  "aw-epic-slices": {
+    "verdict": "Pass",
+    "fingerprint": "0664027683ecc1c8696d9c5ce94e381fdcaeef1e7844d7f8940eb4c62a57b011",
+    "kitCommit": "ecb961f5365ed7987db6a28e7aca2bde46964b13",
+    "date": "2026-11-22T10:39:47.755Z",
+    "issue": 107
+  },
+  "aw-epic-spec": {
+    "verdict": "Pass",
+    "fingerprint": "f91c88cada70eb91b779ddc7563e4fa499db84e0c0a42d6a6b620bfc579f4cb0",
+    "kitCommit": "ecb961f5365ed7987db6a28e7aca2bde46964b13",
+    "date": "2026-11-22T10:39:47.755Z",
+    "issue": 107
+  },
   "aw-fast-build": {
     "verdict": "Pass",
     "fingerprint": "f14a9f9bf19ede5555e3907a572fe74d5904432e479e985302533d3a6f22bb78",
@@ -105,6 +147,13 @@
     "kitCommit": "6cac139a84aca736fc6f8f99a96e3de7f170186f",
     "date": "2026-11-18T21:16:39.000Z",
     "issue": 126
+  },
+  "aw-wayfinder-handoff": {
+    "verdict": "Pass",
+    "fingerprint": "91efa05423d808acfecb2188854eb340c79cb89e6c7481eb99ea970cfc6c3326",
+    "kitCommit": "ecb961f5365ed7987db6a28e7aca2bde46964b13",
+    "date": "2026-11-22T10:39:47.755Z",
+    "issue": 107
   },
   "aw-wayfinder-none-declined": {
     "verdict": "Pass",

@@ -1,0 +1,45 @@
+{
+  "id": "aw-epic-converge",
+  "title": "aw-converge before the ship",
+  "group": "Epic route, one deliverable",
+  "order": 71,
+  "source": "#55: on a cleared map, the deliverable reaches a clean review before it ships",
+  "from": {
+    "case": "aw-epic-review"
+  },
+  "shell": [
+    "npm ci"
+  ],
+  "command": "/ai-workflow:aw-converge",
+  "answers": [
+    {
+      "when": "Which test seam to use for a fix, or whether to accept the one it proposes",
+      "intent": "The seam the spec's Test strategy agreed, or else the one it proposes",
+      "reason": "the case tests that the review ends clean, not which seam"
+    },
+    {
+      "when": "Which base to branch from or diff against",
+      "intent": "Local main",
+      "reason": "only asked if the remote and local main differ"
+    }
+  ],
+  "turns": [],
+  "assertions": [
+    {
+      "name": "the latest review holds no introduced defect",
+      "file": ".aw/reviews/*-review.md",
+      "matches": "Proven defects: 0 introduced"
+    },
+    {
+      "name": "working tree unchanged",
+      "run": "git status --porcelain",
+      "stdout": "^$"
+    },
+    {
+      "judge": "Either the review was already clean and it named /aw-ship and changed nothing, or each round fixed the introduced defects with a commit and a new review, until one came out clean"
+    },
+    {
+      "judge": "Named /aw-ship and did not run it, and neither pushed nor opened a review request"
+    }
+  ]
+}

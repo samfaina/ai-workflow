@@ -21,6 +21,12 @@
       "when": "Which base to branch from or diff against",
       "intent": "Local main",
       "reason": "only asked if the remote and local main differ"
+    },
+    {
+      "when": "Estás en `docs/member-reservations`. No es una rama protegida, pero tampoco es una rama de trabajo de este spec: está 2 commits por delante de `origin/main` (el GLOSSARY y los tickets 01 y 03). ¿Dónde construyo la slice?",
+      "intent": "feat/reserve-book from HEAD (Recommended)",
+      "reason": "Drift: no entry covers the choice of work branch. A work branch from HEAD meets the 'on a work branch' check and keeps the GLOSSARY and the tickets not yet on main.",
+      "drift": true
     }
   ],
   "turns": [],

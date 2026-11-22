@@ -14,8 +14,102 @@
   "answers": [
     {
       "when": "How a reservation is made and answered",
-      "intent": "POST /books/:id/reservations with a member: 201 and the queue position when the book is on loan, 409 when it is available",
+      "intent": "POST /books/:id/reservations with a member: 201 and the queue position when the book is on loan, 409 when it is available; a member is 1 to 100 characters once trimmed, and any other member is refused with 400",
       "reason": "keeps the deliverable to one small slice"
+    },
+    {
+      "when": "What happens to a reservation when the book comes back, or whether a book is held for the first member",
+      "intent": "Nothing in this deliverable: the map decided there is no hold, and the queue only orders the reservations",
+      "reason": "keeps reserve-book to one small slice: a hold would bring expiry and hand-over rules that the rest of the batch builds in one slice"
+    },
+    {
+      "when": "Which requests are refused, and with which status codes",
+      "intent": "400 when member is missing, empty, or longer than 100 characters once trimmed; 404 when the book does not exist; 409 when the book is not on loan, when the member already has 3 active loans, and when the member already reserved that book; messages in the style of src/loans.ts, such as \"book 2 is not on loan\"",
+      "reason": "bounds member at the boundary, as aw-security-and-hardening asks, so the review of the build finds no introduced defect"
+    },
+    {
+      "when": "Q10 - Dónde se lista la cola: ¿movemos el listado a GET /books/:id/reservations?",
+      "intent": "Yes: GET /books/:id/reservations, with 404 when the book does not exist.",
+      "reason": "No answers entry, and not the approval turn, fits this design question. The agent's recommendation is taken as the drift answer.",
+      "drift": true
+    },
+    {
+      "when": "Q11 - Cuerpo del 201: ¿devolvemos la reservation completa?",
+      "intent": "Yes: the whole reservation, with position from 1. 400 when member is missing and 404 when the book does not exist.",
+      "reason": "No entry fits. The agent's recommendation is taken as the drift answer.",
+      "drift": true
+    },
+    {
+      "when": "Q12 - Término \"disponible\": ¿añadimos Available book al glosario y la usamos en el spec?",
+      "intent": "Yes, add Available book to the glossary with free book as the term to avoid, and use it in the spec.",
+      "reason": "No entry fits. The agent's recommendation is taken as the drift answer.",
+      "drift": true
+    },
+    {
+      "when": "Q4 - Reservar un libro que uno mismo tiene en préstamo: ¿lo rechazamos con 409?",
+      "intent": "Yes, reject it with 409 (ada already has book 3 on loan).",
+      "reason": "Drift: no entry fits, so the agent's recommendation is taken.",
+      "drift": true
+    },
+    {
+      "when": "Q6 - Libro borrado con reservations: ¿dejamos DELETE /books/:id como está?",
+      "intent": "Yes, out of scope: DELETE /books/:id stays as it is.",
+      "reason": "Drift: no entry fits, so the agent's recommendation is taken.",
+      "drift": true
+    },
+    {
+      "when": "Q7 - Seam de test: ¿Probamos todos los criterios por HTTP con startApp() y seedSample() en tests/reservations.test.ts, usando setToday para fijar reservedOn?",
+      "intent": "Yes, over HTTP in tests/reservations.test.ts, and reset() empties the reservations too.",
+      "reason": "Drift: no entry fits, so the agent's recommendation is taken.",
+      "drift": true
+    },
+    {
+      "when": "Q8 - La posición en la cola en el 201",
+      "intent": "Yes: position starts at 1 and is only in the 201; the listing does not carry it.",
+      "reason": "No answers entry, and not the approval turn, fits this design question. The agent's recommendation is taken as the drift answer.",
+      "drift": true
+    },
+    {
+      "when": "Q9 - Ámbito del listado",
+      "intent": "Yes. An empty queue is a 200 [], not an error.",
+      "reason": "No entry fits. The agent's recommendation is taken as the drift answer.",
+      "drift": true
+    },
+    {
+      "when": "Para pasar la spec a `approved`, apruébala de forma explícita, por ejemplo con «approved», o pídeme cambios.",
+      "intent": "approved",
+      "reason": "No answers or turns entry fits, since every turn was already sent. The agent recommends approving with \"approved\" and the case checks that the spec ends at status approved. That recommendation is taken as the drift answer.",
+      "drift": true
+    },
+    {
+      "when": "Q9 - Precedencia de errores: ¿se aplica el primer error de esta lista, en el mismo orden que POST /loans?",
+      "intent": "Yes, that order.",
+      "reason": "No answers entry fits this design question. The agent's recommendation is taken as the drift answer.",
+      "drift": true
+    },
+    {
+      "when": "Q10 - Mensajes: ¿usamos estos textos, en el estilo de src/loans.ts?",
+      "intent": "Yes.",
+      "reason": "No entry fits. The agent's recommendation is taken as the drift answer.",
+      "drift": true
+    },
+    {
+      "when": "P6 - Qué pasa con una reserva que termina: cuando su miembro toma prestado el libro, ¿se elimina la reserva del almacén, sin dejar historial?",
+      "intent": "Yes, it is removed, with no history.",
+      "reason": "Drift: no entry fits, so the agent's recommendation is taken.",
+      "drift": true
+    },
+    {
+      "when": "P9 - Límites del cambio: ¿se quedan así? (Always / Ask first / Never)",
+      "intent": "Yes, those boundaries.",
+      "reason": "Drift: no entry fits, so the agent's recommendation is taken.",
+      "drift": true
+    },
+    {
+      "when": "P14 - Glosario: ¿añado Position con la definición «el lugar de una reserva en la cola de reservas de su libro, contando desde 1 la más antigua»?",
+      "intent": "Yes, add Position to the glossary with that definition.",
+      "reason": "No entry fits this question. The agent's recommendation, one of the options the skill offered, is taken as the drift answer.",
+      "drift": true
     }
   ],
   "turns": [

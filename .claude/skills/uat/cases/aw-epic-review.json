@@ -32,17 +32,15 @@
       "matches": "Spec axis judged against: docs/specs/reserve-book/spec\\.md"
     },
     {
-      "name": "no introduced defect, or the ship that follows has nothing to ship",
-      "file": ".aw/reviews/*-review.md",
-      "matches": "Proven defects: 0 introduced"
-    },
-    {
       "name": "working tree unchanged",
       "run": "git status --porcelain",
       "stdout": "^$"
     },
     {
       "judge": "The three axes appear side by side, each from its own subagent"
+    },
+    {
+      "judge": "Every introduced defect in the report is proven by a run at HEAD, and the same run at the merge-base does not show it"
     }
   ]
 }
