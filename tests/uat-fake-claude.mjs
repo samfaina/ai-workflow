@@ -37,6 +37,9 @@
 //   answered: ...` when every value is a label of its question, and `The user
 //   answered: ...` when one is free text. The session log keeps the answers in
 //   the entry's `toolUseResult`.
+// - A Write that runs writes its file. A Bash call runs nothing, unless the
+//   script gives it `git`, the arguments of a git command that runs in the
+//   session's directory once the call is allowed, `{{CWD}}` replaced.
 // - The init event holds what the driver's liveness check reads: `tools`,
 //   which hold AskUserQuestion, `mcp_servers` with the host's `status`,
 //   `plugins` with the name of the plugin --plugin-dir loads, and
@@ -205,6 +208,11 @@ for (const [index, tool] of (turn.tools ?? []).entries()) {
   if (!hooked.decision) host ??= await connectHost(options['--mcp-config'], options['--permission-prompt-tool']);
   const decision = hooked.decision ?? (await host.approve({ tool_name: tool.name, input, tool_use_id: id }));
   if (decision.behavior === 'allow') {
+    if (tool.git) {
+      const args = tool.git.map((arg) => arg.replaceAll('{{CWD}}', cwd));
+      const ran = spawnSync('git', args, { cwd, encoding: 'utf8' });
+      if (ran.status !== 0) fail(`git ${args.join(' ')} failed: ${ran.stderr}`);
+    }
     const { content, toolUseResult } = runTool(tool.name, decision.updatedInput ?? input);
     record('user', { role: 'user', content: [{ type: 'tool_result', tool_use_id: id, content, is_error: false }] }, toolUseResult ? { toolUseResult } : {});
   } else {
