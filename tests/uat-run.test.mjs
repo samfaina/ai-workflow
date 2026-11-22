@@ -1257,32 +1257,38 @@ test('only init falls back to UAT_TARGET: another command without --run is a usa
 
 // What `status` prints for each batch, parsed back: the --cases list of its
 // auto line, and its due cases with their reasons.
-function statusBatches(markdown) {
-  const section = markdown.split(/^## /m).find((part) => part.startsWith('UAT batches')) ?? '';
+function statusBatches(markdown, heading = 'UAT batches') {
+  const section = markdown.split(/^## /m).find((part) => part.startsWith(heading)) ?? '';
   return section.split(/^### /m).slice(1).map((batch) => ({
-    cases: batch.match(/run\.mjs auto --run <run> --source <clone> --cases (\S+)/)[1].split(','),
+    cases: batch.match(/(?:run\.mjs auto --run <run> --source <clone>|\/uat <clone>) --cases (\S+)/)[1].split(','),
     due: Object.fromEntries([...batch.matchAll(/^ {2}- `([^`]+)`: ([a-z-]+)/gm)].map(([, id, reason]) => [id, reason])),
   }));
 }
 
-test('status lists the batches and reasons that due --release lists, each with the auto line that runs it', (t) => {
-  const { run, route } = passedRoute(t);
+// Batches or assisted runs in the shape statusBatches reads, by first case:
+// the order they are listed in is checked apart.
+const byFirstCase = (list) => [...list].sort((a, b) => (a.cases[0] < b.cases[0] ? -1 : 1));
+const dueBatches = (output, list) =>
+  byFirstCase(list.map((batch) => ({ cases: batch.cases, due: Object.fromEntries(batch.due.map((id) => [id, reasons(output)[id]])) })));
+
+test('status lists the batches, assisted cases and reasons that due --release lists, each with the line that runs it', (t) => {
+  const { run, route } = passedRoute(t, { session: { assisted: TERMINAL } });
   tagRelease(run, 'v1.0.0', '2026-02-01T10:00:00Z');
   datePasses(run, { apart: '2026-01-01T10:00:00.000Z' });
-  run.writeCase({ ...route.session, title: 'renamed' });
+  run.writeCase({ ...route.point, title: 'renamed' });
 
   const due = run.due('--release').output;
   const { status, stdout } = run.status();
 
   assert.equal(status, 0, stdout);
-  assert.deepEqual(reasons(due), { session: 'changed', apart: 'before-release' });
-  assert.deepEqual(
-    statusBatches(stdout),
-    due.batches.map((batch) => ({ cases: batch.cases, due: Object.fromEntries(batch.due.map((id) => [id, reasons(due)[id]])) })),
-  );
+  assert.deepEqual(reasons(due), { point: 'changed', session: 'upstream-due', apart: 'before-release' });
+  assert.equal(due.assisted.length, 1);
+  assert.deepEqual(byFirstCase(statusBatches(stdout)), dueBatches(due, due.batches));
+  assert.deepEqual(byFirstCase(statusBatches(stdout, 'Assisted UAT cases')), dueBatches(due, due.assisted));
 });
 
 // An issues file as `gh issue list --json number,title,body,state` prints it.
+// The workflow lists open issues only, so `state` may be missing.
 function issuesFile(run, issues) {
   const file = join(run.root, 'issues.json');
   writeFileSync(file, JSON.stringify(issues));
@@ -1301,6 +1307,7 @@ test('status names the open UAT batch issue whose body holds the batch\'s --case
   const block = (list) => `## What to do\r\n\r\n\`\`\`text\r\n${list}\r\n\`\`\`\r\n`;
   const file = issuesFile(run, [
     { number: 7, title: 'UAT batch 7: the route', state: 'OPEN', body: block('root,point,session') },
+    { number: 6, title: 'UAT batch 6: in backticks', state: 'OPEN', body: 'Run:\n\n`root,point,session`\n' },
     { number: 8, title: 'UAT batch 8: also the route', body: 'Run it with `auto --cases root,point,session`.' },
     { number: 9, title: 'UAT batch 9: closed', state: 'CLOSED', body: block('apart') },
     { number: 10, title: 'Not a batch', state: 'OPEN', body: block('apart') },
@@ -1310,7 +1317,7 @@ test('status names the open UAT batch issue whose body holds the batch\'s --case
   const tracking = trackingOf(run.status('--issues', file).stdout);
 
   assert.deepEqual(tracking, {
-    root: '#7, #8',
+    root: '#7, #6, #8',
     apart: 'none. No open "UAT batch" issue names this `--cases` list.',
   });
 });
@@ -1359,7 +1366,7 @@ test('status lists the batches in run order, the order of their first case, and 
   assert.match(stdout, /- Runs too, for the restore points the due cases start from: `first`\n/);
 });
 
-test('status lists the assisted groups apart with their reasons and the /uat line, and folds away the passes with their date and issue', (t) => {
+test('status lists the assisted cases apart with their reasons and the /uat line, and folds away the passes with their date and issue', (t) => {
   const { run, route } = passedRoute(t, { session: { assisted: TERMINAL } });
   commitKit(run, '2026-02-01T10:00:00Z');
   const ledger = run.ledger();
@@ -1367,7 +1374,7 @@ test('status lists the assisted groups apart with their reasons and the /uat lin
   run.writeCase({ ...route.point, title: 'renamed' });
 
   const stdout = run.status().stdout;
-  const assisted = stdout.split(/^## /m).find((part) => part.startsWith('Assisted groups'));
+  const assisted = stdout.split(/^## /m).find((part) => part.startsWith('Assisted UAT cases'));
 
   assert.deepEqual(statusBatches(stdout).map((batch) => batch.cases), [['root', 'point']]);
   assert.match(assisted, /^ {2}- `session`: upstream-due\. Assisted: its checks read what the terminal shows$/m);

@@ -11,9 +11,13 @@ on:
   push:
     branches:
       - main
+    # A release tag moves the release gate.
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 permissions:
+  contents: read
   issues: write
 
 # A later push builds from a later ledger, so an older build is not worth
@@ -43,13 +47,14 @@ jobs:
           gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 1000 --json number,title,body > "$RUNNER_TEMP/issues.json"
           node .claude/skills/uat/scripts/run.mjs status --issues "$RUNNER_TEMP/issues.json" > "$RUNNER_TEMP/status.md"
 
-      # A closed status issue is still the status issue: editing it keeps one
-      # issue rather than opening another.
+      # The open status issue, oldest first. A closed one is still the status
+      # issue when no other is open: editing it keeps one issue rather than
+      # opening another, and leaves it closed.
       - name: Replace the status issue's body
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          number=$(gh issue list --repo "$GITHUB_REPOSITORY" --state all --label uat:status --limit 1 --json number --jq '.[0].number // empty')
+          number=$(gh issue list --repo "$GITHUB_REPOSITORY" --state all --label uat:status --limit 100 --json number,state --jq 'sort_by(.state != "OPEN", .number) | .[0].number // empty')
           if [ -n "$number" ]; then
             gh issue edit "$number" --repo "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/status.md"
           else

@@ -674,11 +674,12 @@ function dueOf(casesDir, release) {
 
 // A batch issue tracks a batch when it is open, its title starts "UAT batch"
 // and its body names the batch's --cases list whole: on a line of its own, as
-// the batch issues do in their `text` block, or after `--cases`. A longer or
-// shorter list is another batch, and a case id in a sentence names no list.
+// the batch issues do in their `text` block, in backticks or not, or after
+// `--cases`. A longer or shorter list is another batch, and a case id in a
+// sentence names no list.
 function trackingIssues(issues, ids) {
   const list = escapeRegExp(ids.join(','));
-  const named = [new RegExp(`^[ \\t]*${list}[ \\t]*$`, 'm'), new RegExp(`--cases[ \\t]+${list}(?![\\w,-])`)];
+  const named = [new RegExp(`^[ \\t]*(${list}|\`${list}\`)[ \\t]*$`, 'm'), new RegExp(`--cases[ \\t]+${list}(?![\\w,-])`)];
   return issues
     .filter((issue) => (issue.state ?? 'OPEN').toUpperCase() === 'OPEN' && /^UAT batch\b/i.test(issue.title ?? ''))
     .filter((issue) => named.some((pattern) => pattern.test((issue.body ?? '').replace(/\r\n/g, '\n'))))
@@ -689,10 +690,11 @@ const plural = (count, noun, many = `${noun}s`) => `${count} ${count === 1 ? nou
 const AUTO_LINE = 'node .claude/skills/uat/scripts/run.mjs auto --run <run> --source <clone>';
 
 // The state of UAT as Markdown, for the status issue: the progress against the
-// release gate, each batch and assisted group as `due --release` lists them,
-// and the passes. It holds no path outside the repo and no quota figure, as
-// the ledger does not. --issues names a file of open issues, as `gh issue list
-// --json number,title,body` prints them, to find each batch's issue in.
+// release gate, each batch and assisted case as `due --release` lists them,
+// in run order, and the passes. It holds no path outside the repo and no quota
+// figure, as the ledger does not. --issues names a file of issues, as `gh
+// issue list --json number,title,body` prints them, to find each batch's issue
+// in: an issue with a `state` other than open is left out.
 function status(options) {
   const casesDir = resolve(options['cases-dir'] ?? join(skillDir, 'cases'));
   const release = latestRelease(casesDir);
@@ -713,39 +715,31 @@ function status(options) {
     const others = batch.cases.filter((id) => !batch.due.includes(id));
     return others.length === 0 ? [] : [`- Runs too, for the restore points the due cases start from: ${others.map((id) => `\`${id}\``).join(', ')}`];
   };
-  const heading = (batch, index) => `### ${index + 1}. From \`${batch.cases[0]}\`, ${plural(batch.cases.length, 'case')}`;
+  // One run: a batch, or the assisted cases due cases start from, which only
+  // differ in the lines below the tracking issue, their reasons and the
+  // command that starts them.
+  const runSection = (run, index, { extra = [], reason, command }) => [
+    `### ${index + 1}. From \`${run.cases[0]}\`, ${plural(run.cases.length, 'case')}`,
+    '',
+    tracking(run.cases),
+    ...extra,
+    '- Due:',
+    ...run.due.map((id) => `  - \`${id}\`: ${reason(id)}`),
+    ...startsFromLine(run),
+    '',
+    '```text',
+    `${command} ${run.paste}`,
+    '```',
+  ].join('\n');
   const batchSection = (batch, index) => {
     const token = batch.cases.some((id) => needsGitHub((caseId) => byId.get(caseId), byId.get(id)))
       ? '- `UAT_GH_TOKEN`: needed, since a case runs `gh` or reaches GitHub.'
       : '- `UAT_GH_TOKEN`: not needed.';
-    return [
-      heading(batch, index),
-      '',
-      tracking(batch.cases),
-      token,
-      '- Due:',
-      ...batch.due.map((id) => `  - \`${id}\`: ${reasonOf.get(id)}`),
-      ...startsFromLine(batch),
-      '',
-      '```text',
-      `${AUTO_LINE} ${batch.paste}`,
-      '```',
-    ].join('\n');
+    return runSection(batch, index, { extra: [token], reason: (id) => reasonOf.get(id), command: AUTO_LINE });
   };
   const assistedSection = (group, index) => {
     const why = new Map(group.assisted.map((entry) => [entry.case, entry.reason]));
-    return [
-      heading(group, index),
-      '',
-      tracking(group.cases),
-      '- Due:',
-      ...group.due.map((id) => `  - \`${id}\`: ${reasonOf.get(id)}. Assisted: ${why.get(id)}`),
-      ...startsFromLine(group),
-      '',
-      '```text',
-      `/uat <clone> ${group.paste}`,
-      '```',
-    ].join('\n');
+    return runSection(group, index, { reason: (id) => `${reasonOf.get(id)}. Assisted: ${why.get(id)}`, command: '/uat <clone>' });
   };
 
   const passed = cases.filter((uatCase) => !reasonOf.has(uatCase.id));
@@ -768,10 +762,10 @@ function status(options) {
       ? 'No batch is due.'
       : `${plural(batches.length, 'batch', 'batches')}, in run order. Each runs in a run folder of its own, unattended with \`auto\` or with \`/uat\`.`,
     ...inRunOrder(batches).map(batchSection),
-    '## Assisted groups',
+    '## Assisted UAT cases',
     assisted.length === 0
       ? 'No assisted case is due.'
-      : `${plural(assisted.length, 'group')}, in run order. Each runs only with a person, through \`/uat\`, in a run folder of its own.`,
+      : `${plural(assisted.length, 'run')}, in run order, grouped as batches are. Each runs only with a person, through \`/uat\`, in a run folder of its own.`,
     ...inRunOrder(assisted).map(assistedSection),
     '## Passed',
     ['<details>', `<summary>${plural(passed.length, 'case')} passed</summary>`, '', ...passed.map(passLine), '', '</details>'].join('\n'),
