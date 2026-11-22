@@ -14,13 +14,18 @@
   "answers": [
     {
       "when": "How a reservation is made and answered",
-      "intent": "POST /books/:id/reservations with a member: 201 and the queue position when the book is on loan, 409 when it is available",
+      "intent": "POST /books/:id/reservations with a member: 201 and the queue position when the book is on loan, 409 when it is available; a member is 1 to 100 characters once trimmed, and any other member is refused with 400",
       "reason": "keeps the deliverable to one small slice"
     },
     {
       "when": "What happens to a reservation when the book comes back, or whether a book is held for the first member",
       "intent": "Nothing in this deliverable: the map decided there is no hold, and the queue only orders the reservations",
       "reason": "keeps reserve-book to one small slice: a hold would bring expiry and hand-over rules that the rest of the batch builds in one slice"
+    },
+    {
+      "when": "Which requests are refused, and with which status codes",
+      "intent": "400 when member is missing, empty, or longer than 100 characters once trimmed; 404 when the book does not exist; 409 when the book is not on loan, when the member already has 3 active loans, and when the member already reserved that book; messages in the style of src/loans.ts, such as \"book 2 is not on loan\"",
+      "reason": "bounds member at the boundary, as aw-security-and-hardening asks, so the review of the build finds no introduced defect"
     },
     {
       "when": "Q10 - Dónde se lista la cola: ¿movemos el listado a GET /books/:id/reservations?",
@@ -37,6 +42,54 @@
     {
       "when": "Q12 - Término \"disponible\": ¿añadimos Available book al glosario y la usamos en el spec?",
       "intent": "Sí, añade Available book al glosario con free book como término a evitar, y úsalo en el spec.",
+      "reason": "Ninguna entrada encaja. Se toma la recomendación del agente como respuesta de deriva.",
+      "drift": true
+    },
+    {
+      "when": "Q4 - Reservar un libro que uno mismo tiene en préstamo: ¿lo rechazamos con 409?",
+      "intent": "Sí, rechazarlo con 409 (ada already has book 3 on loan).",
+      "reason": "Deriva: ninguna entrada encaja, se toma la recomendación del agente.",
+      "drift": true
+    },
+    {
+      "when": "Q6 - Libro borrado con reservations: ¿dejamos DELETE /books/:id como está?",
+      "intent": "Sí, fuera de alcance: DELETE /books/:id se queda como está.",
+      "reason": "Deriva: ninguna entrada encaja, se toma la recomendación del agente.",
+      "drift": true
+    },
+    {
+      "when": "Q7 - Seam de test: ¿Probamos todos los criterios por HTTP con startApp() y seedSample() en tests/reservations.test.ts, usando setToday para fijar reservedOn?",
+      "intent": "Sí, por HTTP en tests/reservations.test.ts, y reset() vacía también las reservations.",
+      "reason": "Deriva: ninguna entrada encaja, se toma la recomendación del agente.",
+      "drift": true
+    },
+    {
+      "when": "Q8 - La posición en la cola en el 201",
+      "intent": "Sí: position empieza en 1 y va solo en el 201; el listado no la lleva.",
+      "reason": "Ninguna entrada de answers ni el turno de aprobación encaja con esta pregunta de diseño. Se toma la recomendación del agente como respuesta de deriva.",
+      "drift": true
+    },
+    {
+      "when": "Q9 - Ámbito del listado",
+      "intent": "Sí. Una cola vacía es un 200 [], no un error.",
+      "reason": "Ninguna entrada encaja. Se toma la recomendación del agente como respuesta de deriva.",
+      "drift": true
+    },
+    {
+      "when": "Para pasar la spec a `approved`, apruébala de forma explícita, por ejemplo con «approved», o pídeme cambios.",
+      "intent": "approved",
+      "reason": "Ninguna entrada de answers ni de turns encaja, porque todos los turns ya se enviaron. El agente recomienda aprobar con «approved» y el caso comprueba que la spec quede en status approved. Se toma esa recomendación como respuesta de deriva.",
+      "drift": true
+    },
+    {
+      "when": "Q9 - Precedencia de errores: ¿se aplica el primer error de esta lista, en el mismo orden que POST /loans?",
+      "intent": "Sí, ese orden.",
+      "reason": "Ninguna entrada de answers encaja con esta pregunta de diseño. Se toma la recomendación del agente como respuesta de deriva.",
+      "drift": true
+    },
+    {
+      "when": "Q10 - Mensajes: ¿usamos estos textos, en el estilo de src/loans.ts?",
+      "intent": "Sí.",
       "reason": "Ninguna entrada encaja. Se toma la recomendación del agente como respuesta de deriva.",
       "drift": true
     }

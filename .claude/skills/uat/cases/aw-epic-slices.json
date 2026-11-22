@@ -10,7 +10,7 @@
   "shell": [
     "npm ci"
   ],
-  "command": "/ai-workflow:aw-slices",
+  "command": "/ai-workflow:aw-slices reserve-book, en una sola slice: el entregable es pequeño",
   "answers": [
     {
       "when": "How to split the work, or whether to approve the slice plan it proposes",
