@@ -29,68 +29,86 @@
     },
     {
       "when": "Q10 - Dónde se lista la cola: ¿movemos el listado a GET /books/:id/reservations?",
-      "intent": "Sí: GET /books/:id/reservations, con 404 si el libro no existe.",
-      "reason": "Ninguna entrada de answers ni el turno de aprobación encaja con esta pregunta de diseño. Se toma la recomendación del agente como respuesta de deriva.",
+      "intent": "Yes: GET /books/:id/reservations, with 404 when the book does not exist.",
+      "reason": "No answers entry, and not the approval turn, fits this design question. The agent's recommendation is taken as the drift answer.",
       "drift": true
     },
     {
       "when": "Q11 - Cuerpo del 201: ¿devolvemos la reservation completa?",
-      "intent": "Sí: la reservation completa, con position desde 1. 400 si falta member y 404 si el libro no existe.",
-      "reason": "Ninguna entrada encaja. Se toma la recomendación del agente como respuesta de deriva.",
+      "intent": "Yes: the whole reservation, with position from 1. 400 when member is missing and 404 when the book does not exist.",
+      "reason": "No entry fits. The agent's recommendation is taken as the drift answer.",
       "drift": true
     },
     {
       "when": "Q12 - Término \"disponible\": ¿añadimos Available book al glosario y la usamos en el spec?",
-      "intent": "Sí, añade Available book al glosario con free book como término a evitar, y úsalo en el spec.",
-      "reason": "Ninguna entrada encaja. Se toma la recomendación del agente como respuesta de deriva.",
+      "intent": "Yes, add Available book to the glossary with free book as the term to avoid, and use it in the spec.",
+      "reason": "No entry fits. The agent's recommendation is taken as the drift answer.",
       "drift": true
     },
     {
       "when": "Q4 - Reservar un libro que uno mismo tiene en préstamo: ¿lo rechazamos con 409?",
-      "intent": "Sí, rechazarlo con 409 (ada already has book 3 on loan).",
-      "reason": "Deriva: ninguna entrada encaja, se toma la recomendación del agente.",
+      "intent": "Yes, reject it with 409 (ada already has book 3 on loan).",
+      "reason": "Drift: no entry fits, so the agent's recommendation is taken.",
       "drift": true
     },
     {
       "when": "Q6 - Libro borrado con reservations: ¿dejamos DELETE /books/:id como está?",
-      "intent": "Sí, fuera de alcance: DELETE /books/:id se queda como está.",
-      "reason": "Deriva: ninguna entrada encaja, se toma la recomendación del agente.",
+      "intent": "Yes, out of scope: DELETE /books/:id stays as it is.",
+      "reason": "Drift: no entry fits, so the agent's recommendation is taken.",
       "drift": true
     },
     {
       "when": "Q7 - Seam de test: ¿Probamos todos los criterios por HTTP con startApp() y seedSample() en tests/reservations.test.ts, usando setToday para fijar reservedOn?",
-      "intent": "Sí, por HTTP en tests/reservations.test.ts, y reset() vacía también las reservations.",
-      "reason": "Deriva: ninguna entrada encaja, se toma la recomendación del agente.",
+      "intent": "Yes, over HTTP in tests/reservations.test.ts, and reset() empties the reservations too.",
+      "reason": "Drift: no entry fits, so the agent's recommendation is taken.",
       "drift": true
     },
     {
       "when": "Q8 - La posición en la cola en el 201",
-      "intent": "Sí: position empieza en 1 y va solo en el 201; el listado no la lleva.",
-      "reason": "Ninguna entrada de answers ni el turno de aprobación encaja con esta pregunta de diseño. Se toma la recomendación del agente como respuesta de deriva.",
+      "intent": "Yes: position starts at 1 and is only in the 201; the listing does not carry it.",
+      "reason": "No answers entry, and not the approval turn, fits this design question. The agent's recommendation is taken as the drift answer.",
       "drift": true
     },
     {
       "when": "Q9 - Ámbito del listado",
-      "intent": "Sí. Una cola vacía es un 200 [], no un error.",
-      "reason": "Ninguna entrada encaja. Se toma la recomendación del agente como respuesta de deriva.",
+      "intent": "Yes. An empty queue is a 200 [], not an error.",
+      "reason": "No entry fits. The agent's recommendation is taken as the drift answer.",
       "drift": true
     },
     {
       "when": "Para pasar la spec a `approved`, apruébala de forma explícita, por ejemplo con «approved», o pídeme cambios.",
       "intent": "approved",
-      "reason": "Ninguna entrada de answers ni de turns encaja, porque todos los turns ya se enviaron. El agente recomienda aprobar con «approved» y el caso comprueba que la spec quede en status approved. Se toma esa recomendación como respuesta de deriva.",
+      "reason": "No answers or turns entry fits, since every turn was already sent. The agent recommends approving with \"approved\" and the case checks that the spec ends at status approved. That recommendation is taken as the drift answer.",
       "drift": true
     },
     {
       "when": "Q9 - Precedencia de errores: ¿se aplica el primer error de esta lista, en el mismo orden que POST /loans?",
-      "intent": "Sí, ese orden.",
-      "reason": "Ninguna entrada de answers encaja con esta pregunta de diseño. Se toma la recomendación del agente como respuesta de deriva.",
+      "intent": "Yes, that order.",
+      "reason": "No answers entry fits this design question. The agent's recommendation is taken as the drift answer.",
       "drift": true
     },
     {
       "when": "Q10 - Mensajes: ¿usamos estos textos, en el estilo de src/loans.ts?",
-      "intent": "Sí.",
-      "reason": "Ninguna entrada encaja. Se toma la recomendación del agente como respuesta de deriva.",
+      "intent": "Yes.",
+      "reason": "No entry fits. The agent's recommendation is taken as the drift answer.",
+      "drift": true
+    },
+    {
+      "when": "P6 - Qué pasa con una reserva que termina: cuando su miembro toma prestado el libro, ¿se elimina la reserva del almacén, sin dejar historial?",
+      "intent": "Yes, it is removed, with no history.",
+      "reason": "Drift: no entry fits, so the agent's recommendation is taken.",
+      "drift": true
+    },
+    {
+      "when": "P9 - Límites del cambio: ¿se quedan así? (Always / Ask first / Never)",
+      "intent": "Yes, those boundaries.",
+      "reason": "Drift: no entry fits, so the agent's recommendation is taken.",
+      "drift": true
+    },
+    {
+      "when": "P14 - Glosario: ¿añado Position con la definición «el lugar de una reserva en la cola de reservas de su libro, contando desde 1 la más antigua»?",
+      "intent": "Yes, add Position to the glossary with that definition.",
+      "reason": "No entry fits this question. The agent's recommendation, one of the options the skill offered, is taken as the drift answer.",
       "drift": true
     }
   ],

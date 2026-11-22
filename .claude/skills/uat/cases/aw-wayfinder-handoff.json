@@ -56,6 +56,24 @@
       "when": "Which deliverables there are, and the order to spec them in",
       "intent": "The two the destination names, reserve-book first and then cancel-reservation",
       "reason": "the hand-off must name /aw-spec for each"
+    },
+    {
+      "when": "Q3 - Qué cuenta como \"llegada\": ¿La llegada es el orden en que se crearon las reservas, con un número de secuencia creciente como `nextLoanId`, y no su fecha?",
+      "intent": "Yes: the order of creation, with an increasing sequence number. The date, if stored, is for information only.",
+      "reason": "No entry covers how reservations made on the same day are ordered. The agent's recommendation keeps the queue simple and free of ties, and opens no other deliverable.",
+      "drift": true
+    },
+    {
+      "when": "Q4 - El miembro que reservó se lleva el libro: un miembro con reserva pide prestado el libro. ¿Qué pasa con su reserva? (a) Termina sola (b) Sigue en la cola hasta que la cancele",
+      "intent": "(a): borrowing the book ends their reservation and takes it out of the queue.",
+      "reason": "No entry covers what happens when the member who reserved the book gets it. The agent's recommendation sets the book aside for no one, so it keeps to there being no hold.",
+      "drift": true
+    },
+    {
+      "when": "Q5 - La cola sobrevive a la devolución: se devuelve el libro y se lo lleva alguien que no lo había reservado. ¿Las reservas que quedaban siguen en la cola, con el mismo orden, para el siguiente préstamo?",
+      "intent": "Yes: the queue belongs to the book and only changes when reservations are made or end.",
+      "reason": "No entry asks whether the queue survives a return. The agent's recommendation fits there being no hold and nothing passing from one member to another.",
+      "drift": true
     }
   ],
   "turns": [],
