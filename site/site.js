@@ -41,11 +41,11 @@ const invocation = (name) => (skillByName(name)?.invoked === 'user' ? `/${name}`
 const THEME_KEY = 'aw-theme';
 const themeToggle = document.getElementById('theme-toggle');
 
+// The switch is named "Light theme" and pressed while the light theme is on;
+// its knob slides from the moon to the sun.
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
-  const light = theme === 'light';
-  themeToggle.textContent = light ? 'Dark theme' : 'Light theme';
-  themeToggle.setAttribute('aria-pressed', String(light));
+  themeToggle.setAttribute('aria-pressed', String(theme === 'light'));
 }
 
 themeToggle.addEventListener('click', () => {
@@ -59,6 +59,73 @@ themeToggle.addEventListener('click', () => {
 });
 
 applyTheme(document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
+
+// --- Navigation bar ----------------------------------------------------------------
+// Four groups of sections. On a wide screen each group is a dropdown; on a
+// narrow one the Menu button shows every group at once. Escape, a click
+// outside or following a link closes them. The link of the section in view
+// carries aria-current, and its group button the class current.
+
+const nav = document.getElementById('nav');
+const menuToggle = document.getElementById('menu-toggle');
+const groupButtons = [...nav.querySelectorAll('.group-btn')];
+
+function closeMenus(except) {
+  for (const other of groupButtons) if (other !== except) other.setAttribute('aria-expanded', 'false');
+  if (!except) menuToggle.setAttribute('aria-expanded', 'false');
+}
+
+for (const groupButton of groupButtons) {
+  groupButton.addEventListener('click', () => {
+    const open = groupButton.getAttribute('aria-expanded') === 'true';
+    closeMenus(groupButton);
+    groupButton.setAttribute('aria-expanded', String(!open));
+  });
+}
+
+menuToggle.addEventListener('click', () => {
+  menuToggle.setAttribute('aria-expanded', String(menuToggle.getAttribute('aria-expanded') !== 'true'));
+});
+
+nav.addEventListener('click', (event) => {
+  if (event.target.closest('a')) closeMenus();
+});
+
+document.addEventListener('click', (event) => {
+  if (!nav.contains(event.target)) closeMenus();
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape') return;
+  const open = groupButtons.find((groupButton) => groupButton.getAttribute('aria-expanded') === 'true');
+  const menuOpen = menuToggle.getAttribute('aria-expanded') === 'true';
+  if (!open && !menuOpen) return;
+  closeMenus();
+  (menuOpen ? menuToggle : open).focus();
+});
+
+// In page order, which differs from the menu's, so that the topmost section in
+// view wins.
+const sectionOf = (link) => document.getElementById(link.hash.slice(1));
+const navLinks = [...nav.querySelectorAll('a[href^="#"]')].sort((a, b) =>
+  sectionOf(a).compareDocumentPosition(sectionOf(b)) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1,
+);
+const inView = new Map();
+const spy = new IntersectionObserver(
+  (entries) => {
+    for (const entry of entries) inView.set(entry.target.id, entry.isIntersecting);
+    const current = navLinks.find((link) => inView.get(link.hash.slice(1)));
+    for (const link of navLinks) {
+      if (link === current) link.setAttribute('aria-current', 'location');
+      else link.removeAttribute('aria-current');
+    }
+    for (const groupButton of groupButtons) {
+      groupButton.classList.toggle('current', Boolean(current && groupButton.parentElement.contains(current)));
+    }
+  },
+  { rootMargin: '-80px 0px -55% 0px' },
+);
+for (const link of navLinks) spy.observe(sectionOf(link));
 
 // --- Skills explorer ---------------------------------------------------------------
 
