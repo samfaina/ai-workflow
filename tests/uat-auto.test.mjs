@@ -969,7 +969,7 @@ test('each case\'s readings, before and after, are written in its step folder an
   const run = makeRun(t, [caseFile('a', { order: 1, assertions: [{ judge: 'It wrote a note' }] }), caseFile('b', { order: 2 })]);
   const grades = { verdict: 'Pass', line: 'It wrote the note.', judge: [{ criterion: 'It wrote a note', result: 'pass', evidence: 'the note is there' }], findings: [] };
   const fake = fakeClaude(run, {
-    turns: [{ rateLimit: { five_hour: { utilization: 0.4321, resetsIn: 3600 }, seven_day: { utilization: 0.1234, resetsIn: 86400 } }, text: 'Done.' }, { text: 'Done.' }],
+    turns: [{ rateLimit: { five_hour: { utilization: 0.8765, resetsIn: 3600 }, seven_day: { utilization: 0.6789, resetsIn: 86400 } }, text: 'Done.' }, { text: 'Done.' }],
     judgements: [{ grade: grades }, { grade: pass() }],
   });
 
@@ -979,13 +979,14 @@ test('each case\'s readings, before and after, are written in its step folder an
   const quotaOf = (id) => JSON.parse(readText(join(run.runDir, 'steps', id, 'quota.json')));
   const a = quotaOf('a');
   assert.equal(a.before, null, 'nothing was read before the first case');
-  assert.equal(a.after.five_hour.utilization, 0.4321);
-  assert.equal(a.after.seven_day.utilization, 0.1234);
+  assert.equal(a.after.five_hour.utilization, 0.8765);
+  assert.equal(a.after.seven_day.utilization, 0.6789);
   assert.equal(a.after.five_hour.resetsAt, new Date(resetsAtMs(readingOf(run, 'a', 1).five_hour)).toISOString());
   assert.deepEqual(quotaOf('b').before, a.after, 'b starts from the reading a left');
   assert.deepEqual(quotaOf('b').after, a.after, 'b\'s session printed no reading');
 
-  const figures = /0\.4321|43\.21|0\.1234|12\.34/;
+  // No ISO timestamp can hold these: its milliseconds have three digits, and its seconds never reach 60.
+  const figures = /0\.8765|87\.65|0\.6789|67\.89/;
   const scripted = join(run.root, 'fake');
   const holding = filesUnder(run.root).filter((file) => !file.startsWith(scripted) && figures.test(readFileSync(file, 'latin1')));
   // A step folder's path with its trailing separator, so that `a` never matches `ab`.
