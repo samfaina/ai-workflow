@@ -38,7 +38,7 @@ const EXPECTED = [
   'aw-intake-contract', 'aw-intake-stored-data', 'aw-intake-security', 'aw-build-refuses-contract',
   'aw-intake-spec-contradiction', 'aw-spec-change-contradicted', 'aw-build-spec-contradiction',
   'aw-wayfinder-github-write', 'aw-wayfinder-github-draft', 'aw-wayfinder-none-declined', 'aw-wayfinder-none-accepted',
-  'aw-wayfinder-handoff', 'aw-epic-spec', 'aw-epic-slices', 'aw-epic-build', 'aw-epic-review', 'aw-epic-ship',
+  'aw-wayfinder-handoff', 'aw-epic-spec', 'aw-epic-slices', 'aw-epic-build', 'aw-epic-review', 'aw-epic-converge', 'aw-epic-ship',
 ];
 
 test('there is a case file for every result of #49 and for what it left unproven', () => {
