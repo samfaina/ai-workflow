@@ -273,8 +273,9 @@ test('the install section repeats the README install commands and nothing else',
   const readme = read('README.md');
   const install = page.slice(page.indexOf('<section id="install"'), page.indexOf('</section>', page.indexOf('<section id="install"')));
   const commands = [...install.matchAll(/<pre class="block"[^>]*><code>([\s\S]*?)<\/code><\/pre>/g)].map((m) => m[1]);
-  assert.equal(commands.length, 3);
-  assert.equal((install.match(/<button class="copy"/g) ?? []).length, 3, 'one copy button per command block');
+  assert.equal(commands.length, 4);
+  assert.equal((install.match(/<button class="copy"/g) ?? []).length, 4, 'one copy button per command block');
+  for (const block of commands) assert.ok(!block.includes('\n'), `one command per block, so each copies and runs alone: ${block}`);
   for (const block of commands) {
     for (const line of block.split('\n')) assert.ok(readme.includes(line.replace(/&lt;/g, '<').replace(/&gt;/g, '>')), `not in the README: ${line}`);
   }

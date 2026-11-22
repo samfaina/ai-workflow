@@ -8,12 +8,21 @@ import { FILE_TREE, PRE_STEPS, ROUTES, UNCONFIGURED_ACCESS, VCS_OPERATIONS, acce
 
 // --- Helpers -------------------------------------------------------------------
 
+// Children to append: arrays are flattened and empty slots dropped, since
+// append() and replaceChildren() would write null as the text "null".
+const present = (children) => children.flat().filter((child) => child !== null && child !== undefined && child !== false);
+
 // A DOM element with its attributes and children; strings become text.
 function el(tag, attributes = {}, ...children) {
   const node = document.createElement(tag);
   for (const [key, value] of Object.entries(attributes)) node.setAttribute(key, value);
-  node.append(...children.flat().filter((child) => child !== null && child !== undefined && child !== false));
+  node.append(...present(children));
   return node;
+}
+
+// Replaces a container's children, dropping empty slots as el() does.
+function fill(container, ...children) {
+  container.replaceChildren(...present(children));
 }
 
 function button(label, attributes, onClick) {
@@ -335,7 +344,7 @@ function drawStation() {
       el('dl', { class: 'kv' }, ...PRE_STEPS.flatMap(({ label, preStep }) => [el('dt', {}, label), el('dd', {}, withCodeSpans(preStep))])),
     );
   }
-  stationDetail.replaceChildren(...children);
+  fill(stationDetail, children);
 }
 
 // --- Which route? ------------------------------------------------------------------------
@@ -395,7 +404,8 @@ function drawWizard(focus = false) {
       el('p', {}, el('a', { href: '#routes', 'data-route': route }, `See the ${route} route`)),
     );
   }
-  wizard.replaceChildren(
+  fill(
+    wizard,
     given.length ? el('ol', { class: 'given', 'aria-label': 'Your answers' }, ...given) : null,
     ...body,
     controls.length ? el('div', { class: 'actions' }, ...controls) : null,
