@@ -4,14 +4,16 @@
   and no dependencies (ADR 0008). .github/workflows/pages.yml publishes this
   folder to GitHub Pages.
 
-  The page fetches skills.json, which a browser refuses to do for a file
-  opened from disk. To preview locally, serve site/ with any static server,
-  for example `python -m http.server --directory site`, and open the address
-  it prints.
+  The page fetches skills.json and loads site.js as a module, which a browser
+  refuses to do for a file opened from disk. To preview locally, serve site/
+  with any static server, for example `python -m http.server --directory site`,
+  and open the address it prints.
 
   README.md stays the reference: this page repeats only the install commands
   and links to the README, GLOSSARY.md and docs/adr/ for everything else.
-  `node scripts/validate-kit.mjs` keeps skills.json in step with the kit.
+  `node scripts/validate-kit.mjs` keeps skills.json in step with the kit, and
+  tests/site.test.mjs holds guide.mjs, the data behind the interactive parts,
+  to the skills' own text.
 -->
 <html lang="en" data-theme="dark">
 <head>
@@ -35,32 +37,117 @@
 <body>
 <div class="bar">
   <div class="wrap">
-    <a class="brand" href="#top">ai-workflow</a>
-    <button class="toggle" id="theme-toggle" type="button" aria-pressed="false">Light theme</button>
+    <a class="brand" href="#top"><span class="brand-mark" aria-hidden="true"></span>ai-workflow</a>
+    <nav class="nav" id="nav" aria-label="Sections">
+      <button class="menu-toggle" id="menu-toggle" type="button" aria-expanded="false" aria-controls="nav-groups">Menu</button>
+      <ul class="groups" id="nav-groups">
+        <li class="group">
+          <button class="group-btn" type="button" aria-expanded="false" aria-controls="nav-kit">The kit</button>
+          <div class="menu" id="nav-kit">
+            <span class="group-name">The kit</span>
+            <ul>
+              <li><a href="#principles">Principles<small>The rules that shape it</small></a></li>
+              <li><a href="#upstreams">Upstreams<small>Where the skills come from</small></a></li>
+              <li><a href="#skills">Skills<small>What each skill does</small></a></li>
+            </ul>
+          </div>
+        </li>
+        <li class="group">
+          <button class="group-btn" type="button" aria-expanded="false" aria-controls="nav-work">The work</button>
+          <div class="menu" id="nav-work">
+            <span class="group-name">The work</span>
+            <ul>
+              <li><a href="#routes">Routes<small>Fast, standard and epic</small></a></li>
+              <li><a href="#which-route">Which route?<small>The questions intake asks</small></a></li>
+              <li><a href="#spec">Anatomy of a spec<small>From draft to implemented</small></a></li>
+              <li><a href="#runs">Runs across phases<small>/aw-implement and /aw-converge</small></a></li>
+            </ul>
+          </div>
+        </li>
+        <li class="group">
+          <button class="group-btn" type="button" aria-expanded="false" aria-controls="nav-setup">Set up</button>
+          <div class="menu" id="nav-setup">
+            <span class="group-name">Set up</span>
+            <ul>
+              <li><a href="#install">Install<small>Plugin or npx skills</small></a></li>
+              <li><a href="#configure">Configure a repo<small>Adapters and access levels</small></a></li>
+              <li><a href="#files">What lands where<small>The files the kit writes</small></a></li>
+            </ul>
+          </div>
+        </li>
+        <li class="group">
+          <button class="group-btn" type="button" aria-expanded="false" aria-controls="nav-help">Help</button>
+          <div class="menu" id="nav-help">
+            <span class="group-name">Help</span>
+            <ul>
+              <li><a href="#faq">FAQ<small>Questions adopters ask</small></a></li>
+              <li><a href="#maintaining">Maintaining the kit<small>Checks, upstreams, releases</small></a></li>
+            </ul>
+          </div>
+        </li>
+      </ul>
+    </nav>
+    <button class="theme-switch" id="theme-toggle" type="button" aria-pressed="false" aria-label="Light theme">
+      <span class="track" aria-hidden="true">
+        <svg class="icon moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></svg>
+        <svg class="icon sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        <span class="knob"></span>
+      </span>
+    </button>
   </div>
 </div>
 
 <header class="hero" id="top">
   <div class="wrap">
     <h1>From a task to a merged change, with one human gate</h1>
-    <p class="lead">A kit of agent skills that writes a spec when the change deserves one, proves every acceptance criterion with evidence, and reviews the diff before anything ships. It works with or without a tracker, on any VCS host.</p>
+    <p class="lead">A kit of agent skills that takes a task to a merged change: a spec when the change deserves one, evidence for every acceptance criterion, and a review before anything ships, with or without a tracker, on any VCS host.</p>
     <div class="actions">
       <a class="btn primary" href="#install">Install the kit</a>
-      <a class="btn" href="#skills">Browse the skills</a>
+      <a class="btn" href="#routes">See the routes</a>
     </div>
     <ol class="miniline" aria-label="The standard route, with spec approval as its human gate">
-      <li>intake</li><li>spec</li><li class="gate">Spec approval</li><li>slices</li><li>build</li><li>verify</li><li>review</li><li>ship</li><li class="opt">retro</li>
+      <li>intake</li><li>spec</li><li class="gate">Spec approval</li><li>slices</li><li>build</li><li>verify</li><li>review</li><li>ship</li><li class="opt">retro <span class="sr">(optional)</span></li>
     </ol>
   </div>
 </header>
 
 <main>
-<section id="routes" aria-labelledby="routes-h">
+<section id="principles" aria-labelledby="principles-h">
   <div class="wrap">
     <div class="sec-head">
-      <h2 id="routes-h">Three routes, one gate</h2>
-      <p class="lead">Coming soon: how <code>/aw-intake</code> sends each task down the fast, standard or epic route, phase by phase.</p>
+      <h2 id="principles-h">The rules that shape the kit</h2>
+      <p class="lead">A handful of decisions explain most of how the skills behave. Each one is an ADR in the repo.</p>
     </div>
+    <ul class="principles">
+      <li>
+        <h3>One fixed human gate</h3>
+        <p>Spec approval is the only point where the work waits for a person. It catches a misunderstanding before it costs code. Accepting the change is not a gate: <code>merge</code> is an operation at <code>draft</code> by default, so a person merges unless you raise it.</p>
+        <a href="https://github.com/samfaina/ai-workflow/blob/main/docs/adr/0013-routes-and-the-single-fixed-human-gate.md">ADR 0013</a>
+      </li>
+      <li>
+        <h3>One phase, one owner, one artifact</h3>
+        <p>Each phase is owned by exactly one kit skill and produces exactly one artifact. Where upstreams overlap, the kit merges them into that one owner. The slice plan lives in the spec, not in the tracker.</p>
+        <a href="https://github.com/samfaina/ai-workflow/blob/main/docs/adr/0010-one-owner-per-phase-and-slices-in-the-spec.md">ADR 0010</a>
+      </li>
+      <li>
+        <h3>Evidence on the real app</h3>
+        <p><code>/aw-verify</code> proves each acceptance criterion by driving the running app through the repo's own verify skill. A review finding counts as a defect only when a run demonstrates it; anything else is a risk.</p>
+        <a href="https://github.com/samfaina/ai-workflow/blob/main/docs/adr/0011-verify-skill-lives-in-claude-skills.md">ADR 0011</a>
+        <a href="https://github.com/samfaina/ai-workflow/blob/main/GLOSSARY.md">Glossary: defect</a>
+      </li>
+      <li>
+        <h3>Local by default, writes by access level</h3>
+        <p>Skills speak canonical operations that per-repo adapters translate. Reading is always allowed; each write operation is at <code>write</code> or <code>draft</code>, and an unconfigured repo leaves push, review requests and merges as drafts.</p>
+        <a href="https://github.com/samfaina/ai-workflow/blob/main/docs/adr/0006-config-layer-adapters-and-canonical-operations.md">ADR 0006</a>
+        <a href="https://github.com/samfaina/ai-workflow/blob/main/docs/adr/0007-safe-defaults-when-unconfigured.md">ADR 0007</a>
+      </li>
+      <li>
+        <h3>Self-contained skills</h3>
+        <p><code>npx skills</code> installs one folder at a time, so each skill carries what it needs: its references, its scripts, its upstream license and the rules it follows, restated in its own text.</p>
+        <a href="https://github.com/samfaina/ai-workflow/blob/main/docs/adr/0002-one-flat-tree-two-install-routes.md">ADR 0002</a>
+        <a href="https://github.com/samfaina/ai-workflow/blob/main/docs/adr/0004-upstream-license-travels-with-each-copy.md">ADR 0004</a>
+      </li>
+    </ul>
   </div>
 </section>
 
@@ -68,8 +155,16 @@
   <div class="wrap">
     <div class="sec-head">
       <h2 id="upstreams-h">Where the skills come from</h2>
-      <p class="lead">Coming soon: the upstreams the kit copies and adapts from. Until then, <a href="https://github.com/samfaina/ai-workflow/blob/main/NOTICE.md"><code>NOTICE.md</code></a> lists them.</p>
+      <p class="lead">The kit draws on three upstreams and writes the rest itself. Every skill carries the <code>aw-</code> prefix, copies included, so it never collides with another kit's skills (<a href="https://github.com/samfaina/ai-workflow/blob/main/docs/adr/0001-aw-prefix-on-every-skill.md">ADR 0001</a>).</p>
     </div>
+    <dl class="kinds">
+      <div><dt>Copy</dt><dd>An upstream skill shipped with its text unchanged except for the mechanical transform: the <code>aw-</code> rename, shared files moved into its folder, and references to a replaced skill pointed at the kit skill. Its upstream license sits in its folder as <code>LICENSE.upstream</code>.</dd></div>
+      <div><dt>Adaptation</dt><dd>A kit skill whose text derives from one or more upstream skills. <code>NOTICE.md</code> says what it keeps and what it changes.</dd></div>
+      <div><dt>Inspired</dt><dd>A kit skill that takes an idea from an upstream and none of its text.</dd></div>
+      <div><dt>Kit skill</dt><dd>Written from scratch for this kit, with no upstream text (<a href="https://github.com/samfaina/ai-workflow/blob/main/docs/adr/0014-kit-skills-written-from-scratch.md">ADR 0014</a>).</dd></div>
+    </dl>
+    <p class="muted">Copies are pinned to a commit in <a href="https://github.com/samfaina/ai-workflow/blob/main/upstreams.json"><code>upstreams.json</code></a>, with the hash of every copied file in <a href="https://github.com/samfaina/ai-workflow/blob/main/upstreams.lock.json"><code>upstreams.lock.json</code></a>, and <code>scripts/sync-upstreams.mjs check</code> fails on any edit beyond the transform. <a href="https://github.com/samfaina/ai-workflow/blob/main/NOTICE.md"><code>NOTICE.md</code></a> lists every copy and adaptation with its upstream, pin and kind.</p>
+    <div class="cards" id="upstream-cards" aria-live="polite"><p class="muted">Loading the skills…</p></div>
   </div>
 </section>
 
@@ -77,7 +172,7 @@
   <div class="wrap">
     <div class="sec-head">
       <h2 id="skills-h">What each skill does</h2>
-      <p class="lead">Every skill of the kit, grouped by the part it plays. Pick one to see what it needs, what refers to it, and what it leaves.</p>
+      <p class="lead">Every skill of the kit, grouped by the part it plays. Filter by upstream or group, and pick one to see what it needs, what refers to it, and what it leaves.</p>
     </div>
     <div class="filters">
       <div class="ctrl">
@@ -96,12 +191,28 @@
   </div>
 </section>
 
-<section id="access" aria-labelledby="access-h">
+<section id="routes" aria-labelledby="routes-h">
   <div class="wrap">
     <div class="sec-head">
-      <h2 id="access-h">What the agent may do</h2>
-      <p class="lead">Coming soon: adapters, canonical operations and access levels. Until then, see the <a href="https://github.com/samfaina/ai-workflow/blob/main/README.md">README</a>.</p>
+      <h2 id="routes-h">Three routes, one gate</h2>
+      <p class="lead"><code>/aw-intake</code> sends every task down the fast, standard or epic route, and picks the longer one when in doubt. Pick a station to see what the phase does, the skill that owns it, and the artifact it leaves.</p>
     </div>
+    <div class="explorer stacked">
+      <div class="routes" id="route-lines"></div>
+      <aside class="detail" id="station-detail" aria-live="polite" aria-label="Selected station"></aside>
+    </div>
+    <p class="muted">A dashed rail marks an optional station. The full table is in <a href="https://github.com/samfaina/ai-workflow/blob/main/docs/adr/0013-routes-and-the-single-fixed-human-gate.md">ADR 0013</a>.</p>
+  </div>
+</section>
+
+<section id="which-route" aria-labelledby="which-route-h">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 id="which-route-h">Which route?</h2>
+      <p class="lead">The questions <code>/aw-intake</code> asks to classify a task, in the order its rules apply them. This is a guide: <code>/aw-intake</code> makes the actual call, from the task and the code, and gives a reason for each.</p>
+    </div>
+    <div class="wizard" id="wizard"></div>
+    <p class="muted">The rules are steps 3 and 4 of <a href="https://github.com/samfaina/ai-workflow/blob/main/skills/aw-intake/SKILL.md"><code>aw-intake</code>'s SKILL.md</a>.</p>
   </div>
 </section>
 
@@ -109,22 +220,270 @@
   <div class="wrap">
     <div class="sec-head">
       <h2 id="install-h">Install the kit</h2>
-      <p class="lead">The <a href="https://github.com/samfaina/ai-workflow/blob/main/README.md#install">README</a> explains each route and what it writes to your repo.</p>
+      <p class="lead">The <a href="https://github.com/samfaina/ai-workflow/blob/main/README.md#install">README</a> explains each route, what it writes to your repo, and how to switch Matt Pocock's plugin off where the kit is on.</p>
     </div>
     <div class="install">
       <article>
         <h3>As a Claude Code plugin</h3>
-        <p class="muted">Recommended. Install with project scope in each repo that uses the workflow.</p>
-<pre class="block"><code>claude plugin marketplace add samfaina/ai-workflow
-claude plugin install ai-workflow@samfaina-labs --scope project</code></pre>
+        <p class="muted">Recommended. Add the marketplace once, then install with project scope in each repo that uses the workflow.</p>
+        <div class="copyable">
+<pre class="block"><code>claude plugin marketplace add samfaina/ai-workflow</code></pre>
+          <button class="copy" type="button">Copy</button>
+        </div>
+        <div class="copyable">
+<pre class="block"><code>claude plugin install ai-workflow@samfaina-labs --scope project</code></pre>
+          <button class="copy" type="button">Copy</button>
+        </div>
       </article>
       <article>
         <h3>With <code>npx skills</code></h3>
         <p class="muted">For harnesses without Claude Code's plugin system. Name a skill to install only that one.</p>
-<pre class="block"><code>npx skills add samfaina/ai-workflow
-npx skills add samfaina/ai-workflow --skill aw-&lt;name&gt;</code></pre>
+        <div class="copyable">
+<pre class="block"><code>npx skills add samfaina/ai-workflow</code></pre>
+          <button class="copy" type="button">Copy</button>
+        </div>
+        <div class="copyable">
+<pre class="block"><code>npx skills add samfaina/ai-workflow --skill aw-&lt;name&gt;</code></pre>
+          <button class="copy" type="button">Copy</button>
+        </div>
       </article>
     </div>
+  </div>
+</section>
+
+<section id="configure" aria-labelledby="configure-h">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 id="configure-h">Configure a repo</h2>
+      <p class="lead">Run <code>/aw-setup</code> once in each repo. It explores first, then interviews you one section at a time, leading each with the answer it recommends, and writes nothing until you confirm the whole set. Re-run it to change anything; it updates in place.</p>
+    </div>
+    <div class="two">
+      <article class="panel">
+        <h3>What it asks</h3>
+        <ol class="steps">
+          <li><strong>Tracker</strong>: none, local markdown, GitHub, GitLab or another, and its access level.</li>
+          <li><strong>VCS</strong>: the base branch, protected branches, branch naming, commit convention, review host, merge method and access levels.</li>
+          <li><strong>Checks</strong>: a command for each check level, <code>fast</code>, <code>task</code> and <code>full</code>, proposed from the project's manifests and CI files.</li>
+          <li><strong>Domain docs</strong>: single-context or multi-context, and where the glossary and ADRs live.</li>
+        </ol>
+      </article>
+      <article class="panel">
+        <h3>What it writes</h3>
+        <ul class="plain">
+          <li><code>docs/agents/tracker.md</code>, <code>vcs.md</code> and <code>checks.md</code>, the adapters, and <code>domain.md</code>.</li>
+          <li>An <code>## Agent skills</code> block pointing at all four, in <code>AGENTS.md</code>, or in <code>CLAUDE.md</code> when only that exists.</li>
+          <li><code>.aw/</code> in <code>.gitignore</code>, and on your yes, <code>permissions.deny</code> entries against force-push and <code>--no-verify</code>, and turning Matt Pocock's plugin off in the repo. It warns when Node 18 or later is missing.</li>
+        </ul>
+      </article>
+    </div>
+
+    <h3>Three adapters</h3>
+    <div class="adapters">
+      <article class="panel">
+        <h4><code>tracker.md</code></h4>
+        <p>Where tickets live. Reads: <code>fetch-ticket</code>, <code>query-tickets</code>. Writes: <code>publish-ticket</code>, <code>comment-ticket</code>, <code>set-status</code>, <code>link-tickets</code>.</p>
+      </article>
+      <article class="panel">
+        <h4><code>vcs.md</code></h4>
+        <p>Branches, commits and the review host. Read: <code>diff-base</code>. Writes: <code>start-branch</code>, <code>commit</code>, <code>push</code>, <code>open-review</code>, <code>merge</code>.</p>
+      </article>
+      <article class="panel">
+        <h4><code>checks.md</code></h4>
+        <p>The command for each check level: <code>run-check fast</code>, <code>task</code> or <code>full</code>. A level with no command is reported as not run, never as passed.</p>
+      </article>
+    </div>
+
+    <h3 id="sim-h">Access levels: try them</h3>
+    <p class="muted">Each write operation is at <code>write</code>, where the agent performs it, or at <code>draft</code>, where it writes the exact command or text to <code>.aw/drafts/</code>, tells you the path and goes on. The VCS operations below start at the unconfigured defaults. The commands are those of the GitHub VCS template, and with a review host, <code>/aw-ship</code> drafts <code>open-review</code> when <code>push</code> was drafted, and the merge when either was.</p>
+    <div class="sim" id="access-sim" role="group" aria-labelledby="sim-h"></div>
+
+    <div class="two">
+      <article class="panel">
+        <h3 id="never-allowed">Never allowed</h3>
+        <p>Whatever the access levels say, the agent never force-pushes (<code>--force</code>, <code>--force-with-lease</code>, a <code>+</code> refspec), never deletes a branch, local or remote, never pushes directly to a protected branch, and never passes <code>--no-verify</code>. These are not configurable.</p>
+        <p class="muted">From <a href="https://github.com/samfaina/ai-workflow/blob/main/docs/configuration.md#never-allowed"><code>docs/configuration.md</code></a>, which also has the defaults for a repo with no configuration.</p>
+      </article>
+      <article class="panel">
+        <h3>Under another harness</h3>
+        <p>Claude Code is the reference harness. Codex, OpenCode, Cursor and the like get the skills through the <code>SKILL.md</code> standard, and <code>npx skills</code> installs them where Claude Code's plugin system is missing. Install <code>aw-build</code>, <code>aw-verify</code> and <code>aw-review</code> with their phase procedures, and <code>aw-converge</code> and <code>aw-implement</code> with all four. The verify skill lives in <code>.claude/skills/</code> whatever the harness. <code>permissions.deny</code> is Claude Code's alone, and <code>/aw-converge</code> and <code>/aw-implement</code> refuse to start where the harness cannot start subagents.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section id="files" aria-labelledby="files-h">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 id="files-h">What lands where</h2>
+      <p class="lead">What the kit writes in a repo. Pick a node to see which skill writes it and whether it is committed.</p>
+    </div>
+    <div class="explorer">
+      <ul class="tree files" id="file-tree" aria-label="Files the kit writes"></ul>
+      <aside class="detail" id="file-detail" aria-live="polite" aria-label="Selected file"></aside>
+    </div>
+  </div>
+</section>
+
+<section id="spec" aria-labelledby="spec-h">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 id="spec-h">Anatomy of a spec</h2>
+      <p class="lead">A spec is a living document in the repo, at <code>docs/specs/&lt;slug&gt;/spec.md</code>, versioned with the code it describes (<a href="https://github.com/samfaina/ai-workflow/blob/main/docs/adr/0003-spec-always-lives-in-the-repo.md">ADR 0003</a>). Move this example through its statuses to see what each phase changes.</p>
+    </div>
+    <div class="seg" id="spec-status" role="group" aria-label="Spec status">
+      <button type="button" data-status="draft" aria-pressed="true">draft</button>
+      <button type="button" data-status="approved" aria-pressed="false">approved</button>
+      <button type="button" data-status="implemented" aria-pressed="false">implemented</button>
+    </div>
+    <p class="muted" id="spec-status-note" aria-live="polite"></p>
+    <div class="anatomy">
+      <div class="spec-doc" id="spec-doc">
+        <div class="fm">---<br>status: <span class="status" id="spec-status-value">draft</span><br>ticket: LIB-42<br>---</div>
+        <h3># Renew a loan</h3>
+        <h4>## Problem and goal</h4>
+        <p>A member can renew a loan only at the desk. Once this ships, they renew it from their loans page.</p>
+        <h4>## Acceptance criteria</h4>
+        <ul>
+          <li><mark>AC-1</mark>: Given a loan with no hold on its book, when the member renews it, then its due date moves 14 days later.</li>
+          <li><mark>AC-2</mark>: Given a loan whose book another member holds, when the member renews it, then the renewal is refused and the due date stays the same.</li>
+          <li><mark>AC-3</mark>: Given a loan renewed twice, when the member renews it again, then the renewal is refused with "renewal limit reached".</li>
+        </ul>
+        <h4>## Out of scope</h4>
+        <ul><li>Renewing at the desk, which stays as it is.</li></ul>
+        <h4>## Boundaries</h4>
+        <h5>### Always</h5>
+        <ul><li>Run the <code>task</code> checks before each commit.</li></ul>
+        <h5>### Ask first</h5>
+        <ul><li>A change to the loans table's schema.</li></ul>
+        <h5>### Never</h5>
+        <ul><li>Touch the payments module.</li></ul>
+        <h4>## Design</h4>
+        <p>A <code>renew</code> operation on the loans service, called by a button on the loans page.</p>
+        <h4>## Slice plan</h4>
+        <p data-only="draft">Written by <code>/aw-slices</code> after spec approval.</p>
+        <ol data-only="approved" hidden>
+          <li>[ ] Renew a loan with no hold (<mark>AC-1</mark>). AFK.</li>
+          <li>[ ] Refuse a held or twice-renewed loan (<mark>AC-2</mark>, <mark>AC-3</mark>). AFK.</li>
+        </ol>
+        <ol data-only="implemented" hidden>
+          <li>[x] Renew a loan with no hold (<mark>AC-1</mark>). AFK.</li>
+          <li>[x] Refuse a held or twice-renewed loan (<mark>AC-2</mark>, <mark>AC-3</mark>). AFK.</li>
+        </ol>
+        <h4>## Test strategy</h4>
+        <p data-only="draft">Proposed: the loans service's <code>renew</code>, the highest seam that reaches the behaviour.</p>
+        <p data-only="approved implemented" hidden>Agreed: the loans service's <code>renew</code>, which catches the renewal rules and misses the button on the loans page.</p>
+        <h4>## Traceability</h4>
+        <table>
+          <thead><tr><th>Criterion</th><th>Evidence</th></tr></thead>
+          <tbody>
+            <tr><td><mark>AC-1</mark></td><td><span data-only="draft approved">test: <code>tests/renew.test.ts</code></span><span data-only="implemented" hidden>test: <code>tests/renew.test.ts</code>; verify: <code>docs/specs/renew-loan/verify/ac-1.md</code> (passed)</span></td></tr>
+            <tr><td><mark>AC-2</mark></td><td><span data-only="draft approved">test: <code>tests/renew.test.ts</code></span><span data-only="implemented" hidden>test: <code>tests/renew.test.ts</code>; verify: <code>docs/specs/renew-loan/verify/ac-2.md</code> (passed)</span></td></tr>
+            <tr><td><mark>AC-3</mark></td><td><span data-only="draft approved">test: <code>tests/renew.test.ts</code></span><span data-only="implemented" hidden>test: <code>tests/renew.test.ts</code>; verify: <code>docs/specs/renew-loan/verify/ac-3.md</code> (passed)</span></td></tr>
+          </tbody>
+        </table>
+        <h4>## Open questions</h4>
+        <p data-only="draft">BLOCKS: Is the renewal period 14 days for every kind of book?</p>
+        <p data-only="approved implemented" hidden>RESOLVED: 14 days for every kind of book.</p>
+      </div>
+      <dl class="notes">
+        <div><dt>Frontmatter</dt><dd><code>status</code> moves from <code>draft</code> to <code>approved</code> at spec approval, and to <code>implemented</code> when <code>/aw-ship</code> ships it. A spec a later one replaces becomes <code>superseded</code>.</dd></div>
+        <div><dt>Acceptance criteria</dt><dd>Numbered <code class="hl">AC-n</code>, each a verifiable Given, when, then with an observable result. Everything after them points back at these numbers.</dd></div>
+        <div><dt>Boundaries</dt><dd>What the agent always does, asks first about, and never touches during this change.</dd></div>
+        <div><dt>Slice plan and Test strategy</dt><dd><code>/aw-slices</code> writes them after approval: vertical slices, each covering at least one criterion and marked AFK or HITL, and the seams agreed with you. <code>/aw-build</code> ticks each done marker.</dd></div>
+        <div><dt>Traceability</dt><dd>One row per criterion with its evidence. At <code>draft</code> it holds the planned evidence, whose paths need not exist yet; <code>/aw-build</code> points each row at the tests that landed, and <code>/aw-verify</code> adds its <code>verify:</code> result.</dd></div>
+        <div><dt>Open questions</dt><dd>A <code>BLOCKS:</code> item must be resolved before approval; the spec check fails on one from <code>approved</code> on.</dd></div>
+      </dl>
+    </div>
+    <p class="muted">The template is <a href="https://github.com/samfaina/ai-workflow/blob/main/skills/aw-check-spec/SPEC-TEMPLATE.md"><code>SPEC-TEMPLATE.md</code></a>, and <code>aw-check-spec</code> checks every spec against it with a script.</p>
+  </div>
+</section>
+
+<section id="runs" aria-labelledby="runs-h">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 id="runs-h">Implementation and convergence runs</h2>
+      <p class="lead">Two commands run several phases in one call. Each phase still runs through its own phase procedure, so it keeps its one owner. Neither ever pushes, opens a review request or merges: shipping stays with <code>/aw-ship</code>.</p>
+    </div>
+    <div class="two">
+      <article class="panel">
+        <h3><code>/aw-implement</code></h3>
+        <p>Takes an approved spec with a slice plan, or a fast-route task, from what is left to build to a review with no introduced defect. It builds each AFK slice in a subagent of its own, in series, and each HITL slice in the main session; verifies in a subagent; reviews in the main session; and runs the rounds of a convergence run when that review holds an introduced defect.</p>
+        <p>It asks only during a HITL slice or to agree a test seam. It refuses to start with no subagents, with <code>commit</code> at <code>draft</code>, with uncommitted changes, or with a spec that is not <code>approved</code>. When it stops, it says why, and running it again resumes from the first slice not done. Its journal is <code>.aw/implement/&lt;slug&gt;.md</code>.</p>
+        <a href="https://github.com/samfaina/ai-workflow/blob/main/docs/adr/0017-aw-implement-takes-one-spec-to-a-clean-review.md">ADR 0017</a>
+      </article>
+      <article class="panel">
+        <h3><code>/aw-converge</code></h3>
+        <p>Takes a work branch from a review report with introduced defects to one with none. Each round is a fix run, <code>/aw-verify</code> when the fix calls for it, and <code>/aw-review</code>. The fix run and the verify run each get a subagent; the review runs in the main session, which has not seen how the defect was fixed.</p>
+        <p>It stops when the latest review holds no introduced defect, at its limit of three rounds, which a call can raise, as in <code>/aw-converge 5</code>, or on anything a round cannot resolve. A repo cannot change the limit, and running it again starts a new count.</p>
+        <a href="https://github.com/samfaina/ai-workflow/blob/main/docs/adr/0016-aw-converge-runs-phases-through-phase-procedures.md">ADR 0016</a>
+      </article>
+    </div>
+    <ol class="miniline runs-line" aria-label="An implementation run, from build to a clean review">
+      <li>build each slice</li><li>verify</li><li>review</li><li class="opt">rounds <span class="sr">(only with introduced defects)</span></li><li class="stop">stop: clean, limit or reason</li>
+    </ol>
+  </div>
+</section>
+
+<section id="faq" aria-labelledby="faq-h">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 id="faq-h">Questions adopters ask</h2>
+    </div>
+    <div class="faq">
+      <details>
+        <summary>Do I need a tracker?</summary>
+        <p>No. With no tracker the task arrives as free text and every tracker write leaves a draft. Only <code>/aw-wayfinder</code> needs one, and it offers to create a local-markdown tracker. <a href="https://github.com/samfaina/ai-workflow/blob/main/docs/configuration.md#defaults-when-unconfigured">Defaults when unconfigured</a></p>
+      </details>
+      <details>
+        <summary>Will the agent push or merge on its own?</summary>
+        <p>Not unless you raise those operations to <code>write</code>. Even then, it merges only when the review found no proven defect and the <code>full</code> check level passed, and for a change with a spec, once the spec is <code>implemented</code>. <a href="https://github.com/samfaina/ai-workflow/blob/main/docs/adr/0013-routes-and-the-single-fixed-human-gate.md">ADR 0013</a></p>
+      </details>
+      <details>
+        <summary>Does every task need a spec?</summary>
+        <p>No. The fast route has no spec and no gate: <code>/aw-intake</code> states 1 to 3 done-when criteria instead. A task that changes a contract, stored data or security, or contradicts a spec, takes the standard route. <a href="https://github.com/samfaina/ai-workflow/blob/main/skills/aw-intake/SKILL.md">aw-intake</a></p>
+      </details>
+      <details>
+        <summary>What if my repo has no verify skill?</summary>
+        <p>Then every acceptance criterion needs <code>test:</code> or <code>manual:</code> evidence. <code>/aw-create-verify</code> writes one for the repo's app. <a href="https://github.com/samfaina/ai-workflow/blob/main/docs/adr/0011-verify-skill-lives-in-claude-skills.md">ADR 0011</a></p>
+      </details>
+      <details>
+        <summary>Does the kit install hooks?</summary>
+        <p>No, neither agent hooks nor git hooks. <code>/aw-setup</code> only offers <code>permissions.deny</code> entries, and a mechanical control is added only when <code>/aw-retro</code> finds an error class that happened twice. <a href="https://github.com/samfaina/ai-workflow/blob/main/docs/adr/0009-no-guardrails-module-in-v1.md">ADR 0009</a></p>
+      </details>
+      <details>
+        <summary>Can I keep Matt Pocock's plugin installed?</summary>
+        <p>Yes: keep it at user scope and turn it off in the repos that use the kit, so the two never offer competing skills for the same phase. <a href="https://github.com/samfaina/ai-workflow/blob/main/README.md#switching-plugins-on-or-off-per-repo">README</a></p>
+      </details>
+      <details>
+        <summary>What happens without Node?</summary>
+        <p><code>aw-check-spec</code> walks the same checklist by reading and marks the result as not script-verified, never as passed. <code>/aw-setup</code> warns up front. <a href="https://github.com/samfaina/ai-workflow/blob/main/docs/adr/0012-spec-check-is-a-separate-model-invoked-skill.md">ADR 0012</a></p>
+      </details>
+      <details>
+        <summary>Is the review posted to the pull request?</summary>
+        <p>No. The review report stays local, under <code>.aw/</code>, and is never posted to the review host. <a href="https://github.com/samfaina/ai-workflow/blob/main/GLOSSARY.md">Glossary: review report</a></p>
+      </details>
+      <details>
+        <summary>Is there a compatibility promise?</summary>
+        <p>No, not before 1.0. The kit is built for its author's own use and published as is; anyone can use it or fork it. <a href="https://github.com/samfaina/ai-workflow/blob/main/docs/adr/0005-personal-kit-published-as-is.md">ADR 0005</a></p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section id="maintaining" aria-labelledby="maintaining-h">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 id="maintaining-h">Maintaining the kit</h2>
+      <p class="lead">For whoever changes the kit itself. The scripts are dependency-free Node 18+, run as <code>node &lt;path&gt;</code> (<a href="https://github.com/samfaina/ai-workflow/blob/main/docs/adr/0008-scripts-are-dependency-free-node.md">ADR 0008</a>).</p>
+    </div>
+    <ul class="plain maint">
+      <li><strong>Checks.</strong> <code>node --test</code> runs the tests and <code>node scripts/validate-kit.mjs</code> the kit invariants. CI runs both on every pull request.</li>
+      <li><strong>Upstream copies.</strong> <code>node scripts/sync-upstreams.mjs install</code> writes the copies at their pins, <code>check</code> verifies them offline, and <code>report</code> lists what changed upstream since each pin.</li>
+      <li><strong>This page.</strong> <code>validate-kit</code> fails when <code>site/skills.json</code> misses a skill, names one the plugin does not list, or disagrees with <code>NOTICE.md</code> or a skill's frontmatter.</li>
+      <li><strong>Changing a rule.</strong> Skills restate rules word for word, and so does this page: <code>git grep</code> a rule's wording under <code>skills/</code> and <code>site/</code>, and change every copy in the same diff. <a href="https://github.com/samfaina/ai-workflow/blob/main/.claude/CLAUDE.md">.claude/CLAUDE.md</a></li>
+      <li><strong>Releases.</strong> A semver tag <code>vX.Y.Z</code>, the same version in <code>.claude-plugin/plugin.json</code> and the marketplace entry, and a hand-written changelog entry. Without the version bump, installed plugin users never see the update. <a href="https://github.com/samfaina/ai-workflow/blob/main/docs/adr/0015-pinned-upstreams-and-release.md">ADR 0015</a></li>
+    </ul>
+    <p class="muted">The <a href="https://github.com/samfaina/ai-workflow/blob/main/README.md#maintaining-the-kit">README</a> lists every invariant the validator checks.</p>
   </div>
 </section>
 </main>
@@ -137,9 +496,10 @@ npx skills add samfaina/ai-workflow --skill aw-&lt;name&gt;</code></pre>
       <li><a href="https://github.com/samfaina/ai-workflow/tree/main/docs/adr">Decisions (ADRs)</a></li>
       <li><a href="https://github.com/samfaina/ai-workflow">Source on GitHub</a></li>
     </ul>
+    <p class="made">made with <span role="img" aria-label="love">💚</span> by <a href="https://github.com/samfaina">samfaina</a></p>
   </div>
 </footer>
 
-<script src="site.js"></script>
+<script type="module" src="site.js"></script>
 </body>
 </html>

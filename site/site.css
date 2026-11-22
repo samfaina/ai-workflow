@@ -41,6 +41,17 @@
 }
 
 * { box-sizing: border-box; }
+
+/* Scrollbars in the theme's colours, for the page and for every box that
+   scrolls on its own, such as a route's line: a thumb in the rule colour that
+   turns soft on hover, on a track that is the box's own background. */
+* { scrollbar-width: thin; scrollbar-color: var(--rule) transparent; }
+html { scrollbar-color: var(--rule) var(--bg); }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 5px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background-color: var(--soft); }
+::-webkit-scrollbar-corner { background: transparent; }
 html { scroll-behavior: smooth; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.6 var(--body); overflow-wrap: break-word; }
 h1, h2, h3 { font-family: var(--display); line-height: 1.15; margin: 0; text-wrap: balance; }
@@ -48,22 +59,55 @@ h1 { font-size: clamp(2rem, 6vw, 3.6rem); font-weight: 700; letter-spacing: -.02
 h2 { font-size: clamp(1.5rem, 3.4vw, 2.2rem); font-weight: 700; letter-spacing: -.01em; }
 h3 { font-size: 1.15rem; font-weight: 600; }
 p { margin: 0; }
-a { color: var(--line); text-underline-offset: 2px; }
+/* No link is underlined: links read by their colour, and darken to ink on hover. */
+a { color: var(--line); text-decoration: none; }
+a:not(.btn):hover { color: var(--ink); }
 code, pre { font-family: var(--mono); font-size: .875em; }
 code { background: var(--sunk); padding: .08em .35em; border-radius: 4px; overflow-wrap: anywhere; }
 button { font: inherit; color: inherit; cursor: pointer; }
 :focus-visible { outline: 3px solid var(--line); outline-offset: 2px; border-radius: 4px; }
 
 .wrap { max-width: 1120px; margin-inline: auto; padding-inline: 16px; }
-.lead { font-size: 1.1rem; color: var(--soft); max-width: 62ch; }
+.lead { font-size: 1.1rem; color: var(--soft); }
 .muted { color: var(--soft); }
 
-/* The bar on top: the kit's name and the theme toggle. */
-.bar { background: var(--panel); border-bottom: 1px solid var(--rule); }
-.bar .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 60px; }
-.brand { font: 600 1rem/1.2 var(--mono); color: var(--ink); text-decoration: none; display: inline-flex; align-items: center; min-height: 44px; }
-.toggle { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; min-width: 44px; padding: 8px 14px; border: 1.5px solid var(--rule); border-radius: 6px; background: var(--bg); font-weight: 500; }
-.toggle:hover { border-color: var(--line); }
+/* The bar on top, pinned while the page scrolls: the kit's name, the section
+   menus and the theme switch. */
+html { scroll-padding-top: 76px; }
+.bar { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--panel) 88%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--rule); }
+.bar .wrap { display: flex; align-items: center; gap: 12px; min-height: 60px; }
+.brand { font: 600 1rem/1.2 var(--mono); color: var(--ink); display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin-right: auto; }
+.brand-mark { width: 14px; height: 14px; border-radius: 50%; background: var(--gate-mark); box-shadow: 0 0 0 3px var(--gate-soft); }
+
+.nav { position: relative; }
+.menu-toggle { display: none; }
+.groups { list-style: none; margin: 0; padding: 0; display: flex; gap: 2px; }
+.group { position: relative; }
+.group-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 6px 12px; border: 0; border-radius: 6px; background: none; font-weight: 500; color: var(--soft); }
+.group-btn::after { content: ""; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateY(-2px) rotate(45deg); transition: transform .15s; }
+.group-btn:hover, .group-btn[aria-expanded="true"] { color: var(--ink); background: var(--sunk); }
+.group-btn[aria-expanded="true"]::after { transform: translateY(1px) rotate(-135deg); }
+.group-btn.current { color: var(--line); }
+.menu { display: none; position: absolute; top: calc(100% + 8px); left: 0; min-width: 260px; padding: 8px; background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; box-shadow: 0 12px 32px var(--shadow); }
+.group-btn[aria-expanded="true"] + .menu { display: block; }
+/* The last two menus open leftwards, so they never cross the page's edge. */
+.group:nth-last-child(-n + 2) .menu { left: auto; right: 0; }
+.group-name { display: none; }
+.menu ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.menu a { display: grid; gap: 2px; min-height: 44px; padding: 8px 10px; border-radius: 6px; color: var(--ink); font-weight: 500; }
+.menu a small { color: var(--soft); font-weight: 400; font-size: .8rem; }
+.menu a:hover { background: var(--sunk); }
+.menu a[aria-current="location"] { background: var(--line-soft); color: var(--line); }
+
+/* The theme switch: a track with a moon and a sun, and a knob that slides to
+   the sun while the light theme is on. */
+.theme-switch { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; min-width: 44px; padding: 0 4px; border: 0; background: none; }
+.track { position: relative; display: inline-flex; align-items: center; justify-content: space-between; width: 60px; height: 30px; padding: 0 7px; border-radius: 15px; background: var(--sunk); border: 1px solid var(--rule); }
+.theme-switch:hover .track { border-color: var(--line); }
+.icon { position: relative; z-index: 1; width: 16px; height: 16px; fill: none; stroke: var(--soft); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.knob { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--line-mark); transition: transform .2s ease; }
+.theme-switch[aria-pressed="false"] .moon, .theme-switch[aria-pressed="true"] .sun { stroke: var(--on-accent); }
+.theme-switch[aria-pressed="true"] .knob { transform: translateX(30px); }
 
 .hero { background: var(--panel); border-bottom: 1px solid var(--rule); padding-block: 40px 32px; }
 .hero .wrap { display: grid; gap: 20px; }
@@ -72,16 +116,31 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .btn { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 16px; border-radius: 6px; font-weight: 600; text-decoration: none; border: 1.5px solid var(--line); color: var(--line); background: transparent; }
 .btn.primary { background: var(--line); color: var(--on-accent); }
 
-/* The standard route as a line. overflow-x: auto scrolls the line, never the
-   page, and the list carries room for the gate's 10px pulse. */
-.miniline { list-style: none; margin: 4px 0 0 -12px; padding: 12px 0 8px 12px; display: flex; overflow-x: auto; }
-.miniline li { position: relative; flex: 1 0 86px; min-width: 86px; padding: 30px 8px 0 0; font: 500 .72rem/1.25 var(--mono); color: var(--soft); }
-.miniline li::before { content: ""; position: absolute; top: 10px; left: 0; right: 0; height: 4px; background: var(--line-mark); }
-.miniline li:last-child::before { right: calc(100% - 20px); }
-.miniline li::after { content: ""; box-sizing: border-box; position: absolute; top: 2px; left: 0; width: 20px; height: 20px; border-radius: 50%; background: var(--panel); border: 4px solid var(--line-mark); }
+/* A line of stations, here and in the routes: each station's circle sits at
+   the middle of its slot, with its label centred under it and wrapping when
+   long, and the rail runs from the first circle to the last. overflow-x: auto
+   scrolls a line that cannot fit, never the page, and the padding leaves room
+   for the gate's 10px pulse.
+
+   An optional station has a dashed circle and a dashed rail into it and out
+   of it. A rail is drawn by the slots on either side of a circle, so the slot
+   before an optional station dashes its right half and the slot after it its
+   left half: a solid half-layer sits over a dashed one. */
+.miniline, .line {
+  --rail: var(--line-mark);
+  --dash: repeating-linear-gradient(90deg, var(--rail) 0 6px, transparent 6px 11px);
+  list-style: none; margin: 0; padding: 12px 0 8px; display: flex; overflow-x: auto;
+}
+.miniline li { position: relative; flex: 1 0 86px; min-width: 86px; padding: 30px 4px 0; text-align: center; font: 500 .72rem/1.25 var(--mono); color: var(--soft); }
+.miniline li::before { content: ""; position: absolute; top: 10px; left: 0; right: 0; height: 4px; background: var(--rail); }
+.miniline li:first-child::before { left: 50%; }
+.miniline li:last-child::before { right: 50%; }
+.miniline li::after { content: ""; box-sizing: border-box; position: absolute; top: 2px; left: 50%; width: 20px; height: 20px; margin-left: -10px; border-radius: 50%; background: var(--panel); border: 4px solid var(--rail); }
 .miniline li.gate { color: var(--gate); font-weight: 600; }
 .miniline li.gate::after { background: var(--gate-mark); border-color: var(--gate-mark); animation: gatepulse 2.2s ease-out infinite; }
-.miniline li.opt::before { background: repeating-linear-gradient(90deg, var(--line-mark) 0 6px, transparent 6px 11px); }
+.miniline li.opt::before { background: var(--dash); }
+.miniline li:has(+ li.opt)::before { background: linear-gradient(90deg, var(--rail) 50%, transparent 50%), var(--dash); }
+.miniline li.opt + li::before { background: linear-gradient(90deg, transparent 50%, var(--rail) 50%), var(--dash); }
 .miniline li.opt::after { border-style: dashed; }
 @keyframes gatepulse {
   0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--gate-mark) 60%, transparent); }
@@ -121,7 +180,7 @@ pre.block { margin: 0; padding: 14px; background: var(--sunk); border-radius: 6p
 
 /* Desktop: pinned at the top while the list scrolls. Sticky stays inside
    .explorer, so the panel lets go once the section ends. */
-.detail { background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; padding: 20px; display: grid; gap: 12px; min-width: 0; position: sticky; top: 16px; }
+.detail { background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; padding: 20px; display: grid; gap: 12px; min-width: 0; position: sticky; top: 76px; }
 .detail h3 { font: 500 1.05rem/1.3 var(--mono); overflow-wrap: anywhere; }
 .kv { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 8px 12px; margin: 0; }
 .kv dt { font-weight: 600; font-size: .85rem; color: var(--soft); padding-top: 2px; }
@@ -130,20 +189,191 @@ pre.block { margin: 0; padding: 14px; background: var(--sunk); border-radius: 6p
 .kv dd small { display: block; color: var(--soft); font-size: .82rem; margin-top: 2px; }
 .kv code { overflow-wrap: anywhere; }
 
+/* --- Shared pieces of the guide ------------------------------------------------ */
+
+h4 { font: 600 .95rem/1.3 var(--display); margin: 0; }
+.sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.panel { background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; padding: 18px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 16px; }
+.plain { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; }
+.steps { margin: 0; padding-left: 1.3em; display: grid; gap: 6px; }
+.eyebrow { font: 500 .78rem/1.2 var(--mono); color: var(--soft); text-transform: uppercase; letter-spacing: .04em; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { font: 500 .72rem/1.2 var(--mono); padding: 3px 7px; border-radius: 3px; background: var(--line-soft); color: var(--line); }
+.tag.gate { background: var(--gate-soft); color: var(--gate); }
+mark, code.hl { background: none; color: var(--hl); font-weight: 600; }
+.detail h4 { margin-top: 4px; }
+
+/* Principles. */
+.principles { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+.principles li { background: var(--panel); border: 1px solid var(--rule); border-left: 4px solid var(--line-mark); border-radius: 8px; padding: 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.principles li:first-child { border-left-color: var(--gate-mark); }
+.principles a { display: inline-flex; align-items: center; min-height: 44px; margin-right: 12px; font-weight: 500; }
+.principles p { flex: 1; }
+
+/* Upstreams. */
+.kinds { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 12px 20px; margin: 0; }
+.kinds dt { font: 600 1rem/1.3 var(--display); }
+.kinds dd { margin: 4px 0 0; color: var(--soft); }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 16px; align-items: start; }
+.card { background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; padding: 18px; display: grid; gap: 10px; min-width: 0; }
+.card h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.card .count { font: 400 .8rem/1.2 var(--mono); color: var(--soft); }
+.card > a { display: inline-flex; align-items: center; min-height: 44px; font: 500 .85rem/1.2 var(--mono); overflow-wrap: anywhere; }
+.dot { width: 12px; height: 12px; border-radius: 50%; flex: none; background: var(--line-mark); }
+.dot.pocock { background: var(--pocock); } .dot.addy { background: var(--addy); } .dot.pstack { background: var(--pstack); }
+.names { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.names code { display: inline-block; font-size: .8rem; }
+
+/* Routes: the three lines take the section's full width, one above the other,
+   so that every station of the longest route shows without scrolling on a
+   desktop; the selected station's detail sits under them. Below 820px the
+   detail pins to the bottom like the skills explorer's. */
+.explorer.stacked { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 821px) { .explorer.stacked .detail { position: static; } }
+.routes { display: grid; gap: 22px; min-width: 0; }
+.route { display: grid; gap: 4px; min-width: 0; }
+.route.fast .line { --rail: var(--fast-mark); }
+.line li { flex: 1 0 72px; min-width: 72px; display: flex; }
+.line button { position: relative; flex: 1; min-height: 72px; padding: 34px 4px 8px; border: 0; border-radius: 4px; background: none; text-align: center; font: 500 .74rem/1.25 var(--mono); color: var(--soft); }
+.line button::before { content: ""; position: absolute; top: 12px; left: 0; right: 0; height: 4px; background: var(--rail); }
+.line li:first-child button::before { left: 50%; }
+.line li:last-child button::before { right: 50%; }
+.line button::after { content: ""; box-sizing: border-box; position: absolute; top: 4px; left: 50%; width: 20px; height: 20px; margin-left: -10px; border-radius: 50%; background: var(--panel); border: 4px solid var(--rail); }
+.line button:hover { color: var(--ink); }
+/* The selected station: no background, and a ring around its circle in the
+   route's own colour. A plain station's label also turns ink; a gate keeps
+   its look, so a selected gate differs from the others by its ring alone. */
+.line button[aria-current="true"] { color: var(--ink); font-weight: 600; }
+.line button[aria-current="true"]::after { background: var(--rail); outline: 2px solid var(--rail); outline-offset: 3px; }
+.line .gate button { color: var(--gate); font-weight: 600; }
+.line .gate button::after { background: var(--gate-mark); border-color: var(--gate-mark); animation: gatepulse 2.2s ease-out infinite; }
+.line .gate button[aria-current="true"]::after { outline-color: var(--gate-mark); }
+/* An optional station: dashed, as on .miniline above. */
+.line li.opt button::before { background: var(--dash); }
+.line li:has(+ li.opt) button::before { background: linear-gradient(90deg, var(--rail) 50%, transparent 50%), var(--dash); }
+.line li.opt + li button::before { background: linear-gradient(90deg, transparent 50%, var(--rail) 50%), var(--dash); }
+.line li.opt button::after { border-style: dashed; }
+.line li.opt button[aria-current="true"]::after { background: var(--panel); }
+
+/* Which route? */
+.wizard { background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; padding: 20px; display: grid; gap: 14px; min-width: 0; }
+.wizard h3:focus { outline: none; }
+.wizard h3:focus-visible { outline: 3px solid var(--line); }
+.given { margin: 0; padding-left: 1.3em; display: grid; gap: 4px; font-size: .92rem; }
+.given .q { color: var(--soft); }
+.answers button { display: inline-flex; flex-direction: column; align-items: flex-start; justify-content: center; text-align: left; }
+.answers button small { color: var(--soft); font-size: .78rem; font-weight: 400; }
+.result { color: var(--line); }
+.result.fast { color: var(--fast); }
+.actions button { min-height: 44px; padding: 8px 16px; border: 1.5px solid var(--rule); border-radius: 6px; background: var(--bg); font-weight: 500; }
+.actions button:hover:not(:disabled) { border-color: var(--line); }
+.actions button:disabled { cursor: default; color: var(--soft); }
+
+/* Install: a copy button on each command block. */
+.copyable { position: relative; min-width: 0; }
+.copyable pre { padding-right: 84px; }
+.copy { position: absolute; top: 6px; right: 6px; min-height: 44px; min-width: 64px; padding: 6px 10px; border: 1.5px solid var(--rule); border-radius: 6px; background: var(--panel); font: 500 .8rem/1.2 var(--body); }
+.copy:hover { border-color: var(--line); }
+
+/* Configure a repo. */
+.adapters { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 16px; }
+.sim { display: grid; gap: 10px; }
+.op { background: var(--panel); border: 1px solid var(--rule); border-left: 4px solid var(--rule); border-radius: 8px; padding: 14px 16px; display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 10px 20px; align-items: start; }
+.op.is-run { border-left-color: var(--fast-mark); }
+.op.is-draft { border-left-color: var(--line-mark); border-left-style: dashed; }
+.op-head { display: grid; gap: 8px; }
+.op-name { font-size: 1rem; justify-self: start; }
+.op-result { display: grid; gap: 8px; min-width: 0; }
+.fixed { font: 500 .85rem/1.3 var(--mono); color: var(--soft); display: inline-flex; align-items: center; min-height: 44px; }
+.draft { display: grid; gap: 6px; padding: 10px; border: 1px dashed var(--rule); border-radius: 6px; background: var(--bg); min-width: 0; }
+.draft pre.block { padding: 10px; }
+
+/* What lands where: a tree of folders and files. */
+.files ul { list-style: none; margin: 0 0 0 18px; padding: 0 0 0 8px; border-left: 1px solid var(--rule); }
+.files .row { display: flex; align-items: stretch; gap: 2px; }
+.files .row > button:last-child { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.files .disclose, .files .spacer { flex: none; width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+.files .disclose { color: var(--soft); }
+
+/* Anatomy of a spec. */
+.anatomy { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.spec-doc { background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; padding: 20px; display: grid; gap: 8px; font-size: .92rem; min-width: 0; }
+.spec-doc .fm { font: 400 .85rem/1.5 var(--mono); color: var(--soft); }
+.spec-doc .status { color: var(--line); font-weight: 600; }
+.spec-doc h3, .spec-doc h4 { font-family: var(--mono); font-weight: 500; color: var(--line); }
+.spec-doc h3 { font-size: 1.05rem; }
+.spec-doc h4 { font-size: .88rem; margin-top: 8px; }
+.spec-doc h5 { font: 500 .82rem/1.3 var(--mono); color: var(--soft); margin: 0; }
+.spec-doc ul, .spec-doc ol { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; }
+.spec-doc table { border-collapse: collapse; width: 100%; font-size: .85rem; display: block; overflow-x: auto; }
+.spec-doc th, .spec-doc td { border: 1px solid var(--rule); padding: 6px 8px; text-align: left; vertical-align: top; }
+.spec-doc [hidden] { display: none; }
+.notes { margin: 0; display: grid; gap: 14px; }
+.notes dt { font: 600 .95rem/1.3 var(--display); }
+.notes dd { margin: 4px 0 0; color: var(--soft); }
+
+/* Implementation and convergence runs. */
+.panel > a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 500; }
+.runs-line li { flex-basis: 120px; min-width: 120px; }
+
+/* FAQ. */
+.faq { display: grid; gap: 8px; }
+.faq details { background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; }
+.faq summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; padding: 10px 16px; font-weight: 600; }
+.faq details p { padding: 0 16px 14px; }
+.faq details a { white-space: nowrap; }
+
+.maint { gap: 10px; }
+
 footer { padding-block: 32px 48px; }
+footer .wrap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; }
+.made { color: var(--soft); }
 footer ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 18px; }
 footer a { display: inline-flex; align-items: center; min-height: 44px; }
 
 @media (max-width: 820px) {
+  /* The menus become one panel under the bar, opened by the Menu button,
+     with every group and its links shown at once. */
+  .bar .wrap { gap: 6px; }
+  .menu-toggle { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 6px 12px; border: 1.5px solid var(--rule); border-radius: 6px; background: none; font-weight: 500; }
+  .menu-toggle::before { content: ""; width: 14px; height: 10px; border-block: 2px solid currentColor; background: linear-gradient(currentColor, currentColor) center / 100% 2px no-repeat; }
+  .menu-toggle[aria-expanded="true"] { border-color: var(--line); }
+  .groups { display: none; position: fixed; left: 0; right: 0; top: 60px; max-height: calc(100vh - 60px); overflow-y: auto; flex-direction: column; gap: 14px; padding: 16px; background: var(--panel); border-bottom: 1px solid var(--rule); box-shadow: 0 16px 32px var(--shadow); }
+  .menu-toggle[aria-expanded="true"] + .groups { display: flex; }
+  .group-btn { display: none; }
+  .menu { display: block; position: static; min-width: 0; padding: 0; border: 0; background: none; box-shadow: none; }
+  .group-name { display: block; padding: 0 10px 4px; font: 500 .75rem/1.2 var(--mono); color: var(--soft); text-transform: uppercase; letter-spacing: .04em; }
+
   .explorer { grid-template-columns: minmax(0, 1fr); }
   /* One column: the panel comes after the list, so it pins to the bottom,
      with a capped height and its own scroll. */
   .detail { top: auto; bottom: 0; max-height: 42vh; overflow-y: auto; box-shadow: 0 -8px 24px var(--shadow); }
   .kv { grid-template-columns: minmax(0, 1fr); gap: 2px; }
   .kv dd { margin-bottom: 8px; }
+  .anatomy { grid-template-columns: minmax(0, 1fr); }
+  .op { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* --- Scroll animations ---------------------------------------------------------
+   site.js marks each block with data-reveal and adds .revealed once it scrolls
+   into view, setting --i to its place among its siblings. It does neither
+   when the reader asks for reduced motion. */
+[data-reveal] { transition: opacity .7s ease, transform .7s cubic-bezier(.2, .7, .2, 1); transition-delay: calc(var(--i, 0) * 80ms); }
+[data-reveal]:not(.revealed) { opacity: 0; transform: translateY(18px); }
+
+/* The stations of a line light up from left to right once the line is in
+   view. A station drawn later, after a pick, is inserted already in place. */
+:is(.line, .miniline) > li { transition: opacity .45s ease, transform .5s cubic-bezier(.2, .8, .2, 1.2); transition-delay: calc(var(--i, 0) * 60ms + 200ms); }
+.miniline[data-reveal]:not(.revealed) > li,
+#route-lines[data-reveal]:not(.revealed) .line > li { opacity: 0; transform: translateY(6px) scale(.85); }
+
+/* How far down the page the reader is, as a thin rail under the bar in the
+   routes' colours. */
+.bar::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: linear-gradient(90deg, var(--fast-mark), var(--line-mark), var(--gate-mark)); transform: scaleX(var(--progress, 0)); transform-origin: left; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .miniline li.gate::after { animation: none; }
+  .miniline li.gate::after, .line .gate button::after { animation: none; }
+  .knob, .group-btn::after { transition: none; }
 }
