@@ -109,8 +109,19 @@ describe('ANSWERING.md', () => {
 
   test('takes a turn end\'s reply from the first turn not sent yet, and says it needs that count', () => {
     assert.match(answering, /how many of them have been sent so far/);
-    assert.match(answering, /the first entry of `turns` not sent yet/);
+    assert.match(answering, /the first entry of `turns` not sent yet that fits it\. The `turns` entries before that one are skipped, unless one has checks of its own\./);
     assert.match(answering, /An `answers` entry that fits it comes first, even when the next `turns` entry would also do/);
+  });
+
+  test('settles whether an entry fits from the question and its when alone, and a drift answer names the closest entry', () => {
+    assert.match(textSection(answering, '## Rules'), /Whether an entry fits is settled by the question and the `when` alone, before you look at this run's options or at the answer the agent recommends\./);
+    assert.match(textSection(answering, '## When no entry fits'), /with the entry whose `when` comes closest and why it does not fit/);
+  });
+
+  test('names a stop point by the check that expects it, so an approval a check expects given is answered', () => {
+    const stops = textSection(answering, '### Stop points');
+    assert.match(stops, /A stop point is named by the check that expects the agent to stop there\./);
+    assert.match(stops, /An approval that a check expects given, such as a spec checked at `approved`, is answered\./);
   });
 
   test('states the shared matching rule once, for a question asked with options or in prose', () => {
