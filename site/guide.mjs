@@ -100,12 +100,14 @@ const FAST_ROUTE_STATION = {
   },
 };
 
-const stations = (ids, overrides = {}, from) =>
+// The stations of a route, with each route's own wording over the shared one.
+// From the station `perDeliverableFrom` names on, each runs once per deliverable.
+const stations = (ids, overrides = {}, perDeliverableFrom) =>
   ids.map((id, index) => ({
     id,
     ...STATION[id],
     ...overrides[id],
-    ...(from !== undefined && index >= from ? { perDeliverable: true } : {}),
+    ...(perDeliverableFrom && index >= ids.indexOf(perDeliverableFrom) ? { perDeliverable: true } : {}),
   }));
 
 const STANDARD = ['intake', 'pre-step', 'spec', 'approval', 'slices', 'build', 'verify', 'review', 'ship', 'retro'];
@@ -127,7 +129,7 @@ export const ROUTES = [
     id: 'epic',
     name: 'Epic',
     when: 'Several sessions or deliverables. From spec on, each deliverable takes the standard route with a spec of its own.',
-    stations: stations(['intake', 'pre-step', 'wayfinder', ...STANDARD.slice(2)], {}, 3),
+    stations: stations(['intake', 'pre-step', 'wayfinder', ...STANDARD.slice(STANDARD.indexOf('spec'))], {}, 'spec'),
   },
 ];
 
@@ -212,7 +214,7 @@ export const FILE_TREE = [
         path: 'docs/specs/<slug>/spec.md',
         writers: ['aw-spec', 'aw-slices', 'aw-build', 'aw-verify', 'aw-ship'],
         committed: true,
-        about: '/aw-spec writes it, /aw-slices its Slice plan and Test strategy, /aw-build its done markers and Traceability, /aw-verify its verify: evidence, and /aw-ship sets it to implemented. Each commits its edits with its own work.',
+        about: '/aw-spec writes it and /aw-slices adds its Slice plan and Test strategy, without committing. /aw-build commits its done markers and Traceability with each slice, /aw-verify commits its verify: evidence, and /aw-ship commits the status implemented.',
       },
       {
         path: 'docs/specs/<slug>/verify/',
@@ -236,9 +238,9 @@ export const FILE_TREE = [
     children: [
       {
         path: '.aw/drafts/',
-        writers: ['aw-ship', 'aw-build', 'aw-verify', 'aw-create-verify', 'aw-slices', 'aw-wayfinder', 'aw-retro'],
+        writers: ['aw-ship', 'aw-build', 'aw-verify', 'aw-create-verify', 'aw-slices', 'aw-wayfinder', 'aw-retro', 'aw-unslop'],
         committed: false,
-        about: 'One draft per write operation at draft, named <yyyymmdd-hhmmss>-<operation>.md, with the exact command or text for a person to apply. Any skill that performs a write operation leaves one when that operation is at draft.',
+        about: 'One draft per write operation at draft, named <yyyymmdd-hhmmss>-<operation>.md, with the exact command or text for a person to apply. Each skill that performs a write operation leaves one when that operation is at draft, and aw-unslop may rewrite the body of a drafted open-review.',
       },
       { path: '.aw/reviews/', writers: ['aw-review'], committed: false, about: 'The review reports, one per review, never posted to the review host.' },
       { path: '.aw/review-requests/', writers: ['aw-ship'], committed: false, about: 'The review request body /aw-ship writes before it opens the review request.' },
@@ -323,12 +325,23 @@ const pad = (n) => String(n).padStart(2, '0');
 const stamp = (at) =>
   `${at.getFullYear()}${pad(at.getMonth() + 1)}${pad(at.getDate())}-${pad(at.getHours())}${pad(at.getMinutes())}${pad(at.getSeconds())}`;
 
-// What happens to one operation at one level: whether the agent runs it, what
-// that means, and at `draft` the file the draft is written to.
-export function accessOutcome(name, level, at = new Date()) {
+// aw-ship step 6 and its merge conditions, with a review host: a drafted push
+// drafts open-review whatever its level, and a drafted push or open-review
+// drafts the merge.
+const DRAFTED_BY = { 'open-review': ['push'], merge: ['push', 'open-review'] };
+
+// What happens to one operation, given the level of every write operation:
+// whether the agent runs it, what that means, and when it is drafted, the
+// file the draft is written to.
+export function accessOutcome(name, levels, at = new Date()) {
   const operation = VCS_OPERATIONS.find((candidate) => candidate.name === name);
   if (operation.read) return { runs: true, says: operation.says.read };
+  const draftedEarlier = (DRAFTED_BY[name] ?? []).find((earlier) => accessOutcome(earlier, levels, at).draft);
+  const level = draftedEarlier ? 'draft' : levels[name];
   const outcome = { runs: level === 'write', says: operation.says[level] };
+  if (draftedEarlier && levels[name] === 'write') {
+    outcome.says = `Drafted although it is at write: ${draftedEarlier} was drafted, so the review host has nothing to ${name === 'merge' ? 'merge' : 'review'} yet.`;
+  }
   if (level === 'draft') outcome.draft = `.aw/drafts/${stamp(at)}-${name}.md`;
   return outcome;
 }
@@ -382,7 +395,7 @@ const QUESTIONS = {
     options: YES_NO,
   },
   epic: {
-    text: 'Does it span several sessions, or several deliverables that each deserve a spec of their own?',
+    text: 'Will it take more than one session, or several deliverables that each deserve a spec of their own?',
     options: YES_NO,
   },
   contract: {
@@ -400,7 +413,6 @@ const QUESTIONS = {
     hint: 'That is a spec contradiction. A bug where the code differs from what a spec states is not one: fixing it makes the spec true again.',
     options: YES_NO,
   },
-  session: { text: 'Does it fit in one session?', options: YES_NO },
 };
 
 const NEXT = { fast: '/aw-build, or /aw-implement', standard: '/aw-spec', epic: '/aw-wayfinder' };
@@ -415,14 +427,17 @@ function result(answers, route, routeReason, { type = answers.type, typeReason }
   const reasons = [typeReason ?? `Type: ${type}, because it is ${TYPES[type].about}.`, `Route: ${route}, because ${routeReason}.`];
   let next = NEXT[route];
   if (answers.type === 'investigation' && route === 'fast') next = 'none, unless the answer shows work to do: then /aw-intake again, with that work as the task';
+  // aw-intake step 4: an investigation on the epic route leaves its pre-step
+  // to /aw-wayfinder, which charts the questions.
+  const preStep = answers.type === 'investigation' && route === 'epic' ? 'None at intake: it is left to /aw-wayfinder, which charts the questions.' : TYPES[type].preStep;
   const notes = [NOTE];
   if (answers.type === 'bug' && route === 'fast') notes.push('If the pre-step cannot reproduce the bug, /aw-intake moves it to the standard route or longer.');
-  return { result: { route, type, reasons, preStep: TYPES[type].preStep, next, note: notes.join(' ') } };
+  return { result: { route, type, reasons, preStep, next, note: notes.join(' ') } };
 }
 
 // The longer route wins when in doubt, so "Not sure" counts as the answer that
 // keeps a task off the shorter route.
-const longer = (answer, whenLonger = 'yes') => answer === whenLonger || answer === 'unsure';
+const longer = (answer) => answer === 'yes' || answer === 'unsure';
 
 export function wizardStep(answers) {
   if (!answers.type) return question('type');
@@ -455,7 +470,5 @@ export function wizardStep(answers) {
     });
   }
 
-  if (!answers.session) return question('session');
-  if (longer(answers.session, 'no')) return result(answers, 'standard', 'it does not fit in one session');
   return result(answers, 'fast', 'it fits in one session, changes no contract, stored data or security, and contradicts no spec');
 }

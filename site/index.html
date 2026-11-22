@@ -91,9 +91,10 @@
         <a href="https://github.com/samfaina/ai-workflow/blob/main/docs/adr/0010-one-owner-per-phase-and-slices-in-the-spec.md">ADR 0010</a>
       </li>
       <li>
-        <h3>Proof on the real app</h3>
+        <h3>Evidence on the real app</h3>
         <p><code>/aw-verify</code> proves each acceptance criterion by driving the running app through the repo's own verify skill. A review finding counts as a defect only when a run demonstrates it; anything else is a risk.</p>
         <a href="https://github.com/samfaina/ai-workflow/blob/main/docs/adr/0011-verify-skill-lives-in-claude-skills.md">ADR 0011</a>
+        <a href="https://github.com/samfaina/ai-workflow/blob/main/GLOSSARY.md">Glossary: defect</a>
       </li>
       <li>
         <h3>Local by default, writes by access level</h3>
@@ -132,7 +133,7 @@
   <div class="wrap">
     <div class="sec-head">
       <h2 id="skills-h">What each skill does</h2>
-      <p class="lead">Every skill of the kit, grouped by the part it plays. Filter by origin or group, and pick one to see what it needs, what refers to it, and what it leaves.</p>
+      <p class="lead">Every skill of the kit, grouped by the part it plays. Filter by upstream or group, and pick one to see what it needs, what refers to it, and what it leaves.</p>
     </div>
     <div class="filters">
       <div class="ctrl">
@@ -220,7 +221,7 @@ claude plugin install ai-workflow@samfaina-labs --scope project</code></pre>
         <ol class="steps">
           <li><strong>Tracker</strong>: none, local markdown, GitHub, GitLab or another, and its access level.</li>
           <li><strong>VCS</strong>: the base branch, protected branches, branch naming, commit convention, review host, merge method and access levels.</li>
-          <li><strong>Checks</strong>: a command for each check level, <code>fast</code>, <code>task</code> and <code>full</code>, proposed from the manifests and CI config.</li>
+          <li><strong>Checks</strong>: a command for each check level, <code>fast</code>, <code>task</code> and <code>full</code>, proposed from the project's manifests and CI files.</li>
           <li><strong>Domain docs</strong>: single-context or multi-context, and where the glossary and ADRs live.</li>
         </ol>
       </article>
@@ -251,7 +252,7 @@ claude plugin install ai-workflow@samfaina-labs --scope project</code></pre>
     </div>
 
     <h3 id="sim-h">Access levels: try them</h3>
-    <p class="muted">Each write operation is at <code>write</code>, where the agent performs it, or at <code>draft</code>, where it writes the exact command or text to <code>.aw/drafts/</code>, tells you the path and goes on. The VCS operations below start at the unconfigured defaults. The commands are those of the GitHub VCS template.</p>
+    <p class="muted">Each write operation is at <code>write</code>, where the agent performs it, or at <code>draft</code>, where it writes the exact command or text to <code>.aw/drafts/</code>, tells you the path and goes on. The VCS operations below start at the unconfigured defaults. The commands are those of the GitHub VCS template, and with a review host, <code>/aw-ship</code> drafts <code>open-review</code> when <code>push</code> was drafted, and the merge when either was.</p>
     <div class="sim" id="access-sim" role="group" aria-labelledby="sim-h"></div>
 
     <div class="two">
@@ -308,7 +309,12 @@ claude plugin install ai-workflow@samfaina-labs --scope project</code></pre>
         <h4>## Out of scope</h4>
         <ul><li>Renewing at the desk, which stays as it is.</li></ul>
         <h4>## Boundaries</h4>
-        <p><strong>Always</strong>: run the <code>task</code> checks before each commit. <strong>Ask first</strong>: a change to the loans table's schema. <strong>Never</strong>: touch the payments module.</p>
+        <h5>### Always</h5>
+        <ul><li>Run the <code>task</code> checks before each commit.</li></ul>
+        <h5>### Ask first</h5>
+        <ul><li>A change to the loans table's schema.</li></ul>
+        <h5>### Never</h5>
+        <ul><li>Touch the payments module.</li></ul>
         <h4>## Design</h4>
         <p>A <code>renew</code> operation on the loans service, called by a button on the loans page.</p>
         <h4>## Slice plan</h4>
@@ -328,9 +334,9 @@ claude plugin install ai-workflow@samfaina-labs --scope project</code></pre>
         <table>
           <thead><tr><th>Criterion</th><th>Evidence</th></tr></thead>
           <tbody>
-            <tr><td><mark>AC-1</mark></td><td><span data-only="draft approved">test: <code>tests/renew.test.ts</code> (planned)</span><span data-only="implemented" hidden>test: <code>tests/renew.test.ts</code>; verify: <code>docs/specs/renew-loan/verify/ac-1.md</code> (passed)</span></td></tr>
-            <tr><td><mark>AC-2</mark></td><td><span data-only="draft approved">test: <code>tests/renew.test.ts</code> (planned)</span><span data-only="implemented" hidden>test: <code>tests/renew.test.ts</code>; verify: <code>docs/specs/renew-loan/verify/ac-2.md</code> (passed)</span></td></tr>
-            <tr><td><mark>AC-3</mark></td><td><span data-only="draft approved">test: <code>tests/renew.test.ts</code> (planned)</span><span data-only="implemented" hidden>test: <code>tests/renew.test.ts</code>; verify: <code>docs/specs/renew-loan/verify/ac-3.md</code> (passed)</span></td></tr>
+            <tr><td><mark>AC-1</mark></td><td><span data-only="draft approved">test: <code>tests/renew.test.ts</code></span><span data-only="implemented" hidden>test: <code>tests/renew.test.ts</code>; verify: <code>docs/specs/renew-loan/verify/ac-1.md</code> (passed)</span></td></tr>
+            <tr><td><mark>AC-2</mark></td><td><span data-only="draft approved">test: <code>tests/renew.test.ts</code></span><span data-only="implemented" hidden>test: <code>tests/renew.test.ts</code>; verify: <code>docs/specs/renew-loan/verify/ac-2.md</code> (passed)</span></td></tr>
+            <tr><td><mark>AC-3</mark></td><td><span data-only="draft approved">test: <code>tests/renew.test.ts</code></span><span data-only="implemented" hidden>test: <code>tests/renew.test.ts</code>; verify: <code>docs/specs/renew-loan/verify/ac-3.md</code> (passed)</span></td></tr>
           </tbody>
         </table>
         <h4>## Open questions</h4>
@@ -342,7 +348,7 @@ claude plugin install ai-workflow@samfaina-labs --scope project</code></pre>
         <div><dt>Acceptance criteria</dt><dd>Numbered <code class="hl">AC-n</code>, each a verifiable Given, when, then with an observable result. Everything after them points back at these numbers.</dd></div>
         <div><dt>Boundaries</dt><dd>What the agent always does, asks first about, and never touches during this change.</dd></div>
         <div><dt>Slice plan and Test strategy</dt><dd><code>/aw-slices</code> writes them after approval: vertical slices, each covering at least one criterion and marked AFK or HITL, and the seams agreed with you. <code>/aw-build</code> ticks each done marker.</dd></div>
-        <div><dt>Traceability</dt><dd>One row per criterion with its evidence. At <code>draft</code> the paths need not exist; <code>/aw-build</code> points each row at the tests that landed, and <code>/aw-verify</code> adds its <code>verify:</code> result.</dd></div>
+        <div><dt>Traceability</dt><dd>One row per criterion with its evidence. At <code>draft</code> it holds the planned evidence, whose paths need not exist yet; <code>/aw-build</code> points each row at the tests that landed, and <code>/aw-verify</code> adds its <code>verify:</code> result.</dd></div>
         <div><dt>Open questions</dt><dd>A <code>BLOCKS:</code> item must be resolved before approval; the spec check fails on one from <code>approved</code> on.</dd></div>
       </dl>
     </div>

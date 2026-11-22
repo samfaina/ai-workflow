@@ -24,7 +24,7 @@ function button(label, attributes, onClick) {
 
 // Text with `code` spans, the way the data writes paths and commands.
 const PATHLIKE = /(\/aw-[a-z-]+|aw-[a-z-]+|\.aw\/[^\s,:;]*|docs\/[^\s,:;]*|\.claude\/[^\s,:;]*|<[a-z-]+>|status: [a-z]+|test:|manual:|verify:|Done when:)/g;
-function prose(text) {
+function withCodeSpans(text) {
   return text.split(PATHLIKE).flatMap((part, index) => {
     if (index % 2 === 0) return [part];
     // A path that ends a sentence keeps its full stop outside the code span.
@@ -209,21 +209,22 @@ function drawUpstreams() {
 
 const routeLines = document.getElementById('route-lines');
 const stationDetail = document.getElementById('station-detail');
-const routes = { route: 'standard', station: 'approval' };
+// The selected station, which starts at the gate.
+const routeSelection = { route: 'standard', station: 'approval' };
 
 function drawRoutes() {
   routeLines.replaceChildren(
     ...ROUTES.map((route) => {
       const items = route.stations.map((station) => {
         const classes = [station.gate && 'gate', station.optional && 'opt', station.perDeliverable && 'per'].filter(Boolean).join(' ');
-        const current = route.id === routes.route && station.id === routes.station;
+        const current = route.id === routeSelection.route && station.id === routeSelection.station;
         const label = [station.label, station.optional ? el('span', { class: 'sr' }, ' (optional)') : null];
         return el(
           'li',
           classes ? { class: classes } : {},
           button(label, current ? { 'aria-current': 'true' } : {}, () => {
-            routes.route = route.id;
-            routes.station = station.id;
+            routeSelection.route = route.id;
+            routeSelection.station = station.id;
             drawRoutes();
           }),
         );
@@ -241,8 +242,8 @@ function drawRoutes() {
 }
 
 function drawStation() {
-  const route = ROUTES.find(({ id }) => id === routes.route);
-  const station = route.stations.find(({ id }) => id === routes.station);
+  const route = ROUTES.find(({ id }) => id === routeSelection.route);
+  const station = route.stations.find(({ id }) => id === routeSelection.station);
   const tags = [
     station.gate ? el('span', { class: 'tag gate' }, 'Human gate') : null,
     station.optional ? el('span', { class: 'tag' }, 'Optional') : null,
@@ -252,19 +253,19 @@ function drawStation() {
     el('dt', {}, 'Owner'),
     el('dd', {}, el('a', { href: blob(`skills/${station.owner}/SKILL.md`) }, el('code', {}, invocation(station.owner)))),
     el('dt', {}, 'Leaves'),
-    el('dd', {}, prose(station.artifact)),
+    el('dd', {}, withCodeSpans(station.artifact)),
   ];
   const children = [
     el('p', { class: 'eyebrow' }, `${route.name} route`),
     el('h3', {}, station.label),
     tags.length ? el('p', { class: 'tags' }, ...tags) : null,
-    el('p', {}, prose(station.does)),
+    el('p', {}, withCodeSpans(station.does)),
     el('dl', { class: 'kv' }, ...rows),
   ];
   if (station.preStep) {
     children.push(
       el('h4', {}, 'By type'),
-      el('dl', { class: 'kv' }, ...PRE_STEPS.flatMap(({ label, preStep }) => [el('dt', {}, label), el('dd', {}, prose(preStep))])),
+      el('dl', { class: 'kv' }, ...PRE_STEPS.flatMap(({ label, preStep }) => [el('dt', {}, label), el('dd', {}, withCodeSpans(preStep))])),
     );
   }
   stationDetail.replaceChildren(...children);
@@ -321,9 +322,9 @@ function drawWizard(focus = false) {
     const { route, reasons, preStep, next, note } = step.result;
     body.push(
       el('h3', { tabindex: '-1', class: `focus-target result ${route}` }, `Recommended: the ${route} route`),
-      el('ul', { class: 'plain' }, ...reasons.map((reason) => el('li', {}, prose(reason)))),
-      el('dl', { class: 'kv' }, el('dt', {}, 'Pre-step'), el('dd', {}, prose(preStep)), el('dt', {}, 'Next'), el('dd', {}, prose(next))),
-      el('p', { class: 'muted' }, prose(note)),
+      el('ul', { class: 'plain' }, ...reasons.map((reason) => el('li', {}, withCodeSpans(reason)))),
+      el('dl', { class: 'kv' }, el('dt', {}, 'Pre-step'), el('dd', {}, withCodeSpans(preStep)), el('dt', {}, 'Next'), el('dd', {}, withCodeSpans(next))),
+      el('p', { class: 'muted' }, withCodeSpans(note)),
       el('p', {}, el('a', { href: '#routes', 'data-route': route }, `See the ${route} route`)),
     );
   }
@@ -333,8 +334,8 @@ function drawWizard(focus = false) {
     controls.length ? el('div', { class: 'actions' }, ...controls) : null,
   );
   wizard.querySelector('[data-route]')?.addEventListener('click', (event) => {
-    routes.route = event.currentTarget.dataset.route;
-    routes.station = 'intake';
+    routeSelection.route = event.currentTarget.dataset.route;
+    routeSelection.station = 'intake';
     drawRoutes();
   });
   if (focus) wizard.querySelector('.focus-target')?.focus();
@@ -345,10 +346,13 @@ function drawWizard(focus = false) {
 const sim = document.getElementById('access-sim');
 let levels = { ...UNCONFIGURED_ACCESS };
 
-function drawSim(focusName) {
+// A redraw replaces the buttons, so the one that was used gets focus back.
+const levelButton = (name, level) => `[data-op="${name}"][data-level="${level}"]`;
+
+function drawSim(focusSelector) {
   const rows = VCS_OPERATIONS.map((operation) => {
     const level = operation.read ? 'read' : levels[operation.name];
-    const outcome = accessOutcome(operation.name, level);
+    const outcome = accessOutcome(operation.name, levels);
     const choice = operation.read
       ? el('span', { class: 'fixed' }, 'read: always allowed')
       : el(
@@ -357,11 +361,11 @@ function drawSim(focusName) {
           ...['write', 'draft'].map((value) =>
             button(value, { 'aria-pressed': String(level === value), 'data-op': operation.name, 'data-level': value }, () => {
               levels = { ...levels, [operation.name]: value };
-              drawSim(`${operation.name}:${value}`);
+              drawSim(levelButton(operation.name, value));
             }),
           ),
         );
-    const result = [el('p', {}, prose(outcome.says))];
+    const result = [el('p', {}, withCodeSpans(outcome.says))];
     if (outcome.draft) {
       result.push(
         el(
@@ -390,43 +394,41 @@ function drawSim(focusName) {
       button('Back to the unconfigured defaults', atDefaults ? { disabled: '' } : {}, () => {
         levels = { ...UNCONFIGURED_ACCESS };
         // The reset button is disabled once redrawn, so keep focus in the simulator.
-        drawSim('start-branch:write');
+        drawSim('[data-op]');
       }),
     ),
   );
-  if (focusName) {
-    const [name, level] = focusName.split(':');
-    sim.querySelector(`[data-op="${name}"][data-level="${level}"]`)?.focus();
-  }
+  if (focusSelector) sim.querySelector(focusSelector)?.focus();
 }
 
 // --- What lands where --------------------------------------------------------------------------
 
 const fileTree = document.getElementById('file-tree');
 const fileDetail = document.getElementById('file-detail');
-const files = { selected: 'docs/specs/<slug>/spec.md', collapsed: new Set() };
+const fileSelection = { selected:'docs/specs/<slug>/spec.md', collapsed: new Set() };
 
 function fileNode(node, depth) {
   const name = depth === 0 ? node.path : node.path.slice(node.path.lastIndexOf('/', node.path.length - 2) + 1);
-  const current = node.path === files.selected;
+  const current = node.path === fileSelection.selected;
   const row = [
     node.children
-      ? button(el('span', { 'aria-hidden': 'true' }, files.collapsed.has(node.path) ? '▸' : '▾'), {
+      ? button(el('span', { 'aria-hidden': 'true' }, fileSelection.collapsed.has(node.path) ? '▸' : '▾'), {
           class: 'disclose',
-          'aria-expanded': String(!files.collapsed.has(node.path)),
+          'data-disclose': node.path,
+          'aria-expanded': String(!fileSelection.collapsed.has(node.path)),
           'aria-label': `Show what is in ${node.path}`,
         }, () => {
-          if (files.collapsed.has(node.path)) files.collapsed.delete(node.path);
-          else files.collapsed.add(node.path);
-          drawFiles(`disclose:${node.path}`);
+          if (fileSelection.collapsed.has(node.path)) fileSelection.collapsed.delete(node.path);
+          else fileSelection.collapsed.add(node.path);
+          drawFiles(`[data-disclose="${node.path}"]`);
         })
       : el('span', { class: 'spacer', 'aria-hidden': 'true' }),
     button([el('span', {}, name), node.committed ? null : el('span', { class: 'pill kind' }, 'local')], { 'data-path': node.path, ...(current ? { 'aria-current': 'true' } : {}) }, () => {
-      files.selected = node.path;
-      drawFiles(`select:${node.path}`);
+      fileSelection.selected = node.path;
+      drawFiles(`[data-path="${node.path}"]`);
     }),
   ];
-  const children = node.children && !files.collapsed.has(node.path) ? el('ul', {}, ...node.children.map((child) => fileNode(child, depth + 1))) : null;
+  const children = node.children && !fileSelection.collapsed.has(node.path) ? el('ul', {}, ...node.children.map((child) => fileNode(child, depth + 1))) : null;
   return el('li', {}, el('div', { class: 'row' }, ...row), children);
 }
 
@@ -439,12 +441,13 @@ function findNode(nodes, path) {
   return null;
 }
 
-function drawFiles(focus) {
+// A redraw replaces the buttons, so the one that was used gets focus back.
+function drawFiles(focusSelector) {
   fileTree.replaceChildren(...FILE_TREE.map((node) => fileNode(node, 0)));
-  const node = findNode(FILE_TREE, files.selected);
+  const node = findNode(FILE_TREE, fileSelection.selected);
   fileDetail.replaceChildren(
     el('h3', {}, node.path),
-    el('p', {}, prose(node.about)),
+    el('p', {}, withCodeSpans(node.about)),
     el(
       'dl',
       { class: 'kv' },
@@ -454,11 +457,7 @@ function drawFiles(focus) {
       el('dd', {}, node.committed ? 'Yes: it belongs to the repo.' : 'No: it is local, under the git-ignored .aw/.'),
     ),
   );
-  if (focus) {
-    const [kind, path] = [focus.slice(0, focus.indexOf(':')), focus.slice(focus.indexOf(':') + 1)];
-    const selector = kind === 'disclose' ? `.disclose[aria-label="Show what is in ${path}"]` : `[data-path="${path}"]`;
-    fileTree.querySelector(selector)?.focus();
-  }
+  if (focusSelector) fileTree.querySelector(focusSelector)?.focus();
 }
 
 // --- Anatomy of a spec -------------------------------------------------------------------------
@@ -473,7 +472,7 @@ function drawSpec(status) {
   for (const control of document.querySelectorAll('#spec-status button')) control.setAttribute('aria-pressed', String(control.dataset.status === status));
   for (const part of document.querySelectorAll('#spec-doc [data-only]')) part.hidden = !part.dataset.only.split(' ').includes(status);
   document.getElementById('spec-status-value').textContent = status;
-  document.getElementById('spec-status-note').replaceChildren(...prose(SPEC_NOTES[status]));
+  document.getElementById('spec-status-note').replaceChildren(...withCodeSpans(SPEC_NOTES[status]));
 }
 
 for (const control of document.querySelectorAll('#spec-status button')) control.addEventListener('click', () => drawSpec(control.dataset.status));

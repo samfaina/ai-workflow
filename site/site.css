@@ -202,7 +202,8 @@ mark, code.hl { background: none; color: var(--hl); font-weight: 600; }
 .given .q { color: var(--soft); }
 .answers button { display: inline-flex; flex-direction: column; align-items: flex-start; justify-content: center; text-align: left; }
 .answers button small { color: var(--soft); font-size: .78rem; font-weight: 400; }
-.result.fast { color: var(--fast); } .result.standard { color: var(--line); } .result.epic { color: var(--line); }
+.result { color: var(--line); }
+.result.fast { color: var(--fast); }
 .actions button { min-height: 44px; padding: 8px 16px; border: 1.5px solid var(--rule); border-radius: 6px; background: var(--bg); font-weight: 500; }
 .actions button:hover:not(:disabled) { border-color: var(--line); }
 .actions button:disabled { cursor: default; color: var(--soft); }
@@ -230,7 +231,7 @@ mark, code.hl { background: none; color: var(--hl); font-weight: 600; }
 .files ul { list-style: none; margin: 0 0 0 18px; padding: 0 0 0 8px; border-left: 1px solid var(--rule); }
 .files .row { display: flex; align-items: stretch; gap: 2px; }
 .files .row > button:last-child { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-.files .disclose, .files .spacer { flex: none; width: 32px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+.files .disclose, .files .spacer { flex: none; width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
 .files .disclose { color: var(--soft); }
 
 /* Anatomy of a spec. */
@@ -241,6 +242,7 @@ mark, code.hl { background: none; color: var(--hl); font-weight: 600; }
 .spec-doc h3, .spec-doc h4 { font-family: var(--mono); font-weight: 500; color: var(--line); }
 .spec-doc h3 { font-size: 1.05rem; }
 .spec-doc h4 { font-size: .88rem; margin-top: 8px; }
+.spec-doc h5 { font: 500 .82rem/1.3 var(--mono); color: var(--soft); margin: 0; }
 .spec-doc ul, .spec-doc ol { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; }
 .spec-doc table { border-collapse: collapse; width: 100%; font-size: .85rem; display: block; overflow-x: auto; }
 .spec-doc th, .spec-doc td { border: 1px solid var(--rule); padding: 6px 8px; text-align: left; vertical-align: top; }

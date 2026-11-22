@@ -6,9 +6,9 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { repoRoot } from './fixtures.mjs';
+import { markdownFiles, repoRoot } from './fixtures.mjs';
 import {
   FILE_TREE,
   PRE_STEPS,
@@ -37,7 +37,7 @@ function walk(answers) {
   assert.fail('the wizard never reached a route');
 }
 
-const FAST_FEATURE = { type: 'feature', epic: 'no', contract: 'no', data: 'no', security: 'no', contradiction: 'no', session: 'yes' };
+const FAST_FEATURE = { type: 'feature', epic: 'no', contract: 'no', data: 'no', security: 'no', contradiction: 'no' };
 
 test('the wizard sends a one-session task that changes no contract, data or security, and contradicts no spec, down the fast route', () => {
   const result = walk(FAST_FEATURE);
@@ -56,14 +56,12 @@ for (const [id, what] of [
   });
 }
 
-test('the wizard sends a task that does not fit in one session down the standard route', () => {
-  assert.equal(walk({ ...FAST_FEATURE, session: 'no' }).route, 'standard');
-});
-
-test('the wizard sends a task of several sessions or deliverables down the epic route', () => {
+test('the wizard sends a task of several sessions or deliverables down the epic route, and asks about sessions once', () => {
   const result = walk({ type: 'feature', epic: 'yes' });
   assert.equal(result.route, 'epic');
   assert.equal(result.next, '/aw-wayfinder');
+  assert.match(wizardStep({ type: 'feature' }).question.text, /more than one session/);
+  assert.deepEqual(walk(FAST_FEATURE).asked, ['type', 'epic', 'contract', 'data', 'security', 'contradiction']);
 });
 
 test('a spec contradiction reported as a bug is a feature on the standard route', () => {
@@ -78,13 +76,14 @@ test('an investigation takes the fast route, or the epic route when it spans sev
   const short = walk({ type: 'investigation', sessions: 'no' });
   assert.equal(short.route, 'fast');
   assert.deepEqual(short.asked, ['type', 'sessions']);
-  assert.equal(walk({ type: 'investigation', sessions: 'yes' }).route, 'epic');
+  const long = walk({ type: 'investigation', sessions: 'yes' });
+  assert.equal(long.route, 'epic');
+  assert.match(long.preStep, /left to \/aw-wayfinder/);
 });
 
 test('when in doubt the wizard picks the longer route', () => {
   assert.equal(walk({ type: 'feature', epic: 'unsure' }).route, 'epic');
   assert.equal(walk({ ...FAST_FEATURE, data: 'unsure' }).route, 'standard');
-  assert.equal(walk({ ...FAST_FEATURE, session: 'unsure' }).route, 'standard');
   assert.equal(walk({ type: 'investigation', sessions: 'unsure' }).route, 'epic');
 });
 
@@ -97,6 +96,23 @@ test('the wizard names the pre-step aw-intake runs for each type', () => {
   assert.match(preSteps.refactor, /characterization tests/);
   assert.match(preSteps.performance, /baseline/);
   assert.match(walk({ type: 'investigation', sessions: 'no' }).preStep, /answer/i);
+});
+
+// The wizard restates aw-intake's route rules. Their lists are quoted from
+// aw-intake's text, so a change to that text fails here and the page follows
+// it, as .claude/CLAUDE.md's "Changing a rule" asks.
+test("the wizard's contract and security questions quote aw-intake's lists", () => {
+  const intake = read('skills/aw-intake/SKILL.md').toLowerCase();
+  const contractQuestion = wizardStep({ type: 'feature', epic: 'no' }).question;
+  const securityQuestion = wizardStep({ type: 'feature', epic: 'no', contract: 'no', data: 'no' }).question;
+  assert.equal(contractQuestion.id, 'contract');
+  assert.equal(securityQuestion.id, 'security');
+  const contracts = contractQuestion.text.match(/: (.*)\?$/)[1];
+  assert.ok(intake.includes(`(${contracts.toLowerCase()})`), contracts);
+  const security = securityQuestion.hint.split('. ')[0];
+  assert.ok(intake.includes(security.toLowerCase()), security);
+  assert.ok(intake.includes('when two routes fit, pick the longer one'));
+  assert.ok(intake.includes('upgrading an existing dependency does not, on its own, keep a task off the fast route'));
 });
 
 test('the wizard says /aw-intake makes the actual call', () => {
@@ -127,6 +143,11 @@ test('every station names the skill that owns it, what it does and the artifact 
   }
 });
 
+test('on the epic route, every station from spec on runs once per deliverable', () => {
+  const epic = ROUTES.find(({ id }) => id === 'epic').stations;
+  assert.deepEqual(epic.filter((s) => s.perDeliverable).map((s) => s.id), ['spec', 'approval', 'slices', 'build', 'verify', 'review', 'ship', 'retro']);
+});
+
 test('spec approval is the one gate, and the fast route has none', () => {
   const gates = (route) => ROUTES.find(({ id }) => id === route).stations.filter(({ gate }) => gate).map(({ id }) => id);
   assert.deepEqual(gates('fast'), []);
@@ -149,19 +170,12 @@ test('the pre-step station shows what aw-intake runs for each type', () => {
 
 const nodes = (tree) => tree.flatMap((node) => [node, ...nodes(node.children ?? [])]);
 
-// Every file under a skill's folder, and under its phase procedure's.
+// Every Markdown file under a skill's folder, and under its phase procedure's.
 function skillText(name) {
-  const texts = [];
-  for (const folder of [name, `${name}-steps`]) {
-    let entries;
-    try {
-      entries = readdirSync(join(repoRoot, 'skills', folder), { recursive: true });
-    } catch {
-      continue;
-    }
-    for (const entry of entries) if (entry.endsWith('.md')) texts.push(read(join('skills', folder, entry)));
-  }
-  return texts.join('\n');
+  return [name, `${name}-steps`]
+    .filter((folder) => existsSync(join(repoRoot, 'skills', folder)))
+    .flatMap((folder) => markdownFiles(join('skills', folder)).map(read))
+    .join('\n');
 }
 
 test('every node of the file tree names the skill that writes it, and one of those skills names its path', () => {
@@ -283,30 +297,52 @@ test('the simulator starts from the unconfigured defaults of docs/configuration.
   assert.ok(defaults.includes('`start-branch` and `commit` are at `write`; `push`, `open-review` and `merge` are at `draft`'), defaults);
 });
 
-test('the simulator lists every canonical VCS operation, with diff-base read-only', () => {
+test('the simulator lists every canonical VCS operation, with diff-base as its one read operation', () => {
   assert.deepEqual(VCS_OPERATIONS.map(({ name }) => name), ['diff-base', 'start-branch', 'commit', 'push', 'open-review', 'merge']);
   assert.equal(VCS_OPERATIONS.find(({ name }) => name === 'diff-base').read, true);
-  assert.equal(accessOutcome('diff-base', 'read', AT).runs, true);
+  assert.equal(accessOutcome('diff-base', UNCONFIGURED_ACCESS, AT).runs, true);
+});
+
+const ALL_WRITE = Object.fromEntries(Object.keys(UNCONFIGURED_ACCESS).map((name) => [name, 'write']));
+
+test('at the unconfigured defaults, push, open-review and merge are drafted and the rest run', () => {
+  const drafted = Object.keys(UNCONFIGURED_ACCESS).filter((name) => accessOutcome(name, UNCONFIGURED_ACCESS, AT).draft);
+  assert.deepEqual(drafted, ['push', 'open-review', 'merge']);
 });
 
 test('an operation at draft is not run, and its draft is written to .aw/drafts/ under its name', () => {
-  for (const [name, level] of Object.entries(UNCONFIGURED_ACCESS)) {
-    const outcome = accessOutcome(name, 'draft', AT);
+  for (const name of Object.keys(UNCONFIGURED_ACCESS)) {
+    const outcome = accessOutcome(name, { ...ALL_WRITE, [name]: 'draft' }, AT);
     assert.equal(outcome.runs, false, name);
     assert.equal(outcome.draft.match(DRAFTS)?.[1], name, outcome.draft);
     assert.equal(outcome.draft, `.aw/drafts/20261122-090507-${name}.md`);
-    if (level === 'write') assert.equal(accessOutcome(name, 'write', AT).draft, undefined);
+    assert.equal(accessOutcome(name, ALL_WRITE, AT).draft, undefined);
   }
 });
 
 test('an operation at write is run, and merge at write stays conditional', () => {
-  for (const name of Object.keys(UNCONFIGURED_ACCESS)) assert.equal(accessOutcome(name, 'write', AT).runs, true, name);
-  const merge = accessOutcome('merge', 'write', AT).says;
+  for (const name of Object.keys(UNCONFIGURED_ACCESS)) assert.equal(accessOutcome(name, ALL_WRITE, AT).runs, true, name);
+  const merge = accessOutcome('merge', ALL_WRITE, AT).says;
   assert.match(merge, /no proven defect/);
   assert.match(merge, /full/);
   assert.match(merge, /implemented/);
 });
 
+test('a drafted push drafts open-review, and a drafted push or open-review drafts the merge, as aw-ship does', () => {
+  const pushDrafted = { ...ALL_WRITE, push: 'draft' };
+  const openReview = accessOutcome('open-review', pushDrafted, AT);
+  assert.equal(openReview.runs, false);
+  assert.equal(openReview.draft, '.aw/drafts/20261122-090507-open-review.md');
+  assert.match(openReview.says, /push was drafted/);
+  assert.equal(accessOutcome('merge', pushDrafted, AT).runs, false);
+  const merge = accessOutcome('merge', { ...ALL_WRITE, 'open-review': 'draft' }, AT);
+  assert.equal(merge.runs, false);
+  assert.match(merge.says, /open-review was drafted/);
+  const ship = read('skills/aw-ship/SKILL.md');
+  assert.ok(ship.includes('When `push` was drafted, draft `open-review` too, whatever its access level'));
+  assert.ok(ship.includes('when either was drafted, the merge is drafted too'));
+});
+
 test('commit at draft is the one level /aw-implement refuses to run with', () => {
-  assert.match(accessOutcome('commit', 'draft', AT).says, /\/aw-implement refuses/);
+  assert.match(accessOutcome('commit', { ...ALL_WRITE, commit: 'draft' }, AT).says, /\/aw-implement refuses/);
 });
