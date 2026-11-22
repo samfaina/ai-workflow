@@ -57,7 +57,7 @@ function parseArgs(args) {
 }
 
 const { workdir: workdirOption, log, scratch: scratchOption } = parseArgs(process.argv.slice(2));
-const workdir = realpathSync(workdirOption);
+const workdir = realpathSync.native(workdirOption);
 const stepDir = dirname(workdir);
 const scratch = scratchOption ? scratchOption.toLowerCase() : null;
 // The rule a denial of a gh or git command cites.
@@ -66,9 +66,10 @@ const scratchRule = scratch
   : 'a case session writes to GitHub only on the scratch repo, and the source clone has no GitHub remote to name one';
 
 // The path with its existing part resolved through any link, so that a link
-// inside the working copy cannot lead a write out of it.
+// inside the working copy cannot lead a write out of it. The native call also
+// expands a Windows short name, such as RUNNER~1, into the long one git lists.
 function realPath(path) {
-  if (existsSync(path)) return realpathSync(path);
+  if (existsSync(path)) return realpathSync.native(path);
   const parent = dirname(path);
   return parent === path ? path : join(realPath(parent), basename(path));
 }
