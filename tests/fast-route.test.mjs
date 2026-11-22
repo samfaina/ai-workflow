@@ -31,6 +31,12 @@ test('the Standards axis does not prove as a breach the criterion a test name mu
   assert.match(skillText('aw-review-steps'), /A test name that quotes a done-when criterion keeps the criterion's words/);
 });
 
+test('the Standards axis skips the commit summaries a squash merge replaces', () => {
+  const standards = skillLine('aw-review-steps', '- **Standards**: the list of standards files');
+  assert.match(standards, /and the VCS adapter's merge method\. The brief:/);
+  assert.match(standards, /When the merge method is `squash`, skip the branch's commit summaries too: the merge replaces them, so none reaches the base branch\."/);
+});
+
 test('the Spec axis keeps scope creep a risk unless a run shows it breaks something', () => {
   const review = skillText('aw-review-steps');
   assert.match(review, /Scope creep is a risk, even when a run shows the change is in the diff/);
