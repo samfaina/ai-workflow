@@ -355,6 +355,23 @@ footer a { display: inline-flex; align-items: center; min-height: 44px; }
   .op { grid-template-columns: minmax(0, 1fr); }
 }
 
+/* --- Scroll animations ---------------------------------------------------------
+   site.js marks each block with data-reveal and adds .revealed once it scrolls
+   into view, setting --i to its place among its siblings. It does neither
+   when the reader asks for reduced motion. */
+[data-reveal] { transition: opacity .7s ease, transform .7s cubic-bezier(.2, .7, .2, 1); transition-delay: calc(var(--i, 0) * 80ms); }
+[data-reveal]:not(.revealed) { opacity: 0; transform: translateY(18px); }
+
+/* The stations of a line light up from left to right once the line is in
+   view. A station drawn later, after a pick, is inserted already in place. */
+:is(.line, .miniline) > li { transition: opacity .45s ease, transform .5s cubic-bezier(.2, .8, .2, 1.2); transition-delay: calc(var(--i, 0) * 60ms + 200ms); }
+.miniline[data-reveal]:not(.revealed) > li,
+#route-lines[data-reveal]:not(.revealed) .line > li { opacity: 0; transform: translateY(6px) scale(.85); }
+
+/* How far down the page the reader is, as a thin rail under the bar in the
+   routes' colours. */
+.bar::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: linear-gradient(90deg, var(--fast-mark), var(--line-mark), var(--gate-mark)); transform: scaleX(var(--progress, 0)); transform-origin: left; }
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .miniline li.gate::after, .line .gate button::after { animation: none; }

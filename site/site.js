@@ -292,13 +292,13 @@ const routeSelection = { route: 'standard', station: 'intake' };
 function drawRoutes() {
   routeLines.replaceChildren(
     ...ROUTES.map((route) => {
-      const items = route.stations.map((station) => {
+      const items = route.stations.map((station, index) => {
         const classes = [station.gate && 'gate', station.optional && 'opt', station.perDeliverable && 'per'].filter(Boolean).join(' ');
         const current = route.id === routeSelection.route && station.id === routeSelection.station;
         const label = [station.label, station.optional ? el('span', { class: 'sr' }, ' (optional)') : null];
         return el(
           'li',
-          classes ? { class: classes } : {},
+          { ...(classes ? { class: classes } : {}), style: `--i: ${index}` },
           button(label, current ? { 'aria-current': 'true' } : {}, () => {
             routeSelection.route = route.id;
             routeSelection.station = station.id;
@@ -571,6 +571,70 @@ for (const copy of document.querySelectorAll('.copyable .copy')) {
   });
 }
 
+// --- Scroll animations ---------------------------------------------------------------------------
+// Blocks fade up as they scroll into view, siblings one after another, and the
+// stations of each line light up from left to right. Only the script hides
+// anything, so a page without it shows everything, and nothing moves when the
+// reader asks for reduced motion. A block is revealed once: a station picked
+// later is drawn already in place. A thin bar under the navigation shows how
+// far down the page the reader is.
+
+const REVEAL = [
+  '.hero h1', '.hero .lead', '.hero .actions', '.miniline',
+  '.sec-head', '.principles > li', '.kinds > div', '#upstream-cards', '.filters', '#skills .explorer',
+  '#route-lines', '#station-detail', '.wizard', '.install article', '.two > .panel', '.adapters > .panel',
+  '#access-sim', '.files', '#file-detail', '#spec-status', '.anatomy', '.faq details', '.maint > li', 'footer .wrap',
+].join(', ');
+
+const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+// The blocks not yet revealed. One is revealed once its top is above 90% of
+// the viewport, so a block the reader scrolled past at speed, or jumped over
+// through a link, is revealed too and nothing stays hidden.
+let unrevealed = [];
+
+function startScrollAnimations() {
+  if (calm) return;
+  for (const target of document.querySelectorAll(REVEAL)) {
+    const siblings = [...target.parentElement.children].filter((sibling) => sibling.matches(REVEAL));
+    target.style.setProperty('--i', String(Math.min(siblings.indexOf(target), 6)));
+    target.dataset.reveal = '';
+    unrevealed.push(target);
+  }
+  for (const line of document.querySelectorAll('.miniline')) {
+    [...line.children].forEach((station, index) => station.style.setProperty('--i', String(index)));
+  }
+}
+
+function revealInView() {
+  const fold = window.innerHeight * 0.9;
+  // At the end of the page nothing can scroll higher, so the rest shows.
+  const atEnd = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2;
+  unrevealed = unrevealed.filter((target) => {
+    if (!atEnd && target.getBoundingClientRect().top > fold) return true;
+    target.classList.add('revealed');
+    return false;
+  });
+}
+
+const bar = document.querySelector('.bar');
+function drawProgress() {
+  const room = document.documentElement.scrollHeight - window.innerHeight;
+  bar.style.setProperty('--progress', String(room > 0 ? Math.min(window.scrollY / room, 1) : 0));
+}
+
+let frameQueued = false;
+function onScroll() {
+  if (frameQueued) return;
+  frameQueued = true;
+  requestAnimationFrame(() => {
+    frameQueued = false;
+    revealInView();
+    drawProgress();
+  });
+}
+window.addEventListener('scroll', onScroll, { passive: true });
+window.addEventListener('resize', onScroll, { passive: true });
+
 // --- Start -------------------------------------------------------------------------------------
 
 drawRoutes();
@@ -578,6 +642,8 @@ drawWizard();
 drawSim();
 drawFiles();
 drawSpec('draft');
+startScrollAnimations();
+onScroll();
 
 fetch('skills.json')
   .then((response) => {
