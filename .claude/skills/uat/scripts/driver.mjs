@@ -539,7 +539,7 @@ function continuedSession(runDir, uatCase) {
 // Whether a case runs gh or reaches GitHub, so that it needs the token: its
 // shell lines, cleanup lines or `run` assertions run gh or name github.com, or
 // its setup, or that of a case whose session it continues, points origin there.
-function needsGitHub(loadCase, uatCase, seen = new Set()) {
+export function needsGitHub(loadCase, uatCase, seen = new Set()) {
   const checks = [...(uatCase.assertions ?? []), ...(uatCase.turns ?? []).flatMap((turn) => turn.assertions ?? [])];
   const lines = [...(uatCase.shell ?? []), ...(uatCase.cleanup ?? []), ...checks.map((check) => check.run).filter(Boolean)];
   const runsGh = (line) => callsOf(line).some(({ program }) => program === 'gh');

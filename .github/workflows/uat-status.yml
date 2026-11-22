@@ -1,0 +1,65 @@
+name: UAT status
+
+# Rebuilds the body of the one issue labelled uat:status from `run.mjs
+# status`, which reads only the UAT case files, the UAT ledger and the release
+# tags of this repo. It runs no UAT case and needs no scratch clone and no
+# secret: the runs stay on the maintainer's machine. It changes nothing else
+# in the tracker, except to create the issue, and its label, when neither
+# exists.
+
+on:
+  push:
+    branches:
+      - main
+    # A release tag moves the release gate.
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+# A later push builds from a later ledger, so an older build is not worth
+# finishing.
+concurrency:
+  group: uat-status
+  cancel-in-progress: true
+
+jobs:
+  status:
+    name: Rebuild the UAT status issue
+    runs-on: ubuntu-latest
+    steps:
+      # The whole history, so that the release tags and their dates are there.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build the status
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 1000 --json number,title,body > "$RUNNER_TEMP/issues.json"
+          node .claude/skills/uat/scripts/run.mjs status --issues "$RUNNER_TEMP/issues.json" > "$RUNNER_TEMP/status.md"
+
+      # The open status issue, oldest first. A closed one is still the status
+      # issue when no other is open: editing it keeps one issue rather than
+      # opening another, and leaves it closed.
+      - name: Replace the status issue's body
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          number=$(gh issue list --repo "$GITHUB_REPOSITORY" --state all --label uat:status --limit 100 --json number,state --jq 'sort_by(.state != "OPEN", .number) | .[0].number // empty')
+          if [ -n "$number" ]; then
+            gh issue edit "$number" --repo "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/status.md"
+          else
+            if ! gh label list --repo "$GITHUB_REPOSITORY" --limit 1000 --json name --jq '.[].name' | grep -qx 'uat:status'; then
+              gh label create uat:status --repo "$GITHUB_REPOSITORY" --color 5319E7 --description 'The UAT status issue, rebuilt from the ledger on every push to main'
+            fi
+            gh issue create --repo "$GITHUB_REPOSITORY" --title 'UAT status' --label uat:status --body-file "$RUNNER_TEMP/status.md"
+          fi
