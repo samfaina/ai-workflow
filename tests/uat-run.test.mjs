@@ -1243,7 +1243,7 @@ test('the usage message lists each command with the options it takes, as the scr
   const listed = result.stderr.split('\n').filter((line) => line.trim().startsWith('node run.mjs ')).map(squeeze);
 
   assert.equal(result.status, 2);
-  assert.equal(header.length, 11);
+  assert.equal(header.length, 12);
   assert.deepEqual(listed, header);
 });
 
@@ -1253,4 +1253,139 @@ test('only init falls back to UAT_TARGET: another command without --run is a usa
   const result = spawnSync(process.execPath, [runScript, 'next'], { encoding: 'utf8', env });
 
   assert.equal(result.status, 2);
+});
+
+// What `status` prints for each batch, parsed back: the --cases list of its
+// auto line, and its due cases with their reasons.
+function statusBatches(markdown) {
+  const section = markdown.split(/^## /m).find((part) => part.startsWith('UAT batches')) ?? '';
+  return section.split(/^### /m).slice(1).map((batch) => ({
+    cases: batch.match(/run\.mjs auto --run <run> --source <clone> --cases (\S+)/)[1].split(','),
+    due: Object.fromEntries([...batch.matchAll(/^ {2}- `([^`]+)`: ([a-z-]+)/gm)].map(([, id, reason]) => [id, reason])),
+  }));
+}
+
+test('status lists the batches and reasons that due --release lists, each with the auto line that runs it', (t) => {
+  const { run, route } = passedRoute(t);
+  tagRelease(run, 'v1.0.0', '2026-02-01T10:00:00Z');
+  datePasses(run, { apart: '2026-01-01T10:00:00.000Z' });
+  run.writeCase({ ...route.session, title: 'renamed' });
+
+  const due = run.due('--release').output;
+  const { status, stdout } = run.status();
+
+  assert.equal(status, 0, stdout);
+  assert.deepEqual(reasons(due), { session: 'changed', apart: 'before-release' });
+  assert.deepEqual(
+    statusBatches(stdout),
+    due.batches.map((batch) => ({ cases: batch.cases, due: Object.fromEntries(batch.due.map((id) => [id, reasons(due)[id]])) })),
+  );
+});
+
+// An issues file as `gh issue list --json number,title,body,state` prints it.
+function issuesFile(run, issues) {
+  const file = join(run.root, 'issues.json');
+  writeFileSync(file, JSON.stringify(issues));
+  return file;
+}
+
+// The tracking issue line of each batch `status` prints, by its first case.
+const trackingOf = (markdown) =>
+  Object.fromEntries([...markdown.matchAll(/^### \d+\. From `([^`]+)`[^\n]*\n\n- Tracking issue: ([^\n]*)/gm)].map(([, first, line]) => [first, line]));
+
+test('status names the open UAT batch issue whose body holds the batch\'s --cases list, and says when a batch has none', (t) => {
+  const { run, route } = passedRoute(t);
+  commitKit(run, '2026-02-01T10:00:00Z');
+  run.writeCase({ ...route.session, title: 'renamed' });
+  run.writeCase({ ...route.apart, title: 'renamed' });
+  const block = (list) => `## What to do\r\n\r\n\`\`\`text\r\n${list}\r\n\`\`\`\r\n`;
+  const file = issuesFile(run, [
+    { number: 7, title: 'UAT batch 7: the route', state: 'OPEN', body: block('root,point,session') },
+    { number: 8, title: 'UAT batch 8: also the route', body: 'Run it with `auto --cases root,point,session`.' },
+    { number: 9, title: 'UAT batch 9: closed', state: 'CLOSED', body: block('apart') },
+    { number: 10, title: 'Not a batch', state: 'OPEN', body: block('apart') },
+    { number: 11, title: 'UAT batch 11: a longer list', state: 'OPEN', body: `${block('apart,other')}\`apart\` writes to GitHub.` },
+  ]);
+
+  const tracking = trackingOf(run.status('--issues', file).stdout);
+
+  assert.deepEqual(tracking, {
+    root: '#7, #8',
+    apart: 'none. No open "UAT batch" issue names this `--cases` list.',
+  });
+});
+
+// The paragraph under the status heading: the progress and the release gate.
+const progressOf = (markdown) => markdown.split('\n\n')[1];
+
+test('status gives the progress and the release gate, naming the latest release tag or saying there is none', (t) => {
+  const { run, route } = passedRoute(t);
+  commitKit(run, '2026-02-01T10:00:00Z');
+  run.writeCase({ ...route.apart, title: 'renamed' });
+
+  assert.equal(
+    progressOf(run.status().stdout),
+    '**3 of 4** UAT cases have a Pass in the UAT ledger for what they hold now, and there is no `vX.Y.Z` release tag yet. The release gate is **closed**: 1 case is due.',
+  );
+
+  git(run.root, 'tag', 'v1.2.3');
+  assert.equal(
+    progressOf(run.status().stdout),
+    '**3 of 4** UAT cases have passed since the latest release tag, `v1.2.3`. The release gate is **closed**: 1 case is due.',
+  );
+
+  run.writeCase(route.apart);
+  const clear = run.status();
+  assert.equal(clear.status, 0, 'status reports the gate and does not fail on it');
+  assert.equal(progressOf(clear.stdout), '**4 of 4** UAT cases have passed since the latest release tag, `v1.2.3`. The release gate is **clear**: no case is due.');
+});
+
+test('status lists the batches in run order, the order of their first case, and marks the one that needs UAT_GH_TOKEN as auto does', (t) => {
+  const first = caseFile('first', { order: 1 });
+  const github = caseFile('github', { order: 5, shell: ['gh issue list --repo owner/scratch'] });
+  const later = caseFile('later', { order: 10, from: { case: 'first' } });
+  const run = makeRun(t, [first, github, later]);
+  runCases(run, pass(), pass(), pass());
+  run.cli('report');
+  commitKit(run, '2026-02-01T10:00:00Z');
+  run.writeCase({ ...github, title: 'renamed' });
+  run.writeCase({ ...later, title: 'renamed' });
+
+  assert.deepEqual(run.due('--release').output.batches.map((batch) => batch.cases), [['github'], ['first', 'later']], 'due lists them by their due cases');
+  const stdout = run.status().stdout;
+  assert.deepEqual(statusBatches(stdout).map((batch) => batch.cases), [['first', 'later'], ['github']]);
+  const tokens = [...stdout.matchAll(/^- `UAT_GH_TOKEN`: ([^\n]*)/gm)].map(([, line]) => line);
+  assert.deepEqual(tokens, ['not needed.', 'needed, since a case runs `gh` or reaches GitHub.']);
+  assert.match(stdout, /- Runs too, for the restore points the due cases start from: `first`\n/);
+});
+
+test('status lists the assisted groups apart with their reasons and the /uat line, and folds away the passes with their date and issue', (t) => {
+  const { run, route } = passedRoute(t, { session: { assisted: TERMINAL } });
+  commitKit(run, '2026-02-01T10:00:00Z');
+  const ledger = run.ledger();
+  writeFileSync(run.ledgerFile, JSON.stringify({ ...ledger, root: { ...ledger.root, date: '2026-05-04T10:00:00.000Z', issue: 42 } }));
+  run.writeCase({ ...route.point, title: 'renamed' });
+
+  const stdout = run.status().stdout;
+  const assisted = stdout.split(/^## /m).find((part) => part.startsWith('Assisted groups'));
+
+  assert.deepEqual(statusBatches(stdout).map((batch) => batch.cases), [['root', 'point']]);
+  assert.match(assisted, /^ {2}- `session`: upstream-due\. Assisted: its checks read what the terminal shows$/m);
+  assert.match(assisted, /^\/uat <clone> --cases root,point,session$/m);
+  assert.doesNotMatch(assisted, /run\.mjs auto/);
+  const passed = stdout.split(/^## /m).find((part) => part.startsWith('Passed'));
+  assert.match(passed, /<details>\n<summary>2 cases passed<\/summary>\n\n- `root`: Pass on 2026-05-04, #42\n- `apart`: Pass on \d{4}-\d{2}-\d{2}\n\n<\/details>/);
+});
+
+test('status holds no path outside the repo and no utilization figure, and ends with the commit it was built from', (t) => {
+  const { run, route } = passedRoute(t, { root: { shell: ['gh repo view'] } });
+  commitKit(run, '2026-02-01T10:00:00Z');
+  run.writeCase({ ...route.session, title: 'renamed' });
+  const file = issuesFile(run, [{ number: 3, title: 'UAT batch 3', state: 'OPEN', body: 'root,point,session' }]);
+
+  const stdout = run.status('--issues', file).stdout;
+
+  for (const path of [run.root, run.root.replaceAll('\\', '/'), run.casesDir, file]) assert.equal(stdout.includes(path), false, path);
+  assert.doesNotMatch(stdout, /[A-Za-z]:[\\/]|%|\butilization\b/i);
+  assert.equal(stdout.trimEnd().split('\n').at(-1), `Built from commit ${git(run.root, 'rev-parse', 'HEAD')}.`);
 });

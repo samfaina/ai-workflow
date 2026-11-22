@@ -189,6 +189,8 @@ export function makeRun(t, cases, { allCases = false, script = runScript, fixtur
   const cli = (command, ...args) => runCli(command, '--run', runDir, ...args);
   // `due` reads the cases folder and its ledger, and no run folder.
   const due = (...args) => runCli('due', '--cases-dir', casesDir, ...args);
+  // So does `status`, which prints Markdown.
+  const status = (...args) => runCli('status', '--cases-dir', casesDir, ...args);
   const selection = allCases ? [] : ['--cases', cases.map((c) => c.id).join(',')];
   const init = cli('init', '--source', source, '--cases-dir', casesDir, ...selection);
   if (init.status !== 0) throw new Error(`init failed: ${init.stdout}${init.stderr}`);
@@ -203,6 +205,7 @@ export function makeRun(t, cases, { allCases = false, script = runScript, fixtur
     branchCommit,
     cli,
     due,
+    status,
     state: () => JSON.parse(readFileSync(join(runDir, 'state.json'), 'utf8')),
     // The UAT ledger sits beside the cases folder, as it sits beside /uat's.
     ledgerFile: join(root, 'ledger.json'),
