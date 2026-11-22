@@ -8,9 +8,9 @@
 //   node permission-host.mjs --workdir <dir> --log <file> [--scratch <owner/name>]
 //
 // It allows any tool inside the working copy, denies a file tool's write
-// outside it, and denies AskUserQuestion, which the driver's answering hook
-// (ask-hook.mjs) answers before any prompt: reaching the host means that hook
-// did not run. In a shell command it allows `gh` reads, and denies a `gh` write, or a
+// outside it and the worktrees added to its repository, and denies
+// AskUserQuestion, which the driver's answering hook (ask-hook.mjs) answers
+// before any prompt: reaching the host means that hook did not run. In a shell command it allows `gh` reads, and denies a `gh` write, or a
 // `git push`, `fetch` or `pull`, aimed at a repo other than the scratch repo
 // that --scratch names or a repo in the step folder, the working copy's parent.
 // That filter is best effort: the guarantee is the token the driver gives the
@@ -57,7 +57,7 @@ function parseArgs(args) {
 }
 
 const { workdir: workdirOption, log, scratch: scratchOption } = parseArgs(process.argv.slice(2));
-const workdir = realpathSync(workdirOption);
+const workdir = realpathSync.native(workdirOption);
 const stepDir = dirname(workdir);
 const scratch = scratchOption ? scratchOption.toLowerCase() : null;
 // The rule a denial of a gh or git command cites.
@@ -66,9 +66,10 @@ const scratchRule = scratch
   : 'a case session writes to GitHub only on the scratch repo, and the source clone has no GitHub remote to name one';
 
 // The path with its existing part resolved through any link, so that a link
-// inside the working copy cannot lead a write out of it.
+// inside the working copy cannot lead a write out of it. The native call also
+// expands a Windows short name, such as RUNNER~1, into the long one git lists.
 function realPath(path) {
-  if (existsSync(path)) return realpathSync(path);
+  if (existsSync(path)) return realpathSync.native(path);
   const parent = dirname(path);
   return parent === path ? path : join(realPath(parent), basename(path));
 }
@@ -83,6 +84,21 @@ function gitOut(dir, args) {
   const result = spawnSync('git', ['-C', dir, ...args], { encoding: 'utf8' });
   return result.status === 0 ? result.stdout.trim() : null;
 }
+
+// The worktrees added to the working copy's repository, as git lists them at
+// the time of the write: aw-review makes its runs in worktrees of its own,
+// under the system's temporary directory. None when the working copy is not
+// the repository's main worktree, since the list would then name another's.
+function addedWorktrees() {
+  const listed = (gitOut(workdir, ['worktree', 'list', '--porcelain']) ?? '')
+    .split('\n')
+    .filter((line) => line.startsWith('worktree '))
+    .map((line) => realPath(resolve(line.slice('worktree '.length))));
+  const [main, ...added] = listed;
+  return main !== undefined && isInside(main) && isInside(workdir, main) ? added : [];
+}
+
+const writable = (path) => isInside(path) || addedWorktrees().some((root) => isInside(path, root));
 
 // The GitHub repo the working copy's origin names: where gh goes by default.
 const originRepo = () => githubRepo(gitOut(workdir, ['remote', 'get-url', 'origin']) ?? '');
@@ -227,8 +243,8 @@ function decide(toolName, input) {
     return { behavior: 'deny', message: 'AskUserQuestion reached the permission host: the UAT driver\'s answering hook should have answered it, so that hook did not run' };
   }
   const key = WRITES[toolName];
-  if (key && !(typeof input?.[key] === 'string' && isInside(input[key]))) {
-    return { behavior: 'deny', message: `${toolName} writes only inside the working copy ${workdir}, not to ${input?.[key]}` };
+  if (key && !(typeof input?.[key] === 'string' && writable(input[key]))) {
+    return { behavior: 'deny', message: `${toolName} writes only inside the working copy ${workdir} and the worktrees added to its repository, not to ${input?.[key]}` };
   }
   const denial = SHELLS.has(toolName) && typeof input?.command === 'string' ? shellDenial(input.command) : null;
   if (denial) return { behavior: 'deny', message: denial };

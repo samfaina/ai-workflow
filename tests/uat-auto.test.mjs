@@ -490,6 +490,45 @@ test('a write outside the working copy is denied and logged in the step folder, 
 const SCRATCH = 'https://github.com/o/scratch.git';
 const bash = (command) => ({ name: 'Bash', input: { command } });
 
+test("a write inside a worktree the session added to the working copy's repository is allowed, and one beside it is still denied", (t) => {
+  const criterion = 'It wrote its probe only in its own worktree';
+  const run = makeRun(t, [caseFile('a', { assertions: [{ judge: criterion }] })]);
+  const head = join(run.root, 'review', 'head');
+  const beside = join(run.root, 'review', 'beside', 'probe.txt');
+  const grades = {
+    verdict: 'Not proven',
+    line: 'The session wrote its probe in its worktree, and tried one write beside it, which the permission host denied.',
+    judge: [{ criterion, result: 'not_proven', evidence: `the permission host denied a Write to ${beside}` }],
+    findings: [{ kind: 'environment', text: 'An unexpected denial by the permission host.' }],
+  };
+  const fake = fakeClaude(run, {
+    turns: [
+      {
+        tools: [
+          { ...bash(`git worktree add --detach ${head} HEAD`), git: ['worktree', 'add', '--detach', head, 'HEAD'] },
+          write(join(head, 'tests', 'probe.test.ts'), 'probe\n'),
+          write(beside, 'out\n'),
+        ],
+        text: 'Done.',
+      },
+    ],
+    judgements: [{ grade: grades }],
+  });
+
+  const result = auto(run, fake);
+  assert.equal(result.status, 0, result.report);
+
+  assert.equal(readText(join(head, 'tests', 'probe.test.ts')), 'probe\n');
+  assert.equal(existsSync(beside), false);
+  const log = readLines(join(run.runDir, 'steps', 'a', 'permissions.jsonl'));
+  assert.deepEqual(log.map((entry) => [entry.tool, entry.decision]), [
+    ['Bash', 'allow'],
+    ['Write', 'allow'],
+    ['Write', 'deny'],
+  ]);
+  assert.match(log[2].reason, /only inside the working copy .* and the worktrees added to its repository/);
+});
+
 // A run whose source clone's GitHub remote is the scratch repo, with the
 // driver's token set, as the maintainer runs a case that writes to GitHub.
 function githubRun(t, cases) {
