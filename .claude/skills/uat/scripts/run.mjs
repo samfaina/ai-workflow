@@ -711,6 +711,11 @@ function status(options) {
       ? '- Tracking issue: none. No open "UAT batch" issue names this `--cases` list.'
       : `- Tracking issue: ${found.map((number) => `#${number}`).join(', ')}`;
   };
+  // A ledger entry's run, as its date and the issue that reports it.
+  const runOf = (entry) => `${entry.date.slice(0, 10)}${entry.issue === undefined ? '' : `, #${entry.issue}`}`;
+  // A case that did not pass names its last run, so whoever runs it again
+  // finds why in that run's issue. Every other reason says all there is.
+  const dueReason = (id) => (reasonOf.get(id) === 'not-passed' ? `not-passed, last run ${runOf(ledger[id])}` : reasonOf.get(id));
   const startsFromLine = (batch) => {
     const others = batch.cases.filter((id) => !batch.due.includes(id));
     return others.length === 0 ? [] : [`- Runs too, for the restore points the due cases start from: ${others.map((id) => `\`${id}\``).join(', ')}`];
@@ -735,11 +740,11 @@ function status(options) {
     const token = batch.cases.some((id) => needsGitHub((caseId) => byId.get(caseId), byId.get(id)))
       ? '- `UAT_GH_TOKEN`: needed, since a case runs `gh` or reaches GitHub.'
       : '- `UAT_GH_TOKEN`: not needed.';
-    return runSection(batch, index, { extra: [token], reason: (id) => reasonOf.get(id), command: AUTO_LINE });
+    return runSection(batch, index, { extra: [token], reason: dueReason, command: AUTO_LINE });
   };
   const assistedSection = (group, index) => {
     const why = new Map(group.assisted.map((entry) => [entry.case, entry.reason]));
-    return runSection(group, index, { reason: (id) => `${reasonOf.get(id)}. Assisted: ${why.get(id)}`, command: '/uat <clone>' });
+    return runSection(group, index, { reason: (id) => `${dueReason(id)}. Assisted: ${why.get(id)}`, command: '/uat <clone>' });
   };
 
   const passed = cases.filter((uatCase) => !reasonOf.has(uatCase.id));
@@ -749,10 +754,7 @@ function status(options) {
   const gate = dueCases.length === 0
     ? 'The release gate is **clear**: no case is due.'
     : `The release gate is **closed**: ${plural(dueCases.length, 'case')} ${dueCases.length === 1 ? 'is' : 'are'} due.`;
-  const passLine = (uatCase) => {
-    const entry = ledger[uatCase.id];
-    return `- \`${uatCase.id}\`: Pass on ${entry.date.slice(0, 10)}${entry.issue === undefined ? '' : `, #${entry.issue}`}`;
-  };
+  const passLine = (uatCase) => `- \`${uatCase.id}\`: Pass on ${runOf(ledger[uatCase.id])}`;
   const commit = git(casesDir, ['rev-parse', 'HEAD']);
   const sections = [
     '# UAT status',

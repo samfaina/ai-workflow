@@ -1396,3 +1396,20 @@ test('status holds no path outside the repo and no utilization figure, and ends 
   assert.doesNotMatch(stdout, /[A-Za-z]:[\\/]|%|\butilization\b/i);
   assert.equal(stdout.trimEnd().split('\n').at(-1), `Built from commit ${git(run.root, 'rev-parse', 'HEAD')}.`);
 });
+
+test('status gives a case due as not-passed the date of its last run and the issue that reports it, and no other due case', (t) => {
+  const run = makeRun(t, [caseFile('failed', { order: 1 }), caseFile('unproven', { order: 2 }), caseFile('edited', { order: 3 })]);
+  runCases(run, fail, fail, pass());
+  run.cli('report', '--issue', '126');
+  commitKit(run, '2026-02-01T10:00:00Z');
+  const ledger = run.ledger();
+  const { issue, ...unreported } = ledger.unproven;
+  writeFileSync(run.ledgerFile, JSON.stringify({ ...ledger, failed: { ...ledger.failed, date: '2026-11-18T10:00:00.000Z' }, unproven: { ...unreported, date: '2026-11-17T10:00:00.000Z' } }));
+  run.writeCase({ ...run.readCase('edited'), title: 'renamed' });
+
+  const dueLines = [...run.status().stdout.matchAll(/^ {2}- `[^`]+`: [^\n]*/gm)].map(([line]) => line);
+
+  assert.equal(issue, 126);
+  assert.deepEqual(dueLines.slice(0, 2), ['  - `failed`: not-passed, last run 2026-11-18, #126', '  - `unproven`: not-passed, last run 2026-11-17']);
+  assert.deepEqual(dueLines.slice(2), ['  - `edited`: changed']);
+});
