@@ -12,17 +12,17 @@ How to propose the answer to a question asked during a **UAT case**, from the ca
 
 These rules hold in both flows: a run with the **UAT conductor**, and an **Unattended run**.
 
-Answers and turns are intents, and option labels change between runs. Match each question, whether the agent asked it with options or in prose, to an entry's `when`, then pick the option of **this run** that fulfils its `intent`. Give the reason with the answer. When the entry's `intent` says to type the answer in and no option of this run fulfils it, the answer is that text, given through the question's free-text choice, "Other".
+Answers and turns are intents, and option labels change between runs. Match each question, whether the agent asked it with options or in prose, to an entry's `when`, then pick the option of **this run** that fulfils its `intent`. Whether an entry fits is settled by the question and the `when` alone, before you look at this run's options or at the answer the agent recommends. Give the reason with the answer. When the entry's `intent` says to type the answer in and no option of this run fulfils it, the answer is that text, given through the question's free-text choice, "Other".
 
-A turn that ends with the agent waiting is often a question in plain prose. Treat its text like a question. An `answers` entry that fits it comes first, even when the next `turns` entry would also do; the reply to what no `answers` entry fits comes from the first entry of `turns` not sent yet.
+A turn that ends with the agent waiting is often a question in plain prose. Treat its text like a question. An `answers` entry that fits it comes first, even when the next `turns` entry would also do; the reply to what no `answers` entry fits comes from the first entry of `turns` not sent yet that fits it. The `turns` entries before that one are skipped, unless one has checks of its own.
 
 ### Stop points
 
-Where the case's checks expect the agent to stop, such as an approval it must only ask for, the step ends with the question unanswered. This holds even when an entry such as "accept what it proposes" could be stretched to fit, and even when `turns` has entries not sent yet: answering would take the agent past what the case checks.
+Where the case's checks expect the agent to stop, such as an approval it must only ask for, the step ends with the question unanswered. This holds even when an entry such as "accept what it proposes" could be stretched to fit, and even when `turns` has entries not sent yet: answering would take the agent past what the case checks. A stop point is named by the check that expects the agent to stop there. An approval that a check expects given, such as a spec checked at `approved`, is answered.
 
 ## When no entry fits
 
-When no entry fits a question that is not a stop point, the question is **drift**. Where a drift answer is given, it is chosen from what the case is testing, marked as drift, and given with its reason. What happens next depends on the flow.
+When no entry fits a question that is not a stop point, the question is **drift**. Where a drift answer is given, it is chosen from what the case is testing, marked as drift, and given with its reason, and with the entry whose `when` comes closest and why it does not fit. What happens next depends on the flow.
 
 ### With the UAT conductor
 

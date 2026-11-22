@@ -177,9 +177,9 @@ test('a stop point ends the step with the turn unsent, a prose question no entry
       { tools: [write('{{CWD}}/spec.md', '---\nstatus: draft\n---\n')], text: 'The spec is written. Shall I approve it?' },
       { text: 'What colour should the button be?' }, { text: 'Which database should I use?' }, { text: 'Using SQLite.' }],
     judgements: [
-      { reply: { action: 'end', reason: stopReason } },
+      { reply: { action: 'end', why: 'stop point', check: 0, reason: stopReason } },
       { grade: pass() },
-      { reply: `Here it is: ${JSON.stringify({ action: 'end', reason: noFitReason })}` },
+      { reply: `Here it is: ${JSON.stringify({ action: 'end', why: 'no entry', reason: noFitReason })}` },
       { grade: pass() },
       { reply: sendTurn('Use SQLite.', 'a turn') },
       { reply: answerFrom(0, 'Use SQLite.', 'the database entry fits') },
@@ -225,7 +225,7 @@ test('a prose round is answered question by question: an entry answers one quest
     '',
     '➡️ Yes, as a new ticket.',
   ].join('\n');
-  const hold = { question: 'Serving a reservation', entry: null, recommended: 'the returned book is held for the first member in the queue', answer: 'Yes, hold it for the head of the queue', reason: 'the case does not test how a reservation is served' };
+  const hold = { question: 'Serving a reservation', entry: null, recommended: 'the returned book is held for the first member in the queue', closest: { entry: 1, why: 'entry 1 is about another decision, not how a reservation is served' }, answer: 'Yes, hold it for the head of the queue', reason: 'the case does not test how a reservation is served' };
   const order = { question: 'Order', entry: 0, answer: 'Oldest first', reason: 'entry 0' };
   const noTicket = { question: 'How long a hold lasts', entry: 1, answer: 'No, nothing else is left to decide', reason: 'entry 1 says no, against the recommendation' };
   const message = 'Q1: yes. Q2: oldest first. Q3: no, nothing else is left to decide.';
@@ -261,6 +261,65 @@ test('a prose round is answered question by question: an entry answers one quest
   assert.match(grade.prompt, /## Replies the driver sent[\s\S]*Q3: no, nothing else is left to decide/);
   // Both entries were used, so the turn after the reply ends the step with no judgement.
   assert.match(grade.prompt, /Every `turns` and `answers` entry had been used/);
+});
+
+test('a drift answer in prose names the closest entry left and why its when does not fit, so an entry that fits is not passed over for the recommendation', (t) => {
+  const answers = [{ when: 'How a reservation is made and answered', intent: 'POST /books/:id/reservations with a member', reason: 'keeps the deliverable small' }];
+  const run = makeRun(t, [caseFile('a', { answers })]);
+  const turn = '❓ **Q1** - **Endpoint shape**: POST /reservations with { bookId, member }?\n\n➡️ Yes: POST /reservations with { bookId, member }.';
+  const recommended = 'POST /reservations with { bookId, member }';
+  const drift = { action: 'reply', message: 'Q1: yes.', questions: [{ question: 'Endpoint shape', entry: null, recommended, answer: 'Yes', reason: 'the agent recommends it' }] };
+  const fromEntry = answerFrom(0, 'Q1: POST /books/:id/reservations with a member.', 'entry 0 is how a reservation is made');
+  const fake = fakeClaude(run, { turns: [{ text: turn }, { text: 'Done.' }], judgements: [{ reply: drift }, { reply: fromEntry }, { grade: pass() }] });
+
+  const result = auto(run, fake);
+  assert.equal(result.status, 0, result.report);
+
+  const [first, retry] = replyCalls(fake);
+  assert.match(first.prompt, /First decide which entry fits each question, from the question and the entry's `when` alone/);
+  assert.match(retry.prompt.slice(first.prompt.length), /was refused[\s\S]*names the closest answers entry left[\s\S]*<one of 0>/);
+  assert.deepEqual(fake.sessions().map((call) => call.prompt), ['/a', fromEntry.message]);
+  assert.equal(JSON.parse(readText(join(run.casesDir, 'a.json'))).answers.length, 1, 'no drift answer was recorded');
+});
+
+test('an end at a stop point names the check that expects it, and a turns entry may skip the ones before it unless one has checks of its own', (t) => {
+  const approved = { name: 'spec is approved', file: 'spec.md', frontmatter: { status: 'approved' } };
+  const turns = (first) => [{ intent: 'Accept all the answers it proposes', reason: 'lets the draft reach a full version', ...first }, { intent: 'Explicitly approve the spec', reason: 'the slices need an approved spec' }];
+  const run = makeRun(t, [
+    caseFile('skips', { order: 1, turns: turns({}), assertions: [approved] }),
+    caseFile('keeps', { order: 2, turns: turns({ assertions: [{ name: 'drafted', file: 'spec.md', frontmatter: { status: 'draft' } }] }) }),
+  ]);
+  const asked = 'The spec stays at draft until you approve it explicitly.';
+  const approve = { action: 'reply', message: 'approved', questions: [{ question: 'Approve the spec', entry: 'turn', turn: 2, answer: 'approved', reason: 'turn 2 approves it' }] };
+  const fake = fakeClaude(run, {
+    turns: [
+      { tools: [write('{{CWD}}/spec.md', '---\nstatus: draft\n---\n')], text: asked },
+      { tools: [write('{{CWD}}/spec.md', '---\nstatus: approved\n---\n')], text: 'Approved.' },
+      { tools: [write('{{CWD}}/spec.md', '---\nstatus: draft\n---\n')], text: asked },
+      { text: 'Drafted in full.' },
+    ],
+    judgements: [
+      { reply: { action: 'end', why: 'stop point', reason: 'it asks for approval' } },
+      { reply: approve },
+      { grade: pass() },
+      { reply: approve },
+      { reply: sendTurn('Accept all of them.', 'turn 1 has checks, so it comes first') },
+      { reply: { action: 'end', why: 'not waiting', reason: 'the agent is not waiting' } },
+      { grade: pass() },
+    ],
+  });
+
+  const result = auto(run, fake);
+  assert.equal(result.status, 0, result.report);
+
+  const [end, endRetry, skipped, skippedRetry] = replyCalls(fake);
+  assert.match(end.prompt, /"index": 0,\s*"name": "spec is approved"/, 'the call lists each check with its index');
+  assert.match(end.prompt, /"turn": 1,[\s\S]*"turn": 2,/, 'the call lists every turns entry not sent yet');
+  assert.match(endRetry.prompt.slice(end.prompt.length), /was refused[\s\S]*names the check that expects the agent to stop[\s\S]*from 0 to 0/);
+  assert.match(skippedRetry.prompt.slice(skipped.prompt.length), /was refused[\s\S]*turn 1 has checks of its own, so it is not skipped/);
+  assert.deepEqual(fake.sessions().map((call) => call.prompt), ['/skips', 'approved', '/keeps', 'Accept all of them.']);
+  assert.match(readText(join(run.runDir, 'steps', 'skips', 'ended.txt')), /Every `turns` and `answers` entry had been used/);
+  assert.match(readText(join(run.runDir, 'steps', 'keeps', 'ended.txt')), /unanswered \(not waiting\): the agent is not waiting/);
 });
 
 test('a turn that ends with no turns or answers entry left ends the step without a judgement call', (t) => {
@@ -350,7 +409,7 @@ test('a label that is not one of this run\'s options is refused and asked again 
       { tools: [askTool(tracker)], text: 'Set up.' },
       { tools: [askTool(tracker)], text: 'I could not get an answer.' },
     ],
-    judgements: [{ ask: wrong }, { ask: right }, { grade: pass() }, { ask: wrong }, { ask: wrong }, { reply: { action: 'end', reason: 'not waiting' } }, { grade: pass() }, { grade: notProven }],
+    judgements: [{ ask: wrong }, { ask: right }, { grade: pass() }, { ask: wrong }, { ask: wrong }, { reply: { action: 'end', why: 'not waiting', reason: 'not waiting' } }, { grade: pass() }, { grade: notProven }],
   });
 
   const result = auto(run, fake);
@@ -376,7 +435,7 @@ test('a question the answering hook fails on is refused by Claude Code, since th
   const notProven = { verdict: 'Not proven', line: 'The setup skill asked where tickets live, and the driver\'s answering hook failed, so the setup never ran.', judge: [], findings: [{ kind: 'environment', text: 'The answering hook failed.' }] };
   const fake = fakeClaude(run, {
     turns: [{ tools: [{ ...askTool(tracker), hookFails: true }], text: 'I got no answer.' }],
-    judgements: [{ reply: { action: 'end', reason: 'not waiting' } }, { grade: pass() }, { grade: notProven }],
+    judgements: [{ reply: { action: 'end', why: 'not waiting', reason: 'not waiting' } }, { grade: pass() }, { grade: notProven }],
   });
 
   const result = auto(run, fake);
@@ -393,8 +452,8 @@ test('a question the answering hook fails on is refused by Claude Code, since th
 test('a question no entry fits gets a drift answer among its options, written to the case file with drift: true, and a drift answer in free text is refused', (t) => {
   const run = makeRun(t, [caseFile('a', { answers: [setupAnswers[0]] })]);
   const colour = choice('Which colour does the app use?', ['Blue', 'Green']);
-  const freeText = { action: 'answer', answers: [{ question: tracker.question, labels: ['GitLab'], entry: 0, reason: 'GitLab' }, { question: colour.question, other: 'Teal', entry: null, reason: 'the case does not test colour' }] };
-  const drift = { action: 'answer', answers: [{ question: tracker.question, labels: ['GitLab'], entry: 0, reason: 'GitLab' }, { question: colour.question, labels: ['Blue'], entry: null, reason: 'the case does not test colour, and Blue is the first option' }] };
+  const freeText = { action: 'answer', answers: [{ question: tracker.question, labels: ['GitLab'], entry: 0, reason: 'GitLab' }, { question: colour.question, other: 'Teal', entry: null, closest: { entry: 0, why: 'entry 0 is about where tickets live' }, reason: 'the case does not test colour' }] };
+  const drift = { action: 'answer', answers: [{ question: tracker.question, labels: ['GitLab'], entry: 0, reason: 'GitLab' }, { question: colour.question, labels: ['Blue'], entry: null, closest: { entry: 0, why: 'entry 0 is about where tickets live' }, reason: 'the case does not test colour, and Blue is the first option' }] };
   const fake = fakeClaude(run, { turns: [{ tools: [askTool(tracker, colour)], text: 'Set up.' }], judgements: [{ ask: freeText }, { ask: drift }, { grade: pass() }] });
 
   const result = auto(run, fake);
@@ -433,7 +492,7 @@ test('an AskUserQuestion at a stop point ends the step unanswered, with turns le
   const stopReason = 'a stop point: the case checks that the spec is left at draft, so its approval stays unanswered';
   const fake = fakeClaude(run, {
     turns: [{ tools: [write('{{CWD}}/spec.md', '---\nstatus: draft\n---\n'), askTool(approval)], text: 'Approved.' }],
-    judgements: [{ ask: { action: 'end', reason: stopReason } }, { grade: pass() }],
+    judgements: [{ ask: { action: 'end', check: 0, reason: stopReason } }, { grade: pass() }],
   });
 
   const result = auto(run, fake);
@@ -445,6 +504,29 @@ test('an AskUserQuestion at a stop point ends the step unanswered, with turns le
   assert.ok(gradeCalls(fake)[0].prompt.includes(stopReason));
   assert.match(gradeCalls(fake)[0].prompt, /How the step ended[\s\S]*AskUserQuestion at a stop point/);
   assert.equal(run.state().results.a.verdict, 'Pass');
+});
+
+test('an ask judgement ends only at a check that expects the stop, and its drift answer names the closest entry, so an entry to type in is not passed over', (t) => {
+  const plan = choice('I propose 3 slices. Are their size and order right?', ['Agreed', 'Merge 2 and 3']);
+  const answers = [{ when: 'How to split the work, or whether to approve the slice plan it proposes', intent: 'One slice: otherwise ask for one, typed in if it is not an option', reason: 'keeps the case to one build' }];
+  const assertions = [{ name: 'one slice', file: 'spec.md', matches: '^1\\. ', count: 1 }];
+  const run = makeRun(t, [caseFile('ends', { order: 1, answers, assertions }), caseFile('drifts', { order: 2, answers, assertions })]);
+  const typedIn = { action: 'answer', answers: [{ question: 0, other: 'One slice, the whole deliverable', entry: 0, reason: 'entry 0, typed in' }] };
+  const drift = { action: 'answer', answers: [{ question: 0, labels: ['Agreed'], entry: null, reason: 'no option asks for one slice' }] };
+  const fake = fakeClaude(run, {
+    turns: [0, 1].map(() => ({ tools: [askTool(plan), write('{{CWD}}/spec.md', '1. [ ] The whole deliverable\n')], text: 'Planned.' })),
+    judgements: [{ ask: { action: 'end', reason: 'it asks to approve a plan' } }, { ask: typedIn }, { grade: pass() }, { ask: drift }, { ask: typedIn }, { grade: pass() }],
+  });
+
+  const result = auto(run, fake);
+  assert.equal(result.status, 0, result.report);
+
+  const [end, endRetry, drifted, driftRetry] = askCalls(fake);
+  assert.match(end.prompt, /First decide which entry fits each question, from the question and the entry's `when` alone; only then look at the options/);
+  assert.match(endRetry.prompt.slice(end.prompt.length), /was refused[\s\S]*names the check that expects the agent to stop[\s\S]*from 0 to 0/);
+  assert.match(driftRetry.prompt.slice(drifted.prompt.length), /was refused[\s\S]*names the closest answers entry/);
+  for (const id of ['ends', 'drifts']) assert.match(toolResults(run, id)[0].content, /^The user answered: "I propose 3 slices\. Are their size and order right\?"="One slice, the whole deliverable"/);
+  assert.equal(JSON.parse(readText(join(run.casesDir, 'drifts.json'))).answers.length, 1, 'no drift answer was recorded');
 });
 
 test('a write outside the working copy is denied and logged in the step folder, and the grading call sees the log', (t) => {

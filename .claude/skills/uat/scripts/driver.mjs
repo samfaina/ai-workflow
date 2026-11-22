@@ -16,8 +16,11 @@
 // judgement call by ANSWERING.md, unless no `turns` or `answers` entry is
 // left: it answers each question of the turn, from an entry or by taking the
 // agent's recommendation as a recorded drift answer, and the replies sent are
-// logged for grading. Each step gets one judgement call by GRADING.md. Before the first case, a liveness
-// check confirms that the hook and the permission host are live.
+// logged for grading. A drift answer names the closest entry it ruled out, and
+// an end at a stop point names the check that expects it. How the step ended
+// is saved in the step folder. Each step gets one judgement call by
+// GRADING.md. Before the first case, a liveness check confirms that the hook
+// and the permission host are live.
 //
 // A case writes to GitHub only on the scratch repo, the source clone's GitHub
 // remote: the permission host filters the session's gh and git commands, and
@@ -60,6 +63,8 @@ export const DEFAULT_JUDGE_MODEL = 'sonnet';
 const ASKS_FILE = 'asks.jsonl';
 // The replies the driver sent to prose turns, one line per turn.
 const REPLIES_FILE = 'replies.jsonl';
+// How the step ended, as the grading call reads it.
+const ENDED_FILE = 'ended.txt';
 // Long enough for the hook's judgement call and its one retry.
 const ASK_HOOK_TIMEOUT_S = 300;
 // The liveness check's SessionStart hook only writes a file.
@@ -354,31 +359,58 @@ function sessionTurn(step, prompt, sessionId) {
   return { sessionId: id, text: end.result ?? '', stopped: null };
 }
 
-// The reply to a turn that ended, by ANSWERING.md: the next `turns` entry or an
-// `answers` entry, or the end of the step.
+// The ways a reply judgement may end the step, as its `why` names them.
+const END_KINDS = ['not waiting', 'stop point', 'no entry'];
+
+// The case's checks, each with the index an end at a stop point names it by.
+const indexedChecks = (uatCase) => (uatCase.assertions ?? []).map((check, index) => ({ index, ...check }));
+
+// Why an end at a stop point is refused, or null: it names, by its index, the
+// check that expects the agent to stop, since a stop point is only where a
+// check expects one.
+function stopPointRefusal(value, checks) {
+  if (Number.isInteger(value.check) && value.check >= 0 && value.check < checks) return null;
+  if (checks === 0) return 'the case has no checks, so no question of it is a stop point';
+  return `an end at a stop point names the check that expects the agent to stop, as "check": its index from 0 to ${checks - 1}; when no check expects it, it is not a stop point`;
+}
+
+// Why a drift answer is refused for the entry it ruled out, or null: while an
+// `answers` entry is left, it names the closest one and why its `when` does
+// not fit, so that whether an entry fits is judged from its `when`.
+function closestRefusal(item, name, left) {
+  if (left.length === 0) return null;
+  const closest = item.closest;
+  if (!(Number.isInteger(closest?.entry) && left.includes(closest.entry)) || !filled(closest.why)) {
+    return `the drift answer to ${name} names the closest answers entry left, as "closest": { "entry": <one of ${left.join(', ')}>, "why": "<why its when does not fit>" }`;
+  }
+  return null;
+}
+
+// The reply to a turn that ended, by ANSWERING.md: a `turns` entry not sent
+// yet or an `answers` entry, or the end of the step.
 function replyPrompt(step, text) {
   const { uatCase } = step;
   const turns = uatCase.turns ?? [];
-  const nextTurn = turns[step.turnsSent];
+  const unsent = turns.slice(step.turnsSent).map((turn, index) => ({ turn: step.turnsSent + index + 1, ...turn }));
   return [
     '# UAT judgement: reply\n',
     'You stand in for the person in an unattended run of a UAT case: a Claude Code session running one of the kit\'s skills just ended its turn. Decide by the rules below whether the agent is waiting for the person, and what the person replies. The agent asked in prose: follow the rules of an unattended run for a question in prose.\n',
     section('Rules (ANSWERING.md)', readFileSync(join(skillDir, 'ANSWERING.md'), 'utf8')),
     section('The case', `${uatCase.title}: the person typed \`${uatCase.command}\`.`),
-    section("The case's checks, which say where it expects the agent to stop", asJson(uatCase.assertions ?? [])),
+    section("The case's checks, which say where it expects the agent to stop", asJson(indexedChecks(uatCase))),
     section('`answers` entries not used yet', asJson(step.unusedAnswers().map((index) => ({ index, ...uatCase.answers[index] })))),
     section(
-      'The next `turns` entry',
-      nextTurn ? `Entry ${step.turnsSent + 1} of ${turns.length}, the first not sent yet:\n\n${asJson(nextTurn)}` : 'None: every turn has been sent.',
+      '`turns` entries not sent yet',
+      unsent.length > 0 ? `${asJson(unsent)}\n\nOf ${turns.length} in all, in order.` : 'None: every turn has been sent.',
     ),
     section("The agent's turn", text || '(no text)'),
     section(
       'Your reply',
       [
-        'One JSON object and nothing else, either:',
+        'First decide which entry fits each question, from the question and the entry\'s `when` alone. Then reply with one JSON object and nothing else, either:',
         '',
-        '- `{ "action": "reply", "questions": [...], "message": "..." }`, with one item per question the agent asked in this turn, each `{ "question": "<its text>", "entry": <n> | "turn" | null, "answer": "...", "reason": "..." }`. `entry` is the index of the `answers` entry that fits, `"turn"` for the next `turns` entry when no `answers` entry fits, or `null` for a drift answer, which takes the answer the agent recommended for that question: quote it, as the agent wrote it, in `"recommended": "..."`. Each entry answers one question at most.',
-        '- `{ "action": "end", "reason": "..." }` when the agent is not waiting, at a stop point, or when a question has no entry that fits and no recommended answer.',
+        '- `{ "action": "reply", "questions": [...], "message": "..." }`, with one item per question the agent asked in this turn, each `{ "question": "<its text>", "entry": <n> | "turn" | null, "answer": "...", "reason": "..." }`. `entry` is the index of the `answers` entry that fits. It is `"turn"` when no `answers` entry fits, with `"turn": <its number above>`: the first `turns` entry not sent yet that fits the question, the ones before it being skipped. It is `null` for a drift answer, which takes the answer the agent recommended for that question: quote it, as the agent wrote it, in `"recommended": "..."`, and while an `answers` entry is left, name the closest one in `"closest": { "entry": <n>, "why": "<why its when does not fit>" }`. Each entry answers one question at most.',
+        '- `{ "action": "end", "why": "...", "reason": "..." }`, where `why` is `"not waiting"` when the agent is not waiting for the person, `"stop point"` with `"check": <its index above>` naming the check that expects the agent to stop here, or `"no entry"` when a question has no entry that fits and no recommended answer.',
         '',
         '`message` is what the person types: the answer to each question, written for this turn, and nothing else.',
       ].join('\n'),
@@ -393,8 +425,13 @@ const filled = (value) => typeof value === 'string' && value.trim() !== '';
 
 // Why a reply judgement is refused, or null. `text` is the agent's turn.
 function acceptReply(step, text) {
+  const turns = step.uatCase.turns ?? [];
   return (value) => {
-    if (value.action === 'end') return filled(value.reason) ? null : 'an end needs its reason';
+    if (value.action === 'end') {
+      if (!filled(value.reason)) return 'an end needs its reason';
+      if (!END_KINDS.includes(value.why)) return `an end names its kind, as "why": one of ${END_KINDS.map((kind) => `"${kind}"`).join(', ')}`;
+      return value.why === 'stop point' ? stopPointRefusal(value, (step.uatCase.assertions ?? []).length) : null;
+    }
     if (value.action !== 'reply') return '"action" must be "reply" or "end"';
     if (!filled(value.message)) return 'a reply needs the message the person types';
     if (!Array.isArray(value.questions) || value.questions.length === 0) return '"questions" must list each question of the turn, with its answer';
@@ -408,12 +445,18 @@ function acceptReply(step, text) {
       if (item.entry === null) {
         if (!filled(item.recommended)) return `the drift answer to ${name} needs the answer the agent recommended, quoted in "recommended"`;
         if (!squeezed(text).includes(squeezed(item.recommended))) return `"${item.recommended}", the recommendation quoted for ${name}, is not in the agent's turn: a drift answer in prose takes only an answer the agent recommended`;
+        const closest = closestRefusal(item, name, left);
+        if (closest) return closest;
         continue;
       }
-      if (seen.has(item.entry)) return `${item.entry === 'turn' ? 'the next turns entry' : `answers entry ${item.entry}`} answers two questions`;
+      if (seen.has(item.entry)) return `${item.entry === 'turn' ? 'a turns entry' : `answers entry ${item.entry}`} answers two questions`;
       seen.add(item.entry);
       if (item.entry === 'turn') {
-        if (step.turnsSent >= (step.uatCase.turns ?? []).length) return 'every turn has been sent';
+        if (step.turnsSent >= turns.length) return 'every turn has been sent';
+        const number = item.turn ?? step.turnsSent + 1;
+        if (!(Number.isInteger(number) && number > step.turnsSent && number <= turns.length)) return `turn ${JSON.stringify(item.turn)} is not a turns entry left: those left are ${step.turnsSent + 1} to ${turns.length}`;
+        const checked = turns.slice(step.turnsSent, number - 1).findIndex((turn) => (turn.assertions ?? []).length > 0);
+        if (checked !== -1) return `turn ${step.turnsSent + checked + 1} has checks of its own, so it is not skipped`;
       } else if (!left.includes(item.entry)) return `answers entry ${item.entry} is not one left`;
     }
     return null;
@@ -659,11 +702,14 @@ function runStep(run, uatCase, brief) {
     paceOnQuota(run, `turn ${step.turnsRun + 1} of ${uatCase.id}`);
     const reply = judgement(step, 'reply', replyPrompt(step, text), acceptReply(step, text));
     if (reply.action === 'end') {
-      ended = `The agent ended its turn and the step ended there, unanswered: ${reply.reason}`;
+      const check = reply.why === 'stop point' ? `, at check ${reply.check}` : '';
+      ended = `The agent ended its turn and the step ended there, unanswered (${reply.why}${check}): ${reply.reason}`;
       break;
     }
-    const sentTurn = reply.questions.some((item) => item.entry === 'turn');
-    if (sentTurn) step.turnsSent += 1;
+    const turnItem = reply.questions.find((item) => item.entry === 'turn');
+    const sentTurn = turnItem !== undefined;
+    // The turns before the one sent are skipped.
+    if (sentTurn) step.turnsSent = turnItem.turn ?? step.turnsSent + 1;
     for (const item of reply.questions) {
       if (Number.isInteger(item.entry)) step.used.add(item.entry);
       if (item.entry === null) runMjs('drift', runDir, '--when', item.question, '--intent', item.answer, '--reason', item.reason);
@@ -674,6 +720,7 @@ function runStep(run, uatCase, brief) {
     if (sentTurn && (uatCase.turns[turn - 1].assertions ?? []).length > 0) runMjs('check', runDir, '--turn', String(turn));
   }
 
+  writeFileSync(join(stepDir, ENDED_FILE), `${ended}\n`);
   runMjs('check', runDir);
   const checks = readJson(join(stepDir, 'checks.json'));
   const summary = readerMjs('summary', stepDir);

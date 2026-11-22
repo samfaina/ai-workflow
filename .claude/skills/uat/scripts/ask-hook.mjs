@@ -15,11 +15,13 @@
 //   joined with ", ", or the free text an entry says to type in, which Claude
 //   Code carries as the question's "Other" (#165). A question no entry fits
 //   gets a drift answer among its options, recorded in the case file through
-//   `run.mjs drift`, with `drift: true`.
+//   `run.mjs drift`, with `drift: true`. A drift answer names the closest
+//   entry and why its `when` does not fit.
 // - the end of the step, at a stop point: `continue: false` with the reason,
-//   as a person typing `hecho` ends it.
+//   as a person typing `hecho` ends it. It names the check that expects it.
 // - a denial with the reason, when the judgement call failed, or its answer
-//   was refused twice: a label that is not an option, or a question left out.
+//   was refused twice: a label that is not an option, a question left out, a
+//   drift answer that names no closest entry, or an end that names no check.
 //   The judgement names each question by its index in the call, not its text,
 //   which it can miscopy.
 //
@@ -72,16 +74,16 @@ function askPrompt(uatCase, questions) {
     'You stand in for the person in an unattended run of a UAT case: a Claude Code session running one of the kit\'s skills asked the questions below through AskUserQuestion, with options to choose from. Decide by the rules below what the person answers, or whether the step ends here. Follow the rules of an unattended run for a question asked with options.\n',
     section('Rules (ANSWERING.md)', readFileSync(join(skillDir, 'ANSWERING.md'), 'utf8')),
     section('The case', `${uatCase.title}: the person typed \`${uatCase.command}\`.`),
-    section("The case's checks, which say where it expects the agent to stop", asJson(uatCase.assertions ?? [])),
+    section("The case's checks, which say where it expects the agent to stop", asJson((uatCase.assertions ?? []).map((check, index) => ({ index, ...check })))),
     section('`answers` entries', asJson((uatCase.answers ?? []).map((entry, index) => ({ index, ...entry })))),
     section('The questions, with the options of this run', asJson(questions.map((q, index) => ({ index, ...q })))),
     section(
       'Your reply',
       [
-        'One JSON object and nothing else, either:',
+        'First decide which entry fits each question, from the question and the entry\'s `when` alone; only then look at the options. Then reply with one JSON object and nothing else, either:',
         '',
-        '- `{ "action": "answer", "answers": [...] }` with one answer per question, each `{ "question": <its index above>, "labels": ["<option label>", ...], "entry": <index>, "reason": "..." }`: one label, or one or more for a multiSelect question, each copied exactly from that question\'s options. `entry` is the index of the `answers` entry that fits, or `null` for a drift answer when none fits. When the entry that fits says to type the answer in and no option fulfils it, give `"other": "<the text>"` in place of `labels`; a drift answer is always among the options.',
-        '- `{ "action": "end", "reason": "..." }` at a stop point.',
+        '- `{ "action": "answer", "answers": [...] }` with one answer per question, each `{ "question": <its index above>, "labels": ["<option label>", ...], "entry": <index>, "reason": "..." }`: one label, or one or more for a multiSelect question, each copied exactly from that question\'s options. `entry` is the index of the `answers` entry that fits. When the entry that fits says to type the answer in and no option fulfils it, give `"other": "<the text>"` in place of `labels`. `entry` is `null` for a drift answer when none fits, always among the options, and it names the closest entry in `"closest": { "entry": <n>, "why": "<why its when does not fit>" }`.',
+        '- `{ "action": "end", "check": <its index above>, "reason": "..." }` at a stop point, naming the check that expects the agent to stop here.',
       ].join('\n'),
     ),
   ].join('\n');
@@ -95,9 +97,15 @@ function questionIndex(answer, questions) {
   return questions.findIndex((q) => q.question === named);
 }
 
-// Why an ask judgement is refused, or null.
-function refusalOf(value, questions, entries) {
-  if (value.action === 'end') return typeof value.reason === 'string' && value.reason.trim() ? null : 'an end needs its reason';
+// Why an ask judgement is refused, or null. `entries` and `checks` are how
+// many `answers` entries and checks the case has.
+function refusalOf(value, questions, entries, checks) {
+  if (value.action === 'end') {
+    if (typeof value.reason !== 'string' || !value.reason.trim()) return 'an end needs its reason';
+    if (Number.isInteger(value.check) && value.check >= 0 && value.check < checks) return null;
+    if (checks === 0) return 'the case has no checks, so no question of it is a stop point';
+    return `an end at a stop point names the check that expects the agent to stop, as "check": its index from 0 to ${checks - 1}; when no check expects it, it is not a stop point`;
+  }
   if (value.action !== 'answer') return '"action" must be "answer" or "end"';
   if (!Array.isArray(value.answers)) return '"answers" must list one answer per question';
   for (const answer of value.answers) {
@@ -110,6 +118,11 @@ function refusalOf(value, questions, entries) {
     const drift = answer.entry === null;
     if (!drift && !(Number.isInteger(answer.entry) && answer.entry >= 0 && answer.entry < entries)) return `${answer.entry} is not the index of an answers entry, nor null for a drift answer`;
     if (typeof answer.reason !== 'string' || !answer.reason.trim()) return `the answer to "${q.question}" needs its reason`;
+    if (drift && entries > 0) {
+      const closest = answer.closest;
+      const named = Number.isInteger(closest?.entry) && closest.entry >= 0 && closest.entry < entries;
+      if (!named || typeof closest.why !== 'string' || !closest.why.trim()) return `the drift answer to "${q.question}" names the closest answers entry, as "closest": { "entry": <its index>, "why": "<why its when does not fit>" }`;
+    }
     const choices = labelsOf(q).map((label) => `"${label}"`).join(', ');
     if (answer.other !== undefined) {
       if (drift) return `the drift answer to "${q.question}" must be among its options, ${choices}, not free text`;
@@ -149,7 +162,7 @@ function answer(options, event) {
   const entries = (uatCase.answers ?? []).length;
   let value;
   try {
-    value = judgement(step, 'ask', askPrompt(uatCase, questions), (reply) => refusalOf(reply, questions, entries));
+    value = judgement(step, 'ask', askPrompt(uatCase, questions), (reply) => refusalOf(reply, questions, entries, (uatCase.assertions ?? []).length));
   } catch (error) {
     if (!(error instanceof Refused)) throw error;
     log({ decision: 'deny', reason: error.message });
