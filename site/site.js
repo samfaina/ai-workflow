@@ -285,8 +285,9 @@ function drawUpstreams() {
 
 const routeLines = document.getElementById('route-lines');
 const stationDetail = document.getElementById('station-detail');
-// The selected station, which starts at the gate.
-const routeSelection = { route: 'standard', station: 'approval' };
+// The selected station, which starts at the standard route's first, so that
+// every gate looks alike until one is picked.
+const routeSelection = { route: 'standard', station: 'intake' };
 
 function drawRoutes() {
   routeLines.replaceChildren(
