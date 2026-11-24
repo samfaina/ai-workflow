@@ -247,6 +247,14 @@
           <button class="copy" type="button">Copy</button>
         </div>
       </article>
+      <article>
+        <h3>On Windows</h3>
+        <p class="muted">The kit needs PowerShell 7.3 or later (<code>pwsh</code>), so that Claude Code's PowerShell tool runs in it. Windows PowerShell 5.1 isn't supported.</p>
+        <div class="copyable">
+<pre class="block"><code>winget install --id Microsoft.PowerShell --source winget</code></pre>
+          <button class="copy" type="button">Copy</button>
+        </div>
+      </article>
     </div>
   </div>
 </section>
@@ -272,7 +280,7 @@
         <ul class="plain">
           <li><code>docs/agents/tracker.md</code>, <code>vcs.md</code> and <code>checks.md</code>, the adapters, and <code>domain.md</code>.</li>
           <li>An <code>## Agent skills</code> block pointing at all four, in <code>AGENTS.md</code>, or in <code>CLAUDE.md</code> when only that exists.</li>
-          <li><code>.aw/</code> in <code>.gitignore</code>, and on your yes, <code>permissions.deny</code> entries against force-push and <code>--no-verify</code>, and turning Matt Pocock's plugin off in the repo. It warns when Node 18 or later is missing.</li>
+          <li><code>.aw/</code> in <code>.gitignore</code>, and on your yes, <code>permissions.deny</code> entries against force-push and <code>--no-verify</code>, and turning Matt Pocock's plugin off in the repo. It warns when Node 18 or later is missing, and on Windows when PowerShell 7.3 or later (<code>pwsh</code>) is.</li>
         </ul>
       </article>
     </div>

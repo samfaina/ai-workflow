@@ -43,7 +43,7 @@ import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync,
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { auto, needsGitHub } from './driver.mjs';
+import { auto, needsGitHub, requirePwsh } from './driver.mjs';
 import { fingerprint, fixtureFile, skillFolderOf } from './fingerprint.mjs';
 import { logFolder } from './log-folder.mjs';
 import { Refused } from './refused.mjs';
@@ -120,6 +120,7 @@ function loadState(runDir) {
 
 function init(options) {
   if (!options.source) usage('init needs --source <repo>, or the UAT_SOURCE environment variable');
+  requirePwsh();
   const runDir = resolve(options.run);
   const source = realpathSync(options.source);
   const casesDir = resolve(options['cases-dir'] ?? join(skillDir, 'cases'));

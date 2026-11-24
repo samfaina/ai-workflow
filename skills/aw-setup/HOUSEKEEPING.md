@@ -1,6 +1,6 @@
 # Housekeeping
 
-Four repo-level changes `aw-setup` checks on every run. Each one is idempotent: a re-run finds it already applied and changes nothing.
+Five repo-level changes `aw-setup` checks on every run. Each one is idempotent: a re-run finds it already applied and changes nothing.
 
 ## `.aw/` in `.gitignore`
 
@@ -38,6 +38,13 @@ Other harnesses have no `permissions.deny`; skip this offer there.
 
 - **Explore:** run `node --version`.
 - **Warn** when it fails or reports a major version below 18: "Node 18 or later not found. `aw-check-spec` cannot run its script, so specs are checked by reading and the result is never script-verified. Install Node 18+ to get the script-verified spec check." Setup carries on either way.
+
+## PowerShell (Windows)
+
+On Windows the kit needs PowerShell 7.3 or later (`pwsh`). Claude Code's PowerShell tool runs the agent's commands in `pwsh` when it finds it and falls back to Windows PowerShell 5.1 otherwise, where quoted arguments, `2>&1` and `&&` do not work as the kit's commands expect.
+
+- **Explore:** on Windows only, run `pwsh --version`. On other platforms there is no check.
+- **Warn** when it fails or reports a version below 7.3: "PowerShell 7.3 or later (`pwsh`) not found. On Windows the kit needs it, so that Claude Code's PowerShell tool runs in it; Windows PowerShell 5.1 isn't supported. Install it with `winget install --id Microsoft.PowerShell --source winget`." Setup carries on either way.
 
 ## Matt Pocock's plugin (Claude Code)
 

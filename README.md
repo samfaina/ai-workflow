@@ -41,6 +41,14 @@ npx skills add samfaina/ai-workflow --skill aw-<name>
 
 Each skill folder is self-contained, with its license, references and scripts, so a single skill works on its own. The exceptions are the phases that hand their steps to a phase procedure: `aw-build`, `aw-verify` and `aw-review` each need their phase procedure (`aw-build-steps`, and so on) installed too, and `aw-converge` needs `aw-converge-steps` and all three. `aw-implement` needs the same four.
 
+### On Windows
+
+The kit needs PowerShell 7.3 or later (`pwsh`) on Windows, so that Claude Code's PowerShell tool runs in it. The tool uses `pwsh` when it finds it and falls back to Windows PowerShell 5.1 otherwise, where the agents' commands fail: quoted arguments reach native commands split, a native command's stderr becomes an error under `2>&1`, there is no `&&` or `||`, and output comes back in the wrong encoding. Windows PowerShell 5.1 isn't supported. Install PowerShell 7 with:
+
+```powershell
+winget install --id Microsoft.PowerShell --source winget
+```
+
 ## Switching plugins on or off per repo
 
 Claude Code decides which plugins are active in a repo from `enabledPlugins` in the settings files. Keys are `<plugin>@<marketplace>`. A project's `.claude/settings.json` (shared) or `.claude/settings.local.json` (yours only) overrides your user settings.
@@ -67,7 +75,7 @@ To turn the kit off in one repo without uninstalling it, set `"ai-workflow@samfa
 
 ## Configuring a repo
 
-Run `/aw-setup` once in each repo that uses the workflow. One interview writes three adapters to `docs/agents/` (`tracker.md`, `vcs.md`, `checks.md`), the domain doc (`domain.md`) and an `## Agent skills` block pointing to all four in `AGENTS.md`, or in `CLAUDE.md` when only that exists. The adapters translate the kit's canonical operations into the repo's tools and set what the agent may do itself (`write`) and what it only drafts for you in `.aw/drafts/` (`draft`). Setup also adds `.aw/` to `.gitignore`, offers `permissions.deny` entries against force-push and `--no-verify`, warns when Node is missing, and offers to turn Pocock's plugin off in the repo. Re-run it to change anything; it updates in place.
+Run `/aw-setup` once in each repo that uses the workflow. One interview writes three adapters to `docs/agents/` (`tracker.md`, `vcs.md`, `checks.md`), the domain doc (`domain.md`) and an `## Agent skills` block pointing to all four in `AGENTS.md`, or in `CLAUDE.md` when only that exists. The adapters translate the kit's canonical operations into the repo's tools and set what the agent may do itself (`write`) and what it only drafts for you in `.aw/drafts/` (`draft`). Setup also adds `.aw/` to `.gitignore`, offers `permissions.deny` entries against force-push and `--no-verify`, warns when Node is missing, or on Windows when PowerShell 7.3 or later is, and offers to turn Pocock's plugin off in the repo. Re-run it to change anything; it updates in place.
 
 A repo without configuration still works on safe defaults: no tracker, and pushing, opening a review request and merging left as drafts. [`docs/configuration.md`](docs/configuration.md) describes the layer and its defaults.
 

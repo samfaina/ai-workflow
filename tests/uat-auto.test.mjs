@@ -1023,14 +1023,14 @@ test('a run stopped by a failed session resumes with auto, which restarts that s
   assert.deepEqual(Object.keys(run.state().results), ['a', 'b']);
 });
 
-test('the case\'s shell lines run in the working copy before the session, which runs in the environment they leave', (t) => {
-  const run = makeRun(t, [caseFile('a', { shell: ["$env:UAT_PROBE = 'set by the shell lines'", "Set-Content -Path shell.txt -Value 'ran'"] })]);
+test('the case\'s shell lines run in the working copy before the session, which runs in the environment they leave, non-ASCII text included', (t) => {
+  const run = makeRun(t, [caseFile('a', { shell: ["$env:UAT_PROBE = 'set by the shell lines: año, café'", "Set-Content -Path shell.txt -Value 'ran'"] })]);
   const fake = fakeClaude(run, { turns: [{ text: 'Done.' }], judgements: [{ grade: pass() }] });
 
   const result = auto(run, fake);
 
   assert.equal(result.status, 0, result.report);
-  assert.equal(fake.sessions()[0].env.UAT_PROBE, 'set by the shell lines');
+  assert.equal(fake.sessions()[0].env.UAT_PROBE, 'set by the shell lines: año, café');
   assert.equal(readText(join(run.runDir, 'steps', 'a', 'repo', 'shell.txt')).trim(), 'ran');
 });
 

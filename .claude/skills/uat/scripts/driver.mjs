@@ -28,11 +28,12 @@
 // that repo alone. A batch whose cases need GitHub does not start without it.
 //
 // The driver never runs with ANTHROPIC_API_KEY set, so a run is never billed
-// to the API. It stays inside the plan's quota by the rate-limit readings in
-// the case sessions' own streams, before each case and each turn: the
-// five-hour window over --max-five-hour waits until it resets, and the weekly
-// window over --max-weekly stops the run, as does a turn the rate limit
-// refuses. Both thresholds are required, from the flags or UAT_MAX_FIVE_HOUR
+// to the API, and on Windows it never starts without PowerShell 7.3 or later
+// (pwsh), the shell the agent under test runs its PowerShell commands in. It
+// stays inside the plan's quota by the rate-limit readings in the case
+// sessions' own streams, before each case and each turn: the five-hour window
+// over --max-five-hour waits until it resets, and the weekly window over
+// --max-weekly stops the run, as does a turn the rate limit refuses. Both thresholds are required, from the flags or UAT_MAX_FIVE_HOUR
 // and UAT_MAX_WEEKLY, since no default is committed. A run it stops can be
 // resumed with `auto --run <dir>`: a step left without a result is reset and
 // run again from its restore point.
@@ -126,12 +127,12 @@ function githubEnv(stepDir) {
   return env;
 }
 
-// A case's `shell` or `cleanup` lines, run in one PowerShell session in the
-// working copy, as the person runs them in a terminal: the cases write them for
-// PowerShell. `where` says where they run: the working copy, the step folder
-// that keeps their script, and the environment they start from. Returns the
-// environment the lines leave. A line that fails stops the run, naming the
-// case. The token stays out of the file that carries that environment back,
+// A case's `shell` or `cleanup` lines, run in one `pwsh` session (PowerShell
+// 7.3 or later) in the working copy, as the person runs them in a terminal:
+// the cases write them for pwsh, on every platform. `where` says where they
+// run: the working copy, the step folder that keeps their script, and the
+// environment they start from. Returns the environment the lines leave. A
+// line that fails stops the run, naming the case. The token stays out of the file that carries that environment back,
 // since the step folder is readable by the grading call.
 function runLines(id, field, lines, where) {
   const { workdir, stepDir, env } = where;
@@ -145,10 +146,8 @@ function runLines(id, field, lines, where) {
     `[IO.File]::WriteAllText(${quote(envFile)}, ($uatLeft | ConvertTo-Json -Compress))`,
   ];
   const file = join(stepDir, `${field}.ps1`);
-  const bom = String.fromCharCode(0xfeff); // so Windows PowerShell reads the file as UTF-8
-  writeFileSync(file, `${bom}${body.join('\n')}\n`);
-  const shell = process.platform === 'win32' ? 'powershell.exe' : 'pwsh';
-  const result = spawnSync(shell, ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', file], { cwd: workdir, env, encoding: 'utf8' });
+  writeFileSync(file, `${body.join('\n')}\n`);
+  const result = spawnSync('pwsh', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', file], { cwd: workdir, env, encoding: 'utf8' });
   if (result.error || result.status !== 0 || !existsSync(envFile)) {
     const why = result.error ? result.error.message : `exit ${result.status}: ${tail(`${result.stdout}${result.stderr}`)}`;
     throw new Refused(`${id}: its ${field} lines failed in ${workdir}: ${why}`);
@@ -588,6 +587,27 @@ function olderThan(version, minimum) {
   return false;
 }
 
+// On Windows a UAT run needs PowerShell 7.3 or later (`pwsh`), the shell the
+// kit requires there: Claude Code's PowerShell tool runs the agent's commands
+// in it when it finds it, and in Windows PowerShell 5.1 otherwise, where they
+// fail. run.mjs init and auto check it before the first step. `version` gives
+// what `pwsh --version` prints, or null when it does not run.
+const PWSH_MINIMUM = '7.3.0';
+const PWSH_INSTALL = 'winget install --id Microsoft.PowerShell --source winget';
+function pwshVersion() {
+  const result = spawnSync('pwsh', ['--version'], { encoding: 'utf8' });
+  return result.error || result.status !== 0 ? null : result.stdout.trim();
+}
+export function requirePwsh({ platform = process.platform, version = pwshVersion } = {}) {
+  if (platform !== 'win32') return;
+  const found = version();
+  if (found !== null && !olderThan(found, PWSH_MINIMUM)) return;
+  const what = found === null ? '`pwsh --version` does not run' : `\`pwsh --version\` reports ${found}`;
+  throw new Refused(
+    `on Windows a UAT run needs PowerShell 7.3 or later (pwsh), and ${what}: without it the agent under test runs its PowerShell commands in Windows PowerShell 5.1, which the kit does not support. Install it with \`${PWSH_INSTALL}\`, then run again`,
+  );
+}
+
 // The init event of a session started with `args`, which is then killed with
 // what it started: on Windows the whole tree, since a batch file's cmd.exe
 // does not pass the kill on.
@@ -771,6 +791,7 @@ export async function auto(options) {
   if (process.env.ANTHROPIC_API_KEY) {
     throw new Refused('ANTHROPIC_API_KEY is set: an unattended run spends the plan, never the API. Unset it and run auto again');
   }
+  requirePwsh();
   const thresholds = thresholdsOf(options);
   const runDir = resolve(options.run);
   const stateFile = join(runDir, 'state.json');
