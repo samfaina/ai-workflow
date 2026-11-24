@@ -134,6 +134,13 @@
     "date": "2026-11-10T18:16:44.000Z",
     "issue": 105
   },
+  "aw-setup-local": {
+    "verdict": "Pass",
+    "fingerprint": "fbb62b1029b24ec06a3dadd13ed04fe286ee6cbf0bbbc8012518407b7a405c1f",
+    "kitCommit": "4be14ad2b59b4e874f905123f03507fa8dd0dd84",
+    "date": "2026-11-24T17:25:24.020Z",
+    "issue": 219
+  },
   "aw-setup-none": {
     "verdict": "Pass",
     "fingerprint": "8a1da2949fce4afe6be5d82b6cb0e74757342d91733d678d17067cce70343a8f",
