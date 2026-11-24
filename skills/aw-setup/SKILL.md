@@ -10,7 +10,7 @@ Write the per-repo configuration the kit's skills read:
 
 - **Adapters** in `docs/agents/`: `tracker.md`, `vcs.md` and `checks.md`, each translating the kit's canonical operations into this repo's tooling and setting the access level of each write operation, plus the domain doc, `domain.md`, which says where the glossary and ADRs live.
 - **The pointer block**: an `## Agent skills` section in `AGENTS.md`, or in `CLAUDE.md` when only that exists, through which every skill finds the adapters.
-- **Housekeeping**: `.aw/` in `.gitignore`, the `permissions.deny` offer, the Node warning and the Pocock check.
+- **Housekeeping**: `.aw/` in `.gitignore`, the `permissions.deny` offer, the Node warning, the PowerShell warning on Windows and the Pocock check.
 
 This is an interview, not a script. Explore, propose, confirm, then write. Re-running it updates what exists in place.
 
@@ -134,7 +134,7 @@ Done when the three adapters, the domain doc, the block and the accepted houseke
 
 ### 5. Report
 
-Tell the user what was written and what changed, and any warning from housekeeping (Node missing, Pocock's plugin left on). Say they can edit `docs/agents/*.md` by hand or re-run `/aw-setup` at any time. Then name the next skill: `/aw-intake`, to start a task. Done when the report lists every file written or changed and every warning.
+Tell the user what was written and what changed, and any warning from housekeeping (Node missing, PowerShell 7.3 or later missing on Windows, Pocock's plugin left on). Say they can edit `docs/agents/*.md` by hand or re-run `/aw-setup` at any time. Then name the next skill: `/aw-intake`, to start a task. Done when the report lists every file written or changed and every warning.
 
 ## Credits
 
