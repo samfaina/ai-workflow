@@ -103,7 +103,9 @@ const writable = (path) => isInside(path) || addedWorktrees().some((root) => isI
 // The GitHub repo the working copy's origin names: where gh goes by default.
 const originRepo = () => githubRepo(gitOut(workdir, ['remote', 'get-url', 'origin']) ?? '');
 
-const GH_READ_COMMANDS = new Set(['search', 'status', 'browse', 'help', 'version', 'completion', '--version', '--help', '-h']);
+const GH_READ_COMMANDS = new Set(['search', 'status', 'browse', 'help', 'version', 'completion']);
+// The flags that, given to gh with no command, print its version or its help.
+const GH_READ_FLAGS = new Set(['--version', '--help', '-h']);
 const GH_READ_SUBCOMMANDS = new Set(['list', 'view', 'status', 'diff', 'checks', 'clone', 'checkout', 'download', 'watch', 'get']);
 // Writes no case makes, whatever repo they name: on the account, a gist or
 // gh's own setup, or making, forking, renaming or doing away with a repo.
@@ -139,7 +141,8 @@ function ghDenial(words, assigned) {
   const [group, sub] = args;
   const graphql = group === 'api' && sub === 'graphql';
   let read;
-  if (graphql) read = !fields.some((field) => /\bmutation\b|^(query=)?@/.test(field));
+  if (args.length === 0) read = words.length > 0 && words.every((word) => GH_READ_FLAGS.has(word));
+  else if (graphql) read = !fields.some((field) => /\bmutation\b|^(query=)?@/.test(field));
   else if (group === 'api') read = ['GET', 'HEAD'].includes((method ?? (fields.length > 0 ? 'POST' : 'GET')).toUpperCase());
   else read = GH_READ_COMMANDS.has(group) || (group === 'auth' && sub === 'status') || GH_READ_SUBCOMMANDS.has(sub);
   if (read) return null;

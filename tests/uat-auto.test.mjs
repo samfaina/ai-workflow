@@ -644,6 +644,8 @@ test('gh reads are allowed, and a gh write or a push or fetch aimed at a repo ot
     ['gh repo delete --yes', 'deny'],
     ['gh repo create someone/new --private', 'deny'],
     ['git remote add other https://github.com/someone/project.git && git push other HEAD', 'deny'],
+    ['gh issue create -R someone/project -t x -b y 2>&1', 'deny'],
+    ['gh issue create -R someone/project -t x -b y >/dev/null 2>&1', 'deny'],
   ];
   const fake = fakeClaude(run, {
     turns: [{ tools: commands.map(([command]) => bash(command)), text: 'Done.' }],
@@ -657,6 +659,29 @@ test('gh reads are allowed, and a gh write or a push or fetch aimed at a repo ot
   const log = readLines(join(run.runDir, 'steps', 'a', 'permissions.jsonl'));
   assert.deepEqual(log.map((entry) => [entry.detail, entry.decision]), commands);
   for (const entry of log.filter((e) => e.decision === 'deny')) assert.match(entry.reason, /o\/scratch/, entry.detail);
+});
+
+test('gh --version, --help and -h are reads, with or without a redirection, even where the origin is not on GitHub, and a step with only them is a Pass', (t) => {
+  const run = makeRun(t, [caseFile('a')]);
+  const commands = [
+    'glab --version 2>&1 | head -1; gh --version 2>&1 | head -1',
+    'glab --version; gh --version',
+    'gh --version >/dev/null 2>&1',
+    'gh --version &>/dev/null',
+    'gh --help',
+    'gh -h',
+  ];
+  const fake = fakeClaude(run, {
+    turns: [{ tools: commands.map(bash), text: 'Done.' }],
+    judgements: [{ grade: pass() }],
+  });
+
+  const result = auto(run, fake);
+  assert.equal(result.status, 0, result.report);
+
+  const log = readLines(join(run.runDir, 'steps', 'a', 'permissions.jsonl'));
+  assert.deepEqual(log.map((entry) => [entry.detail, entry.decision]), commands.map((command) => [command, 'allow']));
+  assert.equal(run.state().results.a.verdict, 'Pass');
 });
 
 test('a case session and its shell lines get GH_TOKEN from UAT_GH_TOKEN, and git asks none of the stored credential helpers', (t) => {
