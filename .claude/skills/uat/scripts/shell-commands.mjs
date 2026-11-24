@@ -42,10 +42,10 @@ function commandsOf(line) {
   let quote = null;
   let pending = [];
   // Whether the next word is a redirection's target, and no argument.
-  let target = false;
+  let targetNext = false;
   const endWord = () => {
-    if (word !== null && !target) commands.at(-1).push(word);
-    if (word !== null) target = false;
+    if (word !== null && !targetNext) commands.at(-1).push(word);
+    if (word !== null) targetNext = false;
     word = null;
   };
   for (let i = 0; i < line.length; i += 1) {
@@ -70,14 +70,14 @@ function commandsOf(line) {
       } else {
         i = at - 1;
       }
-    } else if (ch === '>' || ch === '<' || (ch === '&' && line[i + 1] === '>')) {
-      if (!target && STREAM.test(word ?? '')) word = null;
+    } else if (REDIRECTION.test(line.slice(i, i + 3))) {
+      if (!targetNext && STREAM.test(word ?? '')) word = null;
       endWord();
-      i += line.slice(i).match(REDIRECTION)[0].length - 1;
-      target = true;
+      i += line.slice(i, i + 3).match(REDIRECTION)[0].length - 1;
+      targetNext = true;
     } else if (/[;&|(){}`\n]/.test(ch)) {
       endWord();
-      target = false;
+      targetNext = false;
       if (commands.at(-1).length > 0) commands.push([]);
       if (ch === '\n' && pending.length > 0) {
         i = pastHeredocs(line, i + 1, pending) - 1;
