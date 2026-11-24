@@ -6,6 +6,13 @@
 
 // A heredoc's delimiter word after <<, as in 'EOF', "EOF", \EOF or E"OF".
 const HEREDOC_WORD = /^(?:'[^'\n]*'|"[^"\n]*"|[^\s;&|()<>`'"])+/;
+// A redirection's operator, as in > >> < <> >| <<< >& <& &> or &>>: the stream
+// it names comes before it, and its target after it, attached or as the next
+// word.
+const REDIRECTION = /^(?:&>>?|<<<|>>|>&|<&|>\||<>|[<>])/;
+// The word just before a redirection that names its stream and is no
+// argument: a number, or PowerShell's * for all streams.
+const STREAM = /^(?:\d+|\*)$/;
 
 // Where the body of each heredoc in `pending` ends, starting at `from`: past
 // the line that is its delimiter. Only a quoted delimiter's body is skipped,
@@ -26,15 +33,19 @@ function pastHeredocs(line, from, pending) {
 }
 
 // The commands of a line, each as its words with quotes removed: the line is
-// split at ; & | ( ) { } ` and line ends outside quotes, and the body of a
-// heredoc whose delimiter is quoted is left out.
+// split at ; & | ( ) { } ` and line ends outside quotes, a redirection is left
+// out with its target, and so is the body of a heredoc whose delimiter is
+// quoted.
 function commandsOf(line) {
   const commands = [[]];
   let word = null;
   let quote = null;
   let pending = [];
+  // Whether the next word is a redirection's target, and no argument.
+  let target = false;
   const endWord = () => {
-    if (word !== null) commands.at(-1).push(word);
+    if (word !== null && !target) commands.at(-1).push(word);
+    if (word !== null) target = false;
     word = null;
   };
   for (let i = 0; i < line.length; i += 1) {
@@ -59,8 +70,14 @@ function commandsOf(line) {
       } else {
         i = at - 1;
       }
+    } else if (ch === '>' || ch === '<' || (ch === '&' && line[i + 1] === '>')) {
+      if (!target && STREAM.test(word ?? '')) word = null;
+      endWord();
+      i += line.slice(i).match(REDIRECTION)[0].length - 1;
+      target = true;
     } else if (/[;&|(){}`\n]/.test(ch)) {
       endWord();
+      target = false;
       if (commands.at(-1).length > 0) commands.push([]);
       if (ch === '\n' && pending.length > 0) {
         i = pastHeredocs(line, i + 1, pending) - 1;
