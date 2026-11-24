@@ -134,6 +134,13 @@
     "date": "2026-11-10T18:16:44.000Z",
     "issue": 105
   },
+  "aw-setup-none": {
+    "verdict": "Pass",
+    "fingerprint": "8a1da2949fce4afe6be5d82b6cb0e74757342d91733d678d17067cce70343a8f",
+    "kitCommit": "a429647da568cdf4156115d1d8c55ae795bb5724",
+    "date": "2026-11-24T17:06:13.178Z",
+    "issue": 217
+  },
   "aw-ship-merge-review-host": {
     "verdict": "Pass",
     "fingerprint": "b57f8b632d330571771d2de0988991b45cb4563f13f974e3fc812085bf05adaa",
