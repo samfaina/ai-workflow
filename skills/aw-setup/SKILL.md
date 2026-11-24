@@ -55,13 +55,13 @@ Take the sections in order, one answer each. Lead each with the recommended answ
 
 Then the tracker's access: recommend `write` for local markdown, GitHub and GitLab, `draft` for other until its commands are proven, and `draft` for none, where every write leaves a draft. Ask for per-operation overrides only if the user wants any.
 
-A GitHub or GitLab tracker needs the repo reachable: `gh repo view` or `glab repo view` prints the project from this directory. If it does not, record the tracker anyway, and tell the user that every tracker operation fails until `repo view` prints the project. Name what stands in the way, in the order they do it:
+A GitHub or GitLab tracker needs the repo reachable: `gh repo view` or `glab repo view` prints the project from this directory. If it does not, record the tracker anyway, and warn the user that every tracker operation fails until they have done each of these steps, in this order, and `gh repo view` or `glab repo view` prints the project:
 
-1. The CLI installed, `gh` or `glab`, when it is not on the PATH.
+1. The CLI installed: `gh` or `glab`.
 2. Logged in to the host: `gh auth login` or `glab auth login`.
 3. A remote in this clone on that host, naming the project recorded.
 
-Name every step not yet done; a step you cannot check, such as logging in while the CLI is missing, is not done.
+Name every step not yet done in the warning; a step you cannot check, such as logging in while the CLI is missing, is not done.
 
 **B. VCS.** Propose each value from what step 1 found:
 
