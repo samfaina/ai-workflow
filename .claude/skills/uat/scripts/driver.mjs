@@ -33,8 +33,9 @@
 // stays inside the plan's quota by the rate-limit readings in the case
 // sessions' own streams, before each case and each turn: the five-hour window
 // over --max-five-hour waits until it resets, and the weekly window over
-// --max-weekly stops the run, as does a turn the rate limit refuses. Both thresholds are required, from the flags or UAT_MAX_FIVE_HOUR
-// and UAT_MAX_WEEKLY, since no default is committed. A run it stops can be
+// --max-weekly stops the run, as does a turn the rate limit refuses. Both
+// thresholds are required, from the flags or UAT_MAX_FIVE_HOUR and
+// UAT_MAX_WEEKLY, since no default is committed. A run it stops can be
 // resumed with `auto --run <dir>`: a step left without a result is reset and
 // run again from its restore point.
 
@@ -132,8 +133,9 @@ function githubEnv(stepDir) {
 // the cases write them for pwsh, on every platform. `where` says where they
 // run: the working copy, the step folder that keeps their script, and the
 // environment they start from. Returns the environment the lines leave. A
-// line that fails stops the run, naming the case. The token stays out of the file that carries that environment back,
-// since the step folder is readable by the grading call.
+// line that fails stops the run, naming the case. The token stays out of the
+// file that carries that environment back, since the step folder is readable
+// by the grading call.
 function runLines(id, field, lines, where) {
   const { workdir, stepDir, env } = where;
   const envFile = join(stepDir, `${field}-env.json`);

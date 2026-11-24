@@ -24,7 +24,11 @@ const refusesForPwsh = (message) => {
 };
 
 test('on Windows, requirePwsh refuses when pwsh is missing or older than 7.3, and lets 7.3 or later through', () => {
-  assert.throws(() => requirePwsh({ platform: 'win32', version: () => null }), Refused);
+  assert.throws(() => requirePwsh({ platform: 'win32', version: () => null }), (error) => {
+    assert.ok(error instanceof Refused);
+    refusesForPwsh(error.message);
+    return true;
+  });
   assert.throws(() => requirePwsh({ platform: 'win32', version: () => 'PowerShell 7.2.24' }), (error) => {
     assert.ok(error instanceof Refused);
     refusesForPwsh(error.message);
@@ -35,13 +39,6 @@ test('on Windows, requirePwsh refuses when pwsh is missing or older than 7.3, an
   for (const version of ['PowerShell 7.3.0', 'PowerShell 7.4.6', 'PowerShell 7.5.0-preview.2', 'PowerShell 8.0.0']) {
     assert.doesNotThrow(() => requirePwsh({ platform: 'win32', version: () => version }), version);
   }
-});
-
-test('on Windows, the refusal for a missing pwsh names the requirement and the install command', () => {
-  assert.throws(() => requirePwsh({ platform: 'win32', version: () => null }), (error) => {
-    refusesForPwsh(error.message);
-    return true;
-  });
 });
 
 test('off Windows, requirePwsh checks nothing', () => {
