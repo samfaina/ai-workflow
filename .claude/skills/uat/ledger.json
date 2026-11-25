@@ -172,6 +172,12 @@
     "kitCommit": "43edb84e95c6167117de192178db4e4835560da1",
     "date": "2026-11-25T09:26:13.545Z"
   },
+  "aw-setup-pocock": {
+    "verdict": "Pass",
+    "fingerprint": "ad08ef2a8832e1f42af10893b6a43fcdd80a51f66cffacdd8539bb54c7cd3cf8",
+    "kitCommit": "4cfc50ce311dfff2fa48996b1c99b0fecead22be",
+    "date": "2026-11-25T15:11:45.064Z"
+  },
   "aw-ship-merge-review-host": {
     "verdict": "Pass",
     "fingerprint": "b57f8b632d330571771d2de0988991b45cb4563f13f974e3fc812085bf05adaa",
