@@ -83,7 +83,9 @@ Show the proposed commands and where each came from. Put it in your chat text or
 
 **D. Domain docs.** Single-context (one `GLOSSARY.md` and `docs/adr/` at the root) unless step 1 found a `GLOSSARY-MAP.md` or monorepo signals (a `pnpm-workspace.yaml`, a `workspaces` field, a populated `packages/*`); then confirm which layout. Then where the glossary and ADRs live: propose the paths step 1 found, or `GLOSSARY.md` and `docs/adr/` when there are none yet. Template [`domain.md`](adapters/domain.md); when the paths differ from the template's, write the repo's paths in its place.
 
-Done when every section has an answer.
+**Housekeeping offers.** After D, ask each housekeeping offer in [`HOUSEKEEPING.md`](HOUSEKEEPING.md) that applies on this run as a question of its own, with its own options: the `permissions.deny` entries, then Matt Pocock's plugin. Never fold an offer into a section's question or into another offer. An offer that does not apply on this run is not asked. The `.aw/` ignore line and the Node and PowerShell warnings ask nothing.
+
+Done when every section and every offer asked has an answer.
 
 ### 3. Confirm
 
