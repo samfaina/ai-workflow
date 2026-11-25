@@ -30,9 +30,9 @@ describe('aw-setup, step 2. Interview', () => {
   test('comes after section D and before the Done when line', () => {
     const d = interview.indexOf('**D. Domain docs.**');
     const rule = interview.indexOf('After D, ask each housekeeping offer');
-    const done = interview.indexOf('Done when every section has an answer');
+    const done = interview.indexOf('Done when every section and every offer asked has an answer');
     assert.ok(d !== -1 && rule > d, 'The housekeeping rule does not come after section D');
-    assert.ok(done === -1 || done > rule, 'The housekeeping rule comes after the Done when line');
+    assert.ok(done > rule, 'The housekeeping rule does not come before the Done when line');
   });
 
   test('is done only when every applicable offer has its answer too', () => {
@@ -50,6 +50,10 @@ describe('aw-setup housekeeping, the permissions.deny offer', () => {
     );
   });
 
+  test('looks for the entries in both settings files, so an offer already accepted is not asked again', () => {
+    assert.match(deny, /\*\*Explore:\*\* read `permissions\.deny` in `\.claude\/settings\.json` and `\.claude\/settings\.local\.json`; an entry in either file is present\./);
+  });
+
   test('keeps the PowerShell copies in the same offer, not a question of their own', () => {
     assert.match(deny, /offer each entry a second time with `PowerShell\(` in place of `Bash\(`, in the same question\./);
   });
@@ -65,7 +69,7 @@ describe('aw-setup housekeeping, the Pocock plugin offer', () => {
   test('is a question of its own with three options', () => {
     assert.match(
       pocock,
-      /\*\*Offer\*\*, when enabled, to turn it off for this repo only, as a question of its own with three options: set `"mattpocock-skills@<marketplace>": false` under `enabledPlugins` in `\.claude\/settings\.json`, set it in `\.claude\/settings\.local\.json`, or leave it on\./,
+      /\*\*Offer\*\*, when enabled, to turn it off for this repo only, as a question of its own with three options: set `"mattpocock-skills@<marketplace>": false` under `enabledPlugins` in `\.claude\/settings\.json`, set it in `\.claude\/settings\.local\.json`, or leave it on\. Recommend `\.claude\/settings\.json`\./,
     );
   });
 

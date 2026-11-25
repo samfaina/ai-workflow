@@ -13,7 +13,7 @@ Five repo-level changes `aw-setup` checks on every run. Each one is idempotent: 
 
 Basic protection with no hook scripts (ADR 0009). The agent never performs the operations in the `## Never allowed` section of the VCS templates in [`adapters/`](adapters/), whatever the settings say; these entries make Claude Code refuse some of those commands too.
 
-- **Explore:** read `permissions.deny` in `.claude/settings.json`.
+- **Explore:** read `permissions.deny` in `.claude/settings.json` and `.claude/settings.local.json`; an entry in either file is present.
 - **Offer** the entries below that are missing, as a question of its own with three options: add them to `.claude/settings.json` (shared with everyone on the repo), add them to `.claude/settings.local.json` (kept personal), or don't add them. Recommend `.claude/settings.json`. When every entry is already present, the offer is not asked.
 
   ```json
@@ -51,6 +51,6 @@ On Windows the kit needs PowerShell 7.3 or later (`pwsh`). Claude Code's PowerSh
 The two kits offer competing skills for the same phases, so Pocock's plugin stays installed at user scope and is turned off per repo.
 
 - **Explore:** find the `enabledPlugins` key naming Pocock's plugin (`mattpocock-skills@<marketplace>`, as `claude plugin list` shows) in `.claude/settings.local.json`, `.claude/settings.json` and `~/.claude/settings.json`. The most specific file that sets the key decides, in that order: the plugin is enabled in this repo when that value is `true`. Skills offered as `mattpocock-skills:<name>` in this session also show it is on.
-- **Offer**, when enabled, to turn it off for this repo only, as a question of its own with three options: set `"mattpocock-skills@<marketplace>": false` under `enabledPlugins` in `.claude/settings.json`, set it in `.claude/settings.local.json`, or leave it on. Update an existing key rather than adding a second one. When the plugin is already off in this repo, the offer is not asked. When the user leaves it on, mention in the report that both kits' skills stay on.
+- **Offer**, when enabled, to turn it off for this repo only, as a question of its own with three options: set `"mattpocock-skills@<marketplace>": false` under `enabledPlugins` in `.claude/settings.json`, set it in `.claude/settings.local.json`, or leave it on. Recommend `.claude/settings.json`. Update an existing key rather than adding a second one. When the plugin is already off in this repo, the offer is not asked. When the user leaves it on, mention in the report that both kits' skills stay on.
 
 The user-scope install is never touched.
