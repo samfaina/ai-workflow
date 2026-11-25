@@ -83,7 +83,7 @@ Show the proposed commands and where each came from. Put it in your chat text or
 
 **D. Domain docs.** Single-context (one `GLOSSARY.md` and `docs/adr/` at the root) unless step 1 found a `GLOSSARY-MAP.md` or monorepo signals (a `pnpm-workspace.yaml`, a `workspaces` field, a populated `packages/*`); then confirm which layout. Then where the glossary and ADRs live: propose the paths step 1 found, or `GLOSSARY.md` and `docs/adr/` when there are none yet. Template [`domain.md`](adapters/domain.md); when the paths differ from the template's, write the repo's paths in its place.
 
-**Housekeeping offers.** After D, ask each housekeeping offer in [`HOUSEKEEPING.md`](HOUSEKEEPING.md) that applies on this run as a question of its own, with its own options: the `permissions.deny` entries, then Matt Pocock's plugin. Never fold an offer into a section's question or into another offer. An offer that does not apply on this run is not asked. The `.aw/` ignore line and the Node and PowerShell warnings ask nothing.
+**Housekeeping offers.** After D, ask each housekeeping offer in [`HOUSEKEEPING.md`](HOUSEKEEPING.md) that applies on this run as a question of its own, with its own options: the `permissions.deny` entries, then Matt Pocock's plugin, then the removal of the subsections the kit does not own from the pointer block. Never fold an offer into a section's question or into another offer. An offer that does not apply on this run is not asked. The `.aw/` ignore line and the Node and PowerShell warnings ask nothing.
 
 Done when every section and every offer asked has an answer.
 
@@ -114,7 +114,7 @@ A template's Operations table keeps every row: an adapter that cannot perform an
 - Else if a `CLAUDE.md` exists (at the root or in `.claude/`), add it there.
 - Else create `AGENTS.md` with the block.
 
-Never create a second block. Updating a block means rewriting the kit's four subsections below with the new values, in place, in this order and at the top of the block. Subsections the kit does not own, such as `### Issue tracker` or `### Triage labels` from Matt Pocock's setup, follow them unchanged: his skills read them while his plugin is on, and the kit's skills read only the kit's four. When the user turns his plugin off for this repo, offer to remove his subsections. The rest of the file is never touched.
+Never create a second block. Updating a block means rewriting the kit's four subsections below with the new values, in place, in this order and at the top of the block. Subsections the kit does not own, such as `### Issue tracker` or `### Triage labels` from Matt Pocock's setup, follow them unchanged: his skills read them while his plugin is on, and the kit's skills read only the kit's four. Remove them only when the user accepted the offer to remove them in step 2, as [`HOUSEKEEPING.md`](HOUSEKEEPING.md) describes; this step asks nothing. The rest of the file is never touched.
 
 ```markdown
 ## Agent skills

@@ -1,7 +1,9 @@
 // aw-setup asks each housekeeping offer that applies as a question of its own,
 // after interview section D, never folded into a section's question or into
-// another offer (#230). The behaviour is the skill's text, so these tests hold
-// that text: the Interview rule in SKILL.md and each offer's three options in
+// another offer (#230). The offer to remove Pocock's subsections from the
+// pointer block is one of them, asked before Confirm, and step 4 asks nothing
+// (#231). The behaviour is the skill's text, so these tests hold that text: the
+// Interview and Write rules in SKILL.md and each offer's options in
 // HOUSEKEEPING.md.
 
 import assert from 'node:assert/strict';
@@ -15,7 +17,7 @@ describe('aw-setup, step 2. Interview', () => {
   test('asks each applicable housekeeping offer after D, as a question of its own', () => {
     assert.match(
       interview,
-      /After D, ask each housekeeping offer in \[`HOUSEKEEPING\.md`\]\(HOUSEKEEPING\.md\) that applies on this run as a question of its own, with its own options: the `permissions\.deny` entries, then Matt Pocock's plugin\./,
+      /After D, ask each housekeeping offer in \[`HOUSEKEEPING\.md`\]\(HOUSEKEEPING\.md\) that applies on this run as a question of its own, with its own options: the `permissions\.deny` entries, then Matt Pocock's plugin, then the removal of the subsections the kit does not own from the pointer block\./,
     );
   });
 
@@ -78,6 +80,57 @@ describe('aw-setup housekeeping, the Pocock plugin offer', () => {
   });
 
   test('is not asked when the plugin is already off', () => {
-    assert.match(pocock, /When the plugin is already off in this repo, the offer is not asked\./);
+    assert.match(pocock, /When the plugin is already off in this repo, the plugin offer is not asked\./);
+  });
+});
+
+describe("aw-setup housekeeping, the offer to remove Pocock's subsections", () => {
+  const pocock = skillSection('aw-setup/HOUSEKEEPING.md', "## Matt Pocock's plugin (Claude Code)");
+
+  test('is a question of its own with two options, right after the plugin offer', () => {
+    assert.match(
+      pocock,
+      /\*\*Offer\*\*, right after the plugin offer and as a question of its own, to remove the subsections of the `## Agent skills` block that the kit does not own, such as `### Issue tracker` or `### Triage labels`, with two options: remove them, or keep them\. Name each one in the question\./,
+    );
+  });
+
+  test('is asked whenever the plugin is off once the plugin offer is settled, turned off now or already off', () => {
+    assert.match(
+      pocock,
+      /Ask it whenever the plugin is off in this repo once the plugin offer is settled, whether the user turned it off on this run or it was already off, and the block holds such subsections\./,
+    );
+  });
+
+  test('is not asked when the plugin stays on or the block holds no such subsection', () => {
+    assert.match(
+      pocock,
+      /When the plugin stays on, or the block holds no such subsection, the removal offer is not asked\./,
+    );
+  });
+
+  test('says what step 4 writes when the user accepts, and nothing else of the file changes', () => {
+    assert.match(
+      pocock,
+      /\*\*Write, in step 4:\*\* when the user accepted, delete each of those subsections, heading and body, from the block, and leave the kit's four and the rest of the file as they are\./,
+    );
+  });
+
+  test('is asked again on the next run when the user keeps them', () => {
+    assert.match(pocock, /When the user keeps them, the removal offer is asked again on the next run\./);
+  });
+});
+
+describe('aw-setup, step 4. Write, the pointer block', () => {
+  const write = skillSection('aw-setup', '### 4. Write', '### 5. Report');
+
+  test('removes his subsections only when the offer was accepted, and asks nothing', () => {
+    assert.match(
+      write,
+      /Remove them only when the user accepted the offer to remove them in step 2, as \[`HOUSEKEEPING\.md`\]\(HOUSEKEEPING\.md\) describes; this step asks nothing\./,
+    );
+  });
+
+  test('no longer offers the removal during Write', () => {
+    assert.doesNotMatch(write, /offer to remove his subsections/);
   });
 });
