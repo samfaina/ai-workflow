@@ -106,6 +106,12 @@
     "kitCommit": "537bb16f63bd3efda883a71731998e1ebcc3786d",
     "date": "2026-11-20T23:13:58.583Z"
   },
+  "aw-intake-bug": {
+    "verdict": "Pass",
+    "fingerprint": "bcfdc04270624413ea9f393f2ed2c33c24bff6c8a97d2bdd3dd6a7594498a1c9",
+    "kitCommit": "7893270969f3ffc11d348588bab49d2fdc115954",
+    "date": "2026-11-25T20:49:05.767Z"
+  },
   "aw-intake-contract": {
     "verdict": "Pass",
     "fingerprint": "9a44726b17c1c73f445a29a6074c91b9f3211681bafb1cd2657db20438cf9fbf",
