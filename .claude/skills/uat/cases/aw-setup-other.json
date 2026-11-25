@@ -34,13 +34,14 @@
       "when": "Confirmation before writing",
       "intent": "Approve the write as shown",
       "reason": "the case needs the files written"
+    },
+    {
+      "when": "The other tracker's details: which tracker and project, its key and site, the tool used, and how tickets are read, listed, created, commented on, moved and linked",
+      "intent": "Type in: Jira project LIB at https://example.atlassian.net, keys like LIB-123, no CLI: tickets are read and searched on the web, and created, commented, moved and linked by hand; access draft",
+      "reason": "the case tests the other-tracker path with Jira by web only, so reads become paste-the-content and writes drafts, and the key LIB must reach the adapter"
     }
   ],
   "turns": [
-    {
-      "intent": "Jira project LIB at https://example.atlassian.net, no CLI: tickets are read and searched on the web, and created, commented, moved and linked by hand; access draft",
-      "reason": "the agent asks for the details in plain text"
-    },
     {
       "intent": "Confirm",
       "reason": "the agent shows what it will write and waits"
