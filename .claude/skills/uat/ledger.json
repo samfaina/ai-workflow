@@ -134,6 +134,12 @@
     "date": "2026-11-10T18:16:44.000Z",
     "issue": 105
   },
+  "aw-setup-github": {
+    "verdict": "Pass",
+    "fingerprint": "6beb74f36d58e2b84c13afe305377f87a8a50732da8fb5ce1ab9d170d6cf4cd7",
+    "kitCommit": "557dd112a5684c2a113fdc3f03408d57f836687c",
+    "date": "2026-11-25T12:17:37.305Z"
+  },
   "aw-setup-gitlab": {
     "verdict": "Pass",
     "fingerprint": "4b3958b64db6b79a4cbb441ad0aa4366f45233d36bf36129027a15ddd7a1a9a3",
