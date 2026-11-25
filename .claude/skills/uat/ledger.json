@@ -153,6 +153,12 @@
     "date": "2026-11-24T17:25:24.020Z",
     "issue": 219
   },
+  "aw-setup-node-warning": {
+    "verdict": "Pass",
+    "fingerprint": "b6934d9be4d873c1a440d9e22c84c2607feab8c977b42ae23b1a463c32ea8754",
+    "kitCommit": "61cee8f6be1103ab6ee31fdfa75f34b655417563",
+    "date": "2026-11-25T13:27:01.841Z"
+  },
   "aw-setup-none": {
     "verdict": "Pass",
     "fingerprint": "8a1da2949fce4afe6be5d82b6cb0e74757342d91733d678d17067cce70343a8f",
