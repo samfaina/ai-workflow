@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { repoRoot, skillSection, textSection } from './fixtures.mjs';
+import { repoRoot, skillSection, textLine, textSection } from './fixtures.mjs';
 import { skillDir as uatSkillDir } from './uat-fixtures.mjs';
 
 const skillDir = join(repoRoot, 'skills/aw-create-verify');
@@ -23,14 +23,12 @@ const templateCleanUp = textSection(template, '## Clean up', { withHeading: fals
 
 // A step's "Done when" line.
 function doneWhen(step) {
-  return step.split('\n').find((line) => line.startsWith('Done when')) ?? '';
+  return textLine(step, 'Done when');
 }
 
 // The bullet of step 2 that describes this operation.
 function operation(name) {
-  const line = skill.split('\n').find((candidate) => candidate.startsWith(`- **${name}:**`));
-  assert.ok(line, `step 2 has no operation "${name}"`);
-  return line;
+  return textLine(skill, `- **${name}:**`);
 }
 
 test('a citation is opened and confirmed before it is written, and carries the text it cites', () => {

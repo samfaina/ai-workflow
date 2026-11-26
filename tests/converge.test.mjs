@@ -8,7 +8,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 
-import { repoRoot, textSection } from './fixtures.mjs';
+import { repoRoot, textLine, textSection } from './fixtures.mjs';
 
 const read = (path) => readFileSync(join(repoRoot, path), 'utf8').replaceAll('\r\n', '\n');
 const converge = read('skills/aw-converge-steps/SKILL.md');
@@ -16,13 +16,6 @@ const door = read('skills/aw-converge/SKILL.md');
 const buildSteps = read('skills/aw-build-steps/SKILL.md');
 const verifySteps = read('skills/aw-verify-steps/SKILL.md');
 const reviewSteps = read('skills/aw-review-steps/SKILL.md');
-
-// The first line of the text that opens with these words.
-function line(text, start) {
-  const found = text.split('\n').find((candidate) => candidate.startsWith(start));
-  assert.ok(found, `no line starting "${start}"`);
-  return found;
-}
 
 const refusals = textSection(converge, '### 2. Refuse what cannot converge');
 const round = textSection(converge, '### 3. Run the rounds');
@@ -40,14 +33,14 @@ for (const [procedure, phase, text] of [
   ['aw-review-steps', 'aw-review', reviewSteps],
 ]) {
   test(`${procedure} is limited to its callers by its description`, () => {
-    const description = line(text, 'description: ');
+    const description = textLine(text, 'description: ');
     assert.match(description, new RegExp(`calls from /${phase}, the convergence procedure and aw-implement only`));
     assert.match(description, /do not load it by your own choice/);
   });
 
   test(`${procedure} opens by refusing a call that names no caller`, () => {
     const first = textSection(text, '## First step: check the caller');
-    assert.equal(text.split('\n').find((candidate) => candidate.startsWith('## ')), '## First step: check the caller');
+    assert.equal(textLine(text, '## '), '## First step: check the caller');
     assert.match(first, new RegExp(`\`caller: ${phase}\`, \`caller: aw-converge\` or \`caller: aw-implement\``));
     assert.match(first, /stop, change nothing/);
     assert.match(first, new RegExp(`\`/${phase}\``));
@@ -62,11 +55,11 @@ for (const [procedure, phase, text] of [
 
 test('the convergence procedure is hidden, limited to its callers, and opens by refusing a call that names no caller', () => {
   assert.match(converge, /^user-invocable: false$/m);
-  const description = line(converge, 'description: ');
+  const description = textLine(converge, 'description: ');
   assert.match(description, /calls from \/aw-converge and aw-implement only/);
   assert.match(description, /do not load it by your own choice/);
   const first = textSection(converge, '## First step: check the caller');
-  assert.equal(converge.split('\n').find((candidate) => candidate.startsWith('## ')), '## First step: check the caller');
+  assert.equal(textLine(converge, '## '), '## First step: check the caller');
   assert.match(first, /`caller: aw-converge` or `caller: aw-implement`/);
   assert.match(first, /stop, change nothing/);
   assert.match(first, /`\/aw-converge`/);
@@ -81,13 +74,13 @@ test('aw-converge is a thin door: it hands the arguments to the convergence proc
 });
 
 test('the door keeps what a person reads about the command', () => {
-  assert.match(line(door, 'description: '), /up to 3 rounds, which a call can raise, as in \/aw-converge 5/);
-  assert.match(line(door, 'description: '), /Never pushes, opens a review request or merges/);
+  assert.match(textLine(door, 'description: '), /up to 3 rounds, which a call can raise, as in \/aw-converge 5/);
+  assert.match(textLine(door, 'description: '), /Never pushes, opens a review request or merges/);
 });
 
 test('the phases of a round are still called as aw-converge, whoever started the rounds', () => {
-  assert.match(line(fixRunReading, 'Start a subagent'), /`caller: aw-converge; fix run; /);
-  assert.match(line(verifyReading, 'Start a subagent'), /`caller: aw-converge; /);
+  assert.match(textLine(fixRunReading, 'Start a subagent'), /`caller: aw-converge; fix run; /);
+  assert.match(textLine(verifyReading, 'Start a subagent'), /`caller: aw-converge; /);
   assert.match(reviewReading, /`caller: aw-converge; /);
 });
 
@@ -102,7 +95,7 @@ test('the fix run and aw-verify cannot ask from a subagent: a question ends the 
 test('under aw-converge the build procedure takes the spec from its arguments and runs a fix run', () => {
   const first = textSection(buildSteps, '## First step: check the caller');
   assert.match(first, /arguments ask for a fix run/);
-  assert.match(line(buildSteps, 'Take the spec the user names'), /or the arguments name/);
+  assert.match(textLine(buildSteps, 'Take the spec the user names'), /or the arguments name/);
 });
 
 test('the fix run report closes with Stop, Question and Next lines a later command reads', () => {
@@ -119,16 +112,16 @@ for (const [reason, where] of [
   ['criterion correction needed', '- **A defect that shows a criterion is wrong:**'],
 ]) {
   test(`the fix run names its stop as "${reason}"`, () => {
-    assert.match(line(fixRun, where), new RegExp(`\`Stop: ${reason}\``));
+    assert.match(textLine(fixRun, where), new RegExp(`\`Stop: ${reason}\``));
   });
 }
 
 test('a check that fails on code the fix did not touch stops the fix run with its reason', () => {
-  assert.match(line(fixRun, '**Run the `task` checks.**'), /`Stop: check failed on code the fix did not touch`/);
+  assert.match(textLine(fixRun, '**Run the `task` checks.**'), /`Stop: check failed on code the fix did not touch`/);
 });
 
 test('a seam no agreed seam reaches comes back as the one question, and the answer counts as agreed', () => {
-  const seams = line(fixRun, '**Agree the seams.**');
+  const seams = textLine(fixRun, '**Agree the seams.**');
   assert.match(seams, /`Stop: seam to agree`/);
   assert.match(seams, /`Question: /);
   assert.match(seams, /commit nothing/);
@@ -136,7 +129,7 @@ test('a seam no agreed seam reaches comes back as the one question, and the answ
 });
 
 test('a fix run stop that names no skill says Next: none, so no command runs a skill after it', () => {
-  assert.match(line(fixReport, '- `Next: <skill>`'), /`Next: none` after any stop that names no skill/);
+  assert.match(textLine(fixReport, '- `Next: <skill>`'), /`Next: none` after any stop that names no skill/);
 });
 
 test('a spec change the fix run found reaches the user even when the run ends clean', () => {
@@ -147,9 +140,9 @@ test('a spec change the fix run found reaches the user even when the run ends cl
 
 test('every procedure takes the spec or the fast route from the arguments of aw-converge', () => {
   assert.match(textSection(reviewSteps, '## First step: check the caller'), /The arguments name the spec, or say the task is on the fast route/);
-  const specLine = line(reviewSteps, '**Standard or epic route: the spec.**');
+  const specLine = textLine(reviewSteps, '**Standard or epic route: the spec.**');
   assert.match(specLine, /the user names or the arguments name/);
-  assert.match(line(reviewSteps, 'First find the route.'), /when the arguments say so/);
+  assert.match(textLine(reviewSteps, 'First find the route.'), /when the arguments say so/);
 });
 
 test('under aw-converge, .aw/ is local state and not a change in the working tree', () => {
@@ -208,7 +201,7 @@ test('under aw-converge the review ends with the report and leaves what comes ne
 });
 
 test('aw-review names /aw-converge first for an introduced defect, and the manual path as the alternative', () => {
-  const next = line(reviewSteps, '- **An introduced defect:**');
+  const next = textLine(reviewSteps, '- **An introduced defect:**');
   assert.ok(next.indexOf('`/aw-converge`') !== -1 && next.indexOf('`/aw-converge`') < next.indexOf('fix run of `/aw-build`'), next);
   assert.match(next, /Or run the phases by hand/);
 });
@@ -234,14 +227,14 @@ for (const [name, where, wording] of [
   ['uncommitted changes', '- **Uncommitted changes.**', /outside `\.aw\/`/],
 ]) {
   test(`it refuses to start on ${name}, before any work`, () => {
-    assert.match(line(refusals, where), wording);
+    assert.match(textLine(refusals, where), wording);
     assert.match(refusals, /before any work/);
   });
 }
 
 test('the fix run and aw-verify each run in a subagent of their own, the review in the main session', () => {
-  assert.match(line(fixRunReading, 'Start a subagent'), /"aw-build-steps"/);
-  assert.match(line(verifyReading, 'Start a subagent'), /"aw-verify-steps"/);
+  assert.match(textLine(fixRunReading, 'Start a subagent'), /"aw-build-steps"/);
+  assert.match(textLine(verifyReading, 'Start a subagent'), /"aw-verify-steps"/);
   assert.match(reviewReading, /in this session, never in a subagent/);
   assert.match(reviewReading, /"aw-review-steps"/);
   assert.match(reviewReading, /`caller: aw-converge; /);
@@ -257,19 +250,19 @@ for (const [name, where, wording] of [
   ['Commit: draft', '4. **`Commit: draft <path>`**', /ends the run/],
 ]) {
   test(`the fix run ending in ${name} stops the run with its reason`, () => {
-    assert.match(line(fixRunReading, where), wording);
+    assert.match(textLine(fixRunReading, where), wording);
   });
 }
 
 test('a seam to agree stays inside the run: the main session asks and starts the fix run again', () => {
-  const seam = line(fixRunReading, '1. **`Stop: seam to agree`**');
+  const seam = textLine(fixRunReading, '1. **`Stop: seam to agree`**');
   assert.match(seam, /Ask the user/);
   assert.match(seam, /start the fix run again/);
   assert.match(seam, /same round/);
 });
 
 test('a partial Not fixed with a commit goes on, and the next review judges it', () => {
-  assert.match(line(fixRunReading, '5. **`Commit: <hash> <subject>`**'), /`Not fixed:`[^.]*go on[^.]*next review/);
+  assert.match(textLine(fixRunReading, '5. **`Commit: <hash> <subject>`**'), /`Not fixed:`[^.]*go on[^.]*next review/);
 });
 
 test('any step output the command does not recognise stops the run', () => {
@@ -279,7 +272,7 @@ test('any step output the command does not recognise stops the run', () => {
 });
 
 test('a Stop line from aw-verify ends the run, a failed criterion and a journey needing a person among them', () => {
-  assert.match(line(verifyReading, '1. **Any `Stop:` line**'), /ends the run with that reason/);
+  assert.match(textLine(verifyReading, '1. **Any `Stop:` line**'), /ends the run with that reason/);
   assert.match(verifyReading, /`Stop: criterion failed`/);
   assert.match(verifyReading, /`Stop: verify journey needs a person`/);
 });
@@ -290,9 +283,9 @@ test('verify runs only when the fix run names it', () => {
 });
 
 test('zero introduced defects ends the run clean, and the limit ends it with what is left', () => {
-  assert.match(line(reviewReading, '- **0 introduced:**'), /ends the run clean/);
-  assert.match(line(reviewReading, '- **More, with rounds left:**'), /next round/);
-  assert.match(line(reviewReading, '- **More, at the limit:**'), /ends the run/);
+  assert.match(textLine(reviewReading, '- **0 introduced:**'), /ends the run clean/);
+  assert.match(textLine(reviewReading, '- **More, with rounds left:**'), /next round/);
+  assert.match(textLine(reviewReading, '- **More, at the limit:**'), /ends the run/);
 });
 
 test('pre-existing defects and risks never keep a run going', () => {
@@ -300,9 +293,9 @@ test('pre-existing defects and risks never keep a run going', () => {
 });
 
 test('the report names /aw-ship only for a clean run, and lists the defects left at the limit', () => {
-  assert.match(line(report, '  - **Clean:**'), /`\/aw-ship`/);
-  assert.match(line(report, '  - **Limit reached:**'), /defects left/);
-  assert.match(line(report, '  - **Stopped:**'), /its reason/);
+  assert.match(textLine(report, '  - **Clean:**'), /`\/aw-ship`/);
+  assert.match(textLine(report, '  - **Limit reached:**'), /defects left/);
+  assert.match(textLine(report, '  - **Stopped:**'), /its reason/);
   assert.match(report, /Only \*\*Clean\*\* names `\/aw-ship`/);
 });
 

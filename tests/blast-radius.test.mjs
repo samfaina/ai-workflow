@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { repoRoot, skillSection, textSection } from './fixtures.mjs';
+import { repoRoot, skillSection, textLine, textSection } from './fixtures.mjs';
 
 const skillDir = join(repoRoot, 'skills/aw-blast-radius');
 const skill = readFileSync(join(skillDir, 'SKILL.md'), 'utf8');
@@ -23,7 +23,7 @@ test('it is model-invoked: no invocation flag and no agents/openai.yaml', () => 
 });
 
 test('its description triggers narrowly, on the two phrases the ticket names', () => {
-  const description = frontmatter.split('\n').find((line) => line.startsWith('description:'));
+  const description = textLine(frontmatter, 'description:');
   assert.match(description, /blast radius of X/);
   assert.match(description, /what could this break/);
   assert.doesNotMatch(description, /small diff|review/i);
@@ -212,8 +212,7 @@ test('Defect and Risk cover this skill\'s findings as well as the review\'s', ()
 const ship = repoText('skills/aw-ship/SKILL.md');
 
 test('aw-ship\'s Blast Radius line suggests the skill and cites only its conclusion', () => {
-  const line = ship.split('\n').find((candidate) => candidate.startsWith('**Blast Radius:**'));
-  assert.ok(line, 'no Blast Radius line');
+  const line = textLine(ship, '**Blast Radius:**');
   assert.match(line, /what the change can affect outside the review request/);
   assert.match(line, /When the scope is not evident, suggest `\/aw-blast-radius`/);
   assert.match(line, /cite its conclusion, never its script or its report's path/);
@@ -223,7 +222,7 @@ test('aw-ship\'s Blast Radius line suggests the skill and cites only its conclus
 
 test('aw-ship neither requires the skill nor reads its report for a merge condition', () => {
   assert.doesNotMatch(textSection(ship, '## Merge conditions', { withHeading: false }), /blast|safety fact|proof level/i);
-  const line = ship.split('\n').find((candidate) => candidate.startsWith('**Blast Radius:**'));
+  const line = textLine(ship, '**Blast Radius:**');
   const others = ship.split('\n').filter((candidate) => candidate !== line).join('\n');
   assert.doesNotMatch(others, /aw-blast-radius|\.aw\/blast-radius/);
 });
@@ -234,8 +233,7 @@ test('plugin.json lists it', () => {
 });
 
 test('its NOTICE row credits pstack by repo, folder and pin, and says what it takes and what it changes', () => {
-  const row = repoText('NOTICE.md').split('\n').find((line) => line.startsWith('| `aw-blast-radius` |'));
-  assert.ok(row, 'no NOTICE row');
+  const row = textLine(repoText('NOTICE.md'), '| `aw-blast-radius` |');
   assert.match(row, /\| adaptation \|$/);
   assert.match(row, /Lauren Tan/);
   assert.match(row, /\[`cursor\/plugins`\]\(https:\/\/github\.com\/cursor\/plugins\)/);
@@ -247,7 +245,7 @@ test('its NOTICE row credits pstack by repo, folder and pin, and says what it ta
 });
 
 test('the NOTICE opening names it among the adaptations that carry the license', () => {
-  const opening = repoText('NOTICE.md').split('\n').find((line) => line.startsWith('This file lists every skill'));
+  const opening = textLine(repoText('NOTICE.md'), 'This file lists every skill');
   assert.match(opening, /`aw-blast-radius`[^.]*LICENSE.upstream/);
 });
 
@@ -257,7 +255,7 @@ test('ADR 0010 lists it among the phase-free adaptations', () => {
 });
 
 test('the README status paragraph describes it', () => {
-  const status = repoText('README.md').split('\n').find((line) => line.startsWith('> Status:'));
+  const status = textLine(repoText('README.md'), '> Status:');
   assert.match(status, /`aw-blast-radius`, [^;]*which no phase requires/);
 });
 

@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { repoRoot, textSection } from './fixtures.mjs';
+import { repoRoot, textLine, textSection } from './fixtures.mjs';
 
 const skillDir = join(repoRoot, 'skills/aw-observability-and-instrumentation');
 const skill = readFileSync(join(skillDir, 'SKILL.md'), 'utf8');
@@ -129,11 +129,7 @@ test('it credits its upstream', () => {
 });
 
 const repoText = (path) => readFileSync(join(repoRoot, path), 'utf8');
-const noticeRow = (name) => {
-  const row = repoText('NOTICE.md').split('\n').find((line) => line.startsWith(`| \`${name}\` |`));
-  assert.ok(row, `no NOTICE row for ${name}`);
-  return row;
-};
+const noticeRow = (name) => textLine(repoText('NOTICE.md'), `| \`${name}\` |`);
 
 test('plugin.json lists it', () => {
   assert.ok(JSON.parse(repoText('.claude-plugin/plugin.json')).skills.includes('./skills/aw-observability-and-instrumentation'));
@@ -173,7 +169,7 @@ test('its NOTICE row is an adaptation at the pin and says what it takes and what
 });
 
 test('the NOTICE opening names it among the adaptations that carry the license', () => {
-  const opening = repoText('NOTICE.md').split('\n').find((line) => line.startsWith('This file lists every skill'));
+  const opening = textLine(repoText('NOTICE.md'), 'This file lists every skill');
   assert.match(opening, /`aw-observability-and-instrumentation`[^.]*LICENSE.upstream/);
 });
 
@@ -220,6 +216,6 @@ test('ADR 0010 lists it among the phase-free adaptations', () => {
 });
 
 test('the README status paragraph describes it', () => {
-  const status = repoText('README.md').split('\n').find((line) => line.startsWith('> Status:'));
+  const status = textLine(repoText('README.md'), '> Status:');
   assert.match(status, /`aw-observability-and-instrumentation`, /);
 });

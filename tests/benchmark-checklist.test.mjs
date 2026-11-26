@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { repoRoot, textSection } from './fixtures.mjs';
+import { repoRoot, textLine, textSection } from './fixtures.mjs';
 
 const skillDir = join(repoRoot, 'skills/aw-benchmark-checklist');
 const skill = readFileSync(join(skillDir, 'SKILL.md'), 'utf8');
@@ -26,7 +26,7 @@ test('it states that it is phase-free and optional, in the glossary\'s words: no
 });
 
 test('its description fires as the agent is about to give a number it measured', () => {
-  const description = frontmatter.split('\n').find((line) => line.startsWith('description:'));
+  const description = textLine(frontmatter, 'description:');
   assert.match(description, /before you report or act on it/);
   assert.match(description, /Use when you run a benchmark or report a speedup or regression you measured\./);
 });
@@ -101,8 +101,7 @@ test('plugin.json lists it', () => {
 });
 
 test('its NOTICE row credits pstack by repo, folder and pin, and says what it takes and what it changes', () => {
-  const row = repoText('NOTICE.md').split('\n').find((line) => line.startsWith('| `aw-benchmark-checklist` |'));
-  assert.ok(row, 'no NOTICE row');
+  const row = textLine(repoText('NOTICE.md'), '| `aw-benchmark-checklist` |');
   assert.match(row, /\| adaptation \|$/);
   assert.match(row, /Lauren Tan/);
   assert.match(row, /\[`cursor\/plugins`\]\(https:\/\/github\.com\/cursor\/plugins\)/);
@@ -114,7 +113,7 @@ test('its NOTICE row credits pstack by repo, folder and pin, and says what it ta
 });
 
 test('the NOTICE opening names it among the adaptations that carry the license', () => {
-  const opening = repoText('NOTICE.md').split('\n').find((line) => line.startsWith('This file lists every skill'));
+  const opening = textLine(repoText('NOTICE.md'), 'This file lists every skill');
   assert.match(opening, /`aw-benchmark-checklist`[^.]*LICENSE.upstream/);
 });
 
@@ -124,7 +123,7 @@ test('ADR 0010 lists it among the phase-free adaptations', () => {
 });
 
 test('the README status paragraph describes it', () => {
-  const status = repoText('README.md').split('\n').find((line) => line.startsWith('> Status:'));
+  const status = textLine(repoText('README.md'), '> Status:');
   assert.match(status, /`aw-benchmark-checklist`, [^;]*which no phase requires/);
 });
 

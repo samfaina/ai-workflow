@@ -10,7 +10,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 
-import { markdownFiles, repoRoot, skillSection } from './fixtures.mjs';
+import { markdownFiles, repoRoot, skillSection, textLine } from './fixtures.mjs';
 
 const read = (...path) => readFileSync(join(repoRoot, ...path), 'utf8').replaceAll('\r\n', '\n');
 
@@ -27,16 +27,14 @@ const ROUTERS = [
 for (const { skill, line } of ROUTERS) {
   test(`${skill} routes a clean review to /aw-ship with the shared introduced-risk sentence`, () => {
     const text = read('skills', skill, 'SKILL.md');
-    const routing = text.split('\n').find((candidate) => candidate.startsWith(line));
-    assert.ok(routing, `${skill} has no line starting "${line}"`);
+    const routing = textLine(text, line);
     assert.equal(routing, `${line} ${RISK_ROUTING}`);
   });
 }
 
 test("the shared sentence uses aw-ship's own words for both outcomes of an introduced risk", () => {
   const report = skillSection('aw-ship', '### 8. Report');
-  const risks = report.split('\n').find((candidate) => candidate.startsWith('- each introduced risk'));
-  assert.ok(risks, 'aw-ship step 8 lists the introduced risks');
+  const risks = textLine(report, '- each introduced risk');
   for (const words of ['the person who merges to accept', "without a person's acceptance"]) {
     assert.ok(risks.includes(words), `aw-ship step 8 says "${words}"`);
     assert.ok(RISK_ROUTING.includes(words), `the routing sentence says "${words}"`);

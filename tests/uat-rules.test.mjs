@@ -9,7 +9,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, test } from 'node:test';
 
-import { markdownFiles, repoRoot, textSection } from './fixtures.mjs';
+import { markdownFiles, repoRoot, textLine, textSection } from './fixtures.mjs';
 import { caseFile, makeRun, skillDir } from './uat-fixtures.mjs';
 
 const read = (name) => readFileSync(join(skillDir, name), 'utf8').replaceAll('\r\n', '\n');
@@ -218,7 +218,7 @@ describe('GRADING.md', () => {
   });
 
   test('CASE-FORMAT.md sends a judge criterion to it instead of restating how it is graded', () => {
-    const judge = files['CASE-FORMAT.md'].split('\n').find((line) => line.startsWith('- `{ "judge": criterion }`'));
+    const judge = textLine(files['CASE-FORMAT.md'], '- `{ "judge": criterion }`');
     assert.match(judge, /\[GRADING\.md\]\(GRADING\.md\)/);
     assert.doesNotMatch(judge, /apart|transcript/);
   });

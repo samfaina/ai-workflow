@@ -1,6 +1,7 @@
 // Helpers shared by the tests: writing fixture kits, running a CLI the way CI
-// runs it, asserting on its findings, reading a section of a skill's file or of
-// any text, and listing a folder's Markdown files. Not a test file itself.
+// runs it, asserting on its findings, reading a section or a line of a skill's
+// file or of any text, and listing a folder's Markdown files. Not a test file
+// itself.
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -49,8 +50,8 @@ export function manifests(skills) {
 // `skills/` to another file of a skill. Line endings are normalized to `\n`. A
 // heading is a whole line, and a missing one throws, naming it.
 export function skillSection(skillOrFile, fromHeading, toHeading) {
-  const file = skillOrFile.includes('/') ? skillOrFile : `${skillOrFile}/SKILL.md`;
-  const lines = readFileSync(join(repoRoot, 'skills', file), 'utf8').replaceAll('\r\n', '\n').split('\n');
+  const file = skillFile(skillOrFile);
+  const lines = readSkillFile(file).split('\n');
   const start = lines.indexOf(fromHeading);
   if (start === -1) throw new Error(`skills/${file} has no heading "${fromHeading}"`);
   if (toHeading === undefined) return lines.slice(start).join('\n');
@@ -58,6 +59,31 @@ export function skillSection(skillOrFile, fromHeading, toHeading) {
   if (end === -1) throw new Error(`skills/${file} has no heading "${toHeading}" after "${fromHeading}"`);
   return lines.slice(start, end).join('\n') + '\n';
 }
+
+// The first line of `text` that starts with `start`. Line endings are
+// normalized to `\n`. When no line starts with it, it throws, naming `start`.
+export function textLine(text, start) {
+  const line = findLine(text, start);
+  if (line === undefined) throw new Error(`the text has no line starting "${start}"`);
+  return line;
+}
+
+// The first line of a skill's file that starts with `start`. `skillOrFile` is
+// read as `skillSection` reads it. When no line starts with it, it throws,
+// naming the file and `start`.
+export function skillLine(skillOrFile, start) {
+  const file = skillFile(skillOrFile);
+  const line = findLine(readSkillFile(file), start);
+  if (line === undefined) throw new Error(`skills/${file} has no line starting "${start}"`);
+  return line;
+}
+
+const findLine = (text, start) => text.replaceAll('\r\n', '\n').split('\n').find((candidate) => candidate.startsWith(start));
+
+// A skill's name stands for its SKILL.md; any other value is a path under
+// `skills/`. The file is read with its line endings normalized to `\n`.
+const skillFile = (skillOrFile) => (skillOrFile.includes('/') ? skillOrFile : `${skillOrFile}/SKILL.md`);
+const readSkillFile = (file) => readFileSync(join(repoRoot, 'skills', file), 'utf8').replaceAll('\r\n', '\n');
 
 // The lines of `text` from the line `heading` up to, but not including, the
 // next heading line of the same or a higher level (fewer or as many `#`, then a

@@ -5,9 +5,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { repoRoot, skillSection } from './fixtures.mjs';
+import { skillLine, skillSection } from './fixtures.mjs';
 
 const baseline = skillSection('aw-intake/PRE-STEPS.md', '## Performance: baseline', '## Investigation: answer, changing nothing');
 
@@ -32,7 +30,6 @@ test('the baseline is done only when the report sets the median beside the figur
 });
 
 test("intake's report template asks for the baseline's median and spread, beside the figure the task states", () => {
-  const line = readFileSync(join(repoRoot, 'skills/aw-intake/SKILL.md'), 'utf8').split('\n').find((candidate) => candidate.startsWith('**Pre-step:**'));
-  assert.ok(line, 'aw-intake has no **Pre-step:** line');
+  const line = skillLine('aw-intake', '**Pre-step:**');
   assert.match(line, /the baseline's median and spread \(with the figure the task states, when it states one, and whether they match\), or "none">$/);
 });

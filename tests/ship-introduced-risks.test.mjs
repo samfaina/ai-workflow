@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 
-import { repoRoot, skillSection } from './fixtures.mjs';
+import { repoRoot, skillSection, textLine } from './fixtures.mjs';
 
 const read = (...path) => readFileSync(join(repoRoot, ...path), 'utf8').replaceAll('\r\n', '\n');
 const skill = read('skills', 'aw-ship', 'SKILL.md');
@@ -21,7 +21,7 @@ const PERSON_MERGES = 'listed for the person who merges to accept';
 const SHIP_MERGED = "merged by `aw-ship` without a person's acceptance, left to review after the merge";
 
 // The rule of the pre-ship checklist on the introduced-risk item.
-const riskRule = stepFive.split('\n').find((line) => line.startsWith('- each introduced risk'));
+const riskRule = textLine(stepFive, '- each introduced risk');
 
 test('the checklist item of an introduced risk keeps its text, likelihood and cost, and is never ticked', () => {
   assert.ok(riskRule, 'step 5 lists the introduced-risk item');
@@ -34,9 +34,7 @@ test('the checklist item of an introduced risk keeps its text, likelihood and co
 // The paragraph that words the item, and its bullet for each case.
 const wording = stepFive.slice(stepFive.indexOf('**Introduced risks.**'), stepFive.indexOf('**Rollback plan.**'));
 function wordingFor(label) {
-  const found = wording.split('\n').find((line) => line.startsWith(`- **${label}`));
-  assert.ok(found, `step 5 words the item for "${label}"`);
-  return found;
+  return textLine(wording, `- **${label}`);
 }
 
 test('a risk never blocks the merge, and aw-ship never asks anyone to accept it', () => {
@@ -58,7 +56,7 @@ test('with a review host, the published item stays true whether aw-ship or a per
 });
 
 const stepSeven = skillSection('aw-ship', '### 7. Merge', '### 8. Report');
-const localMerge = stepSeven.split('\n').find((line) => line.startsWith('- **With no review host:**'));
+const localMerge = textLine(stepSeven, '- **With no review host:**');
 
 test('after a local merge, step 7 words each risk item as merged without acceptance, in the body and its copy', () => {
   assert.ok(localMerge, 'step 7 has the local merge');
@@ -79,8 +77,7 @@ test('the merge conditions are unchanged, and say introduced risks are not one o
 const stepEight = skillSection('aw-ship', '### 8. Report');
 
 test('step 8 reports each introduced risk and what happened to it, or that there were none', () => {
-  const risks = stepEight.split('\n').find((line) => line.startsWith('- each introduced risk'));
-  assert.ok(risks, 'step 8 lists the introduced risks');
+  const risks = textLine(stepEight, '- each introduced risk');
   assert.match(risks, /likelihood and cost/);
   assert.match(risks, /merged without a person's acceptance, when this skill merged/);
   assert.match(risks, /left for the person who merges to accept, when the merge was drafted or failed, or `merge` is at `draft`/);
@@ -92,7 +89,7 @@ const [adrBody, adrOptions] = adr.split('## Considered Options');
 
 test('ADR 0013 records that an introduced risk never blocks the merge, and rejects the two other options of #129', () => {
   assert.match(adrBody, /An introduced risk never blocks the merge at `merge: write`: `aw-ship` reports it instead/);
-  const option = (title) => adrOptions.split('\n').find((line) => line.startsWith(`- **${title}`));
+  const option = (title) => textLine(adrOptions, `- **${title}`);
   for (const title of ['An unaccepted introduced risk drafts the merge', 'Asking the user to accept each introduced risk before the merge']) {
     const line = option(title);
     assert.ok(line, `ADR 0013 considers "${title}"`);
