@@ -119,6 +119,13 @@
     "date": "2026-11-10T18:16:44.000Z",
     "issue": 105
   },
+  "aw-intake-performance": {
+    "verdict": "Fail",
+    "fingerprint": "0b034e188ffc736e5fa7336306e93f02201eaa712adea89cda3955a4eb4b8061",
+    "kitCommit": "a9f4561ea2c056d693d79b720e982921746c4a4f",
+    "date": "2026-11-26T12:13:58.906Z",
+    "issue": 235
+  },
   "aw-intake-security": {
     "verdict": "Pass",
     "fingerprint": "264827bcfef32c2e989f24ad677b79aeb4b097baf584df3919d82383529cadc4",
