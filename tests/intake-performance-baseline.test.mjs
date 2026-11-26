@@ -14,6 +14,7 @@ const baseline = skillSection('aw-intake/PRE-STEPS.md', '## Performance: baselin
 test('the baseline compares the median with the figure the task states, and the report gives both when they differ', () => {
   assert.match(baseline, /When the task states a figure for the problem \(a time, a rate, a size\), compare the median with it, and say in the report whether they match\./);
   assert.match(baseline, /When they differ, give both numbers, and never present the baseline as confirming the task\./);
+  assert.match(baseline, /That figure is what the task says the problem is, not the target agreed in step 1\./);
   assert.match(baseline, /When the task states no figure, skip this step\./);
 });
 
@@ -33,5 +34,5 @@ test('the baseline is done only when the report sets the median beside the figur
 test("intake's report template asks for the baseline's median and spread, beside the figure the task states", () => {
   const line = readFileSync(join(repoRoot, 'skills/aw-intake/SKILL.md'), 'utf8').split('\n').find((candidate) => candidate.startsWith('**Pre-step:**'));
   assert.ok(line, 'aw-intake has no **Pre-step:** line');
-  assert.match(line, /the baseline's median and spread, with the figure the task states, when it states one, and whether they match/);
+  assert.match(line, /the baseline's median and spread \(with the figure the task states, when it states one, and whether they match\), or "none">$/);
 });
