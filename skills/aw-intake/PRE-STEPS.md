@@ -25,15 +25,15 @@ Then commit the new tests on their own, through `start-branch` when you are on t
 
 ## Performance: baseline
 
-1. Agree with the user what to measure (latency, throughput, memory, size, …), the workload that exercises the slow path, and the target, when they have one.
+1. Before writing the measurement, ask the user, one question at a time, what to measure (latency, throughput, memory, size, …), the workload that exercises the slow path, and the target, when they have one. A choice the task already settles, such as latency when it gives a time, is offered as the recommended answer, not skipped.
 2. Write the measurement as one command, so that `aw-build` and `aw-verify` can rerun it unchanged.
 3. Run it on the current code at least five times.
 4. Write `.aw/baselines/<slug>.md` with the command, the machine and the tool versions, the commit (`git rev-parse HEAD`), every run's number, and the median.
 5. When the task states a figure for the problem (a time, a rate, a size), compare the median with it, and say in the report whether they match. That figure is what the task says the problem is, not the target agreed in step 1. When they differ, give both numbers, and never present the baseline as confirming the task. A tail value that matches the figure, such as the maximum or a p99, is named as the tail, not as the usual case. When the task states no figure, skip this step.
 
-The report states only what the recorded numbers show: quote a count or share of slow runs or requests only when the measurement recorded it. A maximum above a threshold shows that at least one passed it, not how many.
+The report states only what the recorded numbers show: quote a count or share of slow runs or requests only when the measurement recorded it. A maximum above a threshold shows that at least one passed it, not how many. Never report that you could not agree a value with the user unless you asked and got no usable answer; a value you did not ask is reported as assumed.
 
-Done when the file holds at least five runs of one command and the report quotes the median and the spread, and, when the task states a figure, that figure beside the median and whether they match.
+Done when the user has agreed the metric, the workload and the target (or that there is none), the file holds at least five runs of one command, and the report quotes the median and the spread, and, when the task states a figure, that figure beside the median and whether they match.
 
 ## Investigation: answer, changing nothing
 
