@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { skillSection, textSection } from './fixtures.mjs';
+import { skillLine, skillSection, textLine, textSection } from './fixtures.mjs';
 
 test('skillSection returns a skill\'s text from one heading line up to the next named one, or to the end', () => {
   const conditions = skillSection('aw-ship', '## Merge conditions', '## Steps');
@@ -71,4 +71,28 @@ test('textSection throws, naming the heading, when the heading is not found', ()
   assert.throws(() => textSection(outline, '## Third'), /"## Third"/);
   // A heading is a whole line: a prefix of one is not found.
   assert.throws(() => textSection(outline, '## Fir'), /"## Fir"/);
+});
+
+// textLine and skillLine find a line by the words it opens with, the lookup
+// most text tests make (#235's review).
+
+test('textLine returns the first line of a text that starts with the given words', () => {
+  assert.equal(textLine(outline, '## '), '## First');
+  assert.equal(textLine(outline, 'tw'), 'two');
+});
+
+test('textLine normalizes line endings to \n', () => {
+  assert.equal(textLine('a\r\nb line\r\nc\r\n', 'b '), 'b line');
+});
+
+test('textLine throws, naming the words, when no line starts with them', () => {
+  assert.throws(() => textLine(outline, '## Third'), /"## Third"/);
+  // The words must open the line: a line that only holds them does not count.
+  assert.throws(() => textLine(outline, 'Deeper'), /"Deeper"/);
+});
+
+test("skillLine returns the first line of a skill's file that starts with the given words, and throws naming the file and the words", () => {
+  assert.equal(skillLine('aw-ship', '### 8. Report'), '### 8. Report');
+  assert.ok(skillLine('aw-intake/PRE-STEPS.md', '## Performance').startsWith('## Performance: baseline'));
+  assert.throws(() => skillLine('aw-ship', '### 9. Celebrate'), /skills\/aw-ship\/SKILL\.md[^\n]*"### 9\. Celebrate"/);
 });

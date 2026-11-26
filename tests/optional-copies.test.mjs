@@ -9,7 +9,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { repoRoot } from './fixtures.mjs';
+import { repoRoot, textLine } from './fixtures.mjs';
 
 const read = (path) => readFileSync(join(repoRoot, path), 'utf8');
 const { upstreams } = JSON.parse(read('upstreams.json'));
@@ -25,8 +25,7 @@ for (const { name, upstreamPath, userInvoked } of OPTIONAL_COPIES) {
 
   test(`${skill} comes from ${upstreamPath} in Pocock's repo, in upstreams.json and in NOTICE.md`, () => {
     assert.equal(upstreams.mattpocock.skills[name], upstreamPath);
-    const row = read('NOTICE.md').split('\n').find((line) => line.startsWith(`| \`${skill}\` |`));
-    assert.ok(row, 'no NOTICE.md row');
+    const row = textLine(read('NOTICE.md'), `| \`${skill}\` |`);
     assert.ok(row.includes(`\`${upstreamPath}\``), row);
   });
 
@@ -40,8 +39,7 @@ for (const { name, upstreamPath, userInvoked } of OPTIONAL_COPIES) {
 
 test("ADR 0010's list of phase-free copies names every copy in upstreams.json", () => {
   const adr = read('docs/adr/0010-one-owner-per-phase-and-slices-in-the-spec.md');
-  const list = adr.split('\n').find((line) => line.startsWith('Phase-free copies sit outside the table:'));
-  assert.ok(list, 'no list of phase-free copies');
+  const list = textLine(adr, 'Phase-free copies sit outside the table:');
   for (const copy of everyCopy) assert.ok(list.includes(`\`${copy}\``), `the list leaves out ${copy}`);
 });
 

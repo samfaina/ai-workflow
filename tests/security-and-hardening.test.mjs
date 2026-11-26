@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { repoRoot, textSection } from './fixtures.mjs';
+import { repoRoot, textLine, textSection } from './fixtures.mjs';
 
 const skillDir = join(repoRoot, 'skills/aw-security-and-hardening');
 const skill = readFileSync(join(skillDir, 'SKILL.md'), 'utf8');
@@ -181,8 +181,7 @@ test('the threat model, hardening controls, rationalizations and red flags keep 
 
 test('its NOTICE row stays an adaptation and says what it takes and what it changes', () => {
   const notice = readFileSync(join(repoRoot, 'NOTICE.md'), 'utf8');
-  const row = notice.split('\n').find((line) => line.startsWith('| `aw-security-and-hardening` |'));
-  assert.ok(row, 'no NOTICE row');
+  const row = textLine(notice, '| `aw-security-and-hardening` |');
   assert.match(row, /\| adaptation \|$/);
   assert.doesNotMatch(row, /the whole text/);
   for (const taken of ['threat-modeling process', 'hardening controls', 'rationalizations', 'red flags', 'both references']) {

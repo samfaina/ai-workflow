@@ -10,13 +10,13 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { repoRoot } from './fixtures.mjs';
+import { repoRoot, textLine } from './fixtures.mjs';
 
 const read = (path) => readFileSync(join(repoRoot, path), 'utf8');
 const { upstreams } = JSON.parse(read('upstreams.json'));
 const lock = JSON.parse(read('upstreams.lock.json')).upstreams;
 const notice = read('NOTICE.md');
-const readmeStatus = () => read('README.md').split('\n').find((line) => line.startsWith('> Status:'));
+const readmeStatus = () => textLine(read('README.md'), '> Status:');
 
 const ADAPTED = [
   { name: 'tdd', upstreamPath: 'skills/engineering/tdd' },
@@ -36,8 +36,7 @@ for (const { name, upstreamPath } of ADAPTED) {
   });
 
   test(`${skill}'s NOTICE row is an adaptation of ${upstreamPath} that says what it adds`, () => {
-    const row = notice.split('\n').find((line) => line.startsWith(`| \`${skill}\` |`));
-    assert.ok(row, 'no NOTICE.md row');
+    const row = textLine(notice, `| \`${skill}\` |`);
     assert.ok(row.includes(`\`${upstreamPath}\``), row);
     assert.match(row, /\| adaptation \|$/);
     assert.match(row, /the chat text or the confirmation question's preview/);
@@ -45,13 +44,13 @@ for (const { name, upstreamPath } of ADAPTED) {
 
   test(`${skill} keeps almost all of its upstream's text, so it still carries LICENSE.upstream`, () => {
     assert.ok(existsSync(join(repoRoot, 'skills', skill, 'LICENSE.upstream')));
-    const sentence = notice.split('\n').find((line) => line.startsWith('This file lists every skill'));
+    const sentence = textLine(notice, 'This file lists every skill');
     assert.ok(sentence.includes(`\`${skill}\``), `NOTICE.md does not say ${skill} carries LICENSE.upstream`);
   });
 
   test(`ADR 0010 lists ${skill} as a phase-free adaptation, not a copy`, () => {
     const adr = read('docs/adr/0010-one-owner-per-phase-and-slices-in-the-spec.md');
-    const line = adr.split('\n').find((candidate) => candidate.startsWith('Phase-free copies sit outside the table:'));
+    const line = textLine(adr, 'Phase-free copies sit outside the table:');
     const [copies, rest] = line.split('(from Addy Osmani).');
     assert.ok(!copies.includes(`\`${skill}\``), `ADR 0010 still lists ${skill} as a copy`);
     assert.ok(rest.includes(`\`${skill}\``), `ADR 0010 does not list ${skill} as an adaptation`);

@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
 
-import { repoRoot, skillSection } from './fixtures.mjs';
+import { repoRoot, skillSection, textLine } from './fixtures.mjs';
 import { skillDir } from './uat-fixtures.mjs';
 
 const casesDir = join(skillDir, 'cases');
@@ -311,10 +311,8 @@ const readFixture = (path) => readFileSync(join(skillDir, path), 'utf8').replace
 
 // The words step 5 writes in each introduced-risk item for a review host at
 // merge: write, taken from the skill so that the case follows it.
-const hostRiskWording = skillSection('aw-ship', '### 5. Write the review request body', '### 6. Push and open the review request')
-  .split('\n')
-  .find((line) => line.startsWith('- **With a review host at `merge: write`:**'))
-  .match(/"([^"]+)"\.$/)[1];
+const hostRiskStep = skillSection('aw-ship', '### 5. Write the review request body', '### 6. Push and open the review request');
+const hostRiskWording = textLine(hostRiskStep, '- **With a review host at `merge: write`:**').match(/"([^"]+)"\.$/)[1];
 
 test('the review-host merge sits next to the local one, on its restore point', () => {
   const local = byId.get('aw-ship-merge-write');

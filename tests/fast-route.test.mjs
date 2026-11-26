@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { repoRoot, skillSection } from './fixtures.mjs';
+import { repoRoot, skillLine, skillSection } from './fixtures.mjs';
 
 function skillText(skill) {
   return readFileSync(join(repoRoot, 'skills', skill, 'SKILL.md'), 'utf8');
@@ -14,12 +14,6 @@ function skillText(skill) {
 
 function repoFile(path) {
   return readFileSync(join(repoRoot, path), 'utf8');
-}
-
-function skillLine(skill, start) {
-  const line = skillText(skill).split('\n').find((candidate) => candidate.startsWith(start));
-  assert.ok(line, `${skill} has no line starting "${start}"`);
-  return line;
 }
 
 const intakeDefinition = skillLine('aw-intake', '- **fast**:');

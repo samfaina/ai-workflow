@@ -8,7 +8,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 
-import { repoRoot, textSection } from './fixtures.mjs';
+import { repoRoot, textLine, textSection } from './fixtures.mjs';
 
 const read = (path) => readFileSync(join(repoRoot, path), 'utf8').replaceAll('\r\n', '\n');
 const implement = read('skills/aw-implement/SKILL.md');
@@ -16,13 +16,6 @@ const converge = read('skills/aw-converge-steps/SKILL.md');
 const buildSteps = read('skills/aw-build-steps/SKILL.md');
 const verifySteps = read('skills/aw-verify-steps/SKILL.md');
 const reviewSteps = read('skills/aw-review-steps/SKILL.md');
-
-// The first line of the text that opens with these words.
-function line(text, start) {
-  const found = text.split('\n').find((candidate) => candidate.startsWith(start));
-  assert.ok(found, `no line starting "${start}"`);
-  return found;
-}
 
 const journal = textSection(implement, '## The journal');
 const input = textSection(implement, '### 1. Take the input');
@@ -53,53 +46,53 @@ test('its unit is one spec and one review request, and it takes no ticket', () =
 
 test('it never ships', () => {
   assert.match(implement, /never pushes, opens a review request or merges/);
-  assert.match(line(implement, 'description: '), /Never pushes, opens a review request or merges/);
+  assert.match(textLine(implement, 'description: '), /Never pushes, opens a review request or merges/);
 });
 
 test('a spec path picks the standard route, and without one the fast route comes from the conversation', () => {
-  assert.match(line(input, '- **A spec path:**'), /standard route/);
-  assert.match(line(input, '- **No spec path, and `/aw-intake`'), /`Route: fast`/);
+  assert.match(textLine(input, '- **A spec path:**'), /standard route/);
+  assert.match(textLine(input, '- **No spec path, and `/aw-intake`'), /`Route: fast`/);
 });
 
 test('a relaunch on the fast route finds its source in the journal or the Done when lines', () => {
-  const source = line(input, '- **No spec path, on a branch');
+  const source = textLine(input, '- **No spec path, on a branch');
   assert.match(source, /journal/);
   assert.match(source, /`Done when:`/);
 });
 
 test('a journal still at pending is a source on a protected branch, since a seam stop makes no branch', () => {
-  assert.match(line(input, '- **No spec path, on a branch'), /still at `pending` while this branch is protected/);
+  assert.match(textLine(input, '- **No spec path, on a branch'), /still at `pending` while this branch is protected/);
 });
 
 test('the journal learns the work branch after any build, not only after a commit', () => {
-  assert.match(line(build, 'After every build'), /`pending`/);
-  assert.match(line(build, 'After every build'), /`Work branch: /);
+  assert.match(textLine(build, 'After every build'), /`pending`/);
+  assert.match(textLine(build, 'After every build'), /`Work branch: /);
 });
 
 test('an AFK seam stop makes no branch, because the seam check comes before start-branch', () => {
   const branch = textSection(buildSteps, '### 2. Start the work branch');
   assert.match(branch, /In the `afk` variant[^\n]*\*\*A seam to agree in the `afk` variant\*\*/);
-  assert.match(line(textSection(buildSteps, '### 4. Build test-first'), '**A seam to agree in the `afk` variant.**'), /before step 2 creates a work branch/);
+  assert.match(textLine(textSection(buildSteps, '### 4. Build test-first'), '**A seam to agree in the `afk` variant.**'), /before step 2 creates a work branch/);
 });
 
 test('a fast-route build for aw-implement never turns into a fix run', () => {
-  assert.match(line(fastRoute, '**Fix run.**'), /With `caller: aw-implement` there is no fix run/);
+  assert.match(textLine(fastRoute, '**Fix run.**'), /With `caller: aw-implement` there is no fix run/);
 });
 
 test('a seam agreed during a HITL slice reaches the journal too', () => {
-  assert.match(line(build, '2. **`Stop: HITL slice'), /`Agreed seam: /);
+  assert.match(textLine(build, '2. **`Stop: HITL slice'), /`Agreed seam: /);
 });
 
 test('a verify that stops still prints its progress line', () => {
-  assert.match(line(verify, '1. **Any `Stop:` line**'), /`Verify: stopped: /);
+  assert.match(textLine(verify, '1. **Any `Stop:` line**'), /`Verify: stopped: /);
 });
 
 test('with no source at all it asks which spec', () => {
-  assert.match(line(input, '- **Otherwise:**'), /ask which one/);
+  assert.match(textLine(input, '- **Otherwise:**'), /ask which one/);
 });
 
 test('the limit is three rounds, raised per call, and a repo cannot change it', () => {
-  const limit = line(input, '**The limit.**');
+  const limit = textLine(input, '**The limit.**');
   assert.match(limit, /Three rounds/);
   assert.match(limit, /above 3/);
   assert.match(limit, /can only raise the limit/);
@@ -117,7 +110,7 @@ for (const [name, where, wording] of [
   ['a fast-route task with no source', '- **No fast-route source.**', /`\/aw-intake`/],
 ]) {
   test(`it refuses on ${name}, before any work`, () => {
-    assert.match(line(refusals, where), wording);
+    assert.match(textLine(refusals, where), wording);
     assert.match(refusals, /before any work/);
   });
 }
@@ -151,7 +144,7 @@ test('only an implementation run reads the journal, and it never decides the pos
 
 test('the main session reads the journal again before each step, and a missing one changes nothing', () => {
   assert.match(journal, /Read it again before each step/);
-  assert.match(line(journal, '**When it is gone**'), /goes on/);
+  assert.match(textLine(journal, '**When it is gone**'), /goes on/);
 });
 
 test('each call opens a heading, and the round count looks only at the latest', () => {
@@ -160,7 +153,7 @@ test('each call opens a heading, and the round count looks only at the latest', 
 });
 
 test('a journal naming another work branch is replaced, and one on the same branch continues', () => {
-  const relaunch = line(journal, '**A relaunch.**');
+  const relaunch = textLine(journal, '**A relaunch.**');
   assert.match(relaunch, /same work branch continues/);
   assert.match(relaunch, /names another work branch is replaced/);
 });
@@ -175,24 +168,24 @@ test('the agreed seams of every call are applied, and the journal holds what the
 });
 
 test('slices are built in series, each AFK slice in a subagent of its own, in the foreground', () => {
-  assert.match(line(build, 'Start a subagent'), /in the foreground/);
-  assert.match(line(build, 'Start a subagent'), /"aw-build-steps"/);
-  assert.match(line(build, 'Start a subagent'), /`caller: aw-implement; afk; /);
+  assert.match(textLine(build, 'Start a subagent'), /in the foreground/);
+  assert.match(textLine(build, 'Start a subagent'), /"aw-build-steps"/);
+  assert.match(textLine(build, 'Start a subagent'), /`caller: aw-implement; afk; /);
   assert.match(build, /in series/);
   assert.match(build, /reports and none of their reasoning/);
 });
 
 test('the fast route passes the whole of intake\'s report to its one build', () => {
-  assert.match(line(build, 'Start a subagent'), /fast route; intake: <intake's whole report: task, type, pre-step result and criteria>/);
+  assert.match(textLine(build, 'Start a subagent'), /fast route; intake: <intake's whole report: task, type, pre-step result and criteria>/);
 });
 
 test('with every slice done at the start it goes straight to verify', () => {
-  assert.match(line(build, '- **Nothing left to build, standard route:**'), /go to \*\*5\. Verify\*\*/);
-  assert.match(line(build, '- **Nothing left to build, fast route:**'), /`Done when:`/);
+  assert.match(textLine(build, '- **Nothing left to build, standard route:**'), /go to \*\*5\. Verify\*\*/);
+  assert.match(textLine(build, '- **Nothing left to build, fast route:**'), /`Done when:`/);
 });
 
 test('a seam to agree reaches the user as a question, and the answer passes to every later build and fix run', () => {
-  const seam = line(build, '1. **`Stop: seam to agree`**');
+  const seam = textLine(build, '1. **`Stop: seam to agree`**');
   assert.match(seam, /Ask the user/);
   assert.match(seam, /start the build again/);
   assert.match(seam, /`Agreed seam: /);
@@ -201,7 +194,7 @@ test('a seam to agree reaches the user as a question, and the answer passes to e
 });
 
 test('a HITL slice runs in the main session and does not end the run', () => {
-  const hitl = line(build, '2. **`Stop: HITL slice');
+  const hitl = textLine(build, '2. **`Stop: HITL slice');
   assert.match(hitl, /in this session/);
   assert.match(hitl, /`caller: aw-implement; hitl; /);
   assert.match(hitl, /does not end the run/);
@@ -213,13 +206,13 @@ for (const [name, where] of [
   ['Commit: draft', '5. **`Commit: draft <path>`**'],
 ]) {
   test(`a build ending in ${name} ends the run`, () => {
-    assert.match(line(build, where), /ends the run/);
+    assert.match(textLine(build, where), /ends the run/);
   });
 }
 
 test('a failed criterion is never rebuilt automatically', () => {
-  assert.match(line(verify, '1. **Any `Stop:` line**'), /`Stop: criterion failed`/);
-  assert.match(line(verify, '1. **Any `Stop:` line**'), /never rebuilt/);
+  assert.match(textLine(verify, '1. **Any `Stop:` line**'), /`Stop: criterion failed`/);
+  assert.match(textLine(verify, '1. **Any `Stop:` line**'), /never rebuilt/);
 });
 
 test('a commit that is not HEAD and any output not recognised end the run, and the report quotes it', () => {
@@ -237,16 +230,16 @@ test('the run follows each report\'s Next line until it is no longer /aw-build',
 });
 
 test('verify runs in a subagent and the first review in the main session', () => {
-  assert.match(line(verify, 'Start a subagent'), /"aw-verify-steps"/);
-  assert.match(line(verify, 'Start a subagent'), /`caller: aw-implement; /);
+  assert.match(textLine(verify, 'Start a subagent'), /"aw-verify-steps"/);
+  assert.match(textLine(verify, 'Start a subagent'), /`caller: aw-implement; /);
   assert.match(review, /in this session, never in a subagent/);
   assert.match(review, /"aw-review-steps"/);
   assert.match(review, /`caller: aw-implement; /);
 });
 
 test('a review with no introduced defect ends the run clean, and one with a defect starts the rounds', () => {
-  assert.match(line(review, '- **0 introduced:**'), /ends the run clean/);
-  assert.match(line(review, '- **More:**'), /\*\*7\. Converge\*\*/);
+  assert.match(textLine(review, '- **0 introduced:**'), /ends the run clean/);
+  assert.match(textLine(review, '- **More:**'), /\*\*7\. Converge\*\*/);
 });
 
 test('the rounds run through the convergence procedure with the limit and the journal', () => {
@@ -276,9 +269,9 @@ test('the final report gives the state, what is left, every Spec change line and
   assert.match(report, /what is left/);
   assert.match(report, /every `Spec change:` line/);
   assert.match(report, /\(from an earlier call\)/);
-  assert.match(line(report, '  - **Clean:**'), /`\/aw-ship`/);
-  assert.match(line(report, '  - **Limit reached:**'), /defects left/);
-  const stopped = line(report, '  - **Stopped:**');
+  assert.match(textLine(report, '  - **Clean:**'), /`\/aw-ship`/);
+  assert.match(textLine(report, '  - **Limit reached:**'), /defects left/);
+  const stopped = textLine(report, '  - **Stopped:**');
   assert.match(stopped, /at which point/);
   assert.match(stopped, /why/);
   assert.match(stopped, /`\/aw-implement` again/);
@@ -295,20 +288,20 @@ test('aw-build-steps accepts caller: aw-implement in an AFK and a HITL variant',
 });
 
 test('in the AFK variant a question ends the run with a Stop line, and in the HITL variant it asks', () => {
-  const variants = line(buildFirst, 'With `caller: aw-implement`');
+  const variants = textLine(buildFirst, 'With `caller: aw-implement`');
   assert.match(variants, /`afk` variant you run in a subagent/);
   assert.match(variants, /end the run with a `Stop:` line/);
   assert.match(variants, /`hitl` variant runs in the main session and asks/);
 });
 
 test('aw-build-steps keeps choosing the slice, and never makes a fix run for aw-implement', () => {
-  const chosen = line(pick, 'With `caller: aw-implement`');
+  const chosen = textLine(pick, 'With `caller: aw-implement`');
   assert.match(chosen, /first slice in plan order/);
   assert.match(chosen, /never go to \*\*The fix run\*\*/);
 });
 
 test('the AFK variant on a HITL slice changes nothing and names the slice', () => {
-  const hitl = line(pick, 'In the `afk` variant, when the slice is **HITL**');
+  const hitl = textLine(pick, 'In the `afk` variant, when the slice is **HITL**');
   assert.match(hitl, /change nothing, commit nothing/);
   assert.match(hitl, /`Stop: HITL slice <n>: <its name>`/);
   assert.match(hitl, /`Commit: none`/);
@@ -316,18 +309,18 @@ test('the AFK variant on a HITL slice changes nothing and names the slice', () =
 });
 
 test('an AFK seam stop changes nothing, on both routes, and agreed seams count', () => {
-  const seam = line(textSection(buildSteps, '### 4. Build test-first'), '**A seam to agree in the `afk` variant.**');
+  const seam = textLine(textSection(buildSteps, '### 4. Build test-first'), '**A seam to agree in the `afk` variant.**');
   assert.match(seam, /`Stop: seam to agree`/);
   assert.match(seam, /`Question: /);
   assert.match(seam, /change nothing and commit nothing/);
   assert.match(seam, /before the first test/);
   assert.match(seam, /undo what this run changed/);
   assert.match(buildFirst, /`agreed seams:` count as agreed/);
-  assert.match(line(fastRoute, '**Step 4: test-first.**'), /`afk` variant[^.]*`Stop: seam to agree`/);
+  assert.match(textLine(fastRoute, '**Step 4: test-first.**'), /`afk` variant[^.]*`Stop: seam to agree`/);
 });
 
 test('the fast route takes intake\'s report, pre-step result included, from the arguments', () => {
-  assert.match(line(fastRoute, '**Step 1: take the task, not a spec.**'), /`intake:`/);
+  assert.match(textLine(fastRoute, '**Step 1: take the task, not a spec.**'), /`intake:`/);
   assert.match(buildFirst, /intake's whole report/);
 });
 
@@ -336,7 +329,7 @@ test('a slice or a fast-route build closes with the lines aw-implement reads', (
   for (const opener of ['- `Commit: <hash> <subject>`', '- `Spec change: <the change>`', '- `Stop: <reason>`', '- `Question: <the question>`', '- `Next: <skill>`']) {
     assert.ok(closing.includes(opener), opener);
   }
-  assert.match(line(fastRoute, '**Step 8: report each criterion.**'), /\*\*Closing lines for `aw-implement`\*\*/);
+  assert.match(textLine(fastRoute, '**Step 8: report each criterion.**'), /\*\*Closing lines for `aw-implement`\*\*/);
 });
 
 test('the fix run keeps its own closing lines, so aw-converge reads them as before', () => {
@@ -362,22 +355,22 @@ test('aw-review-steps accepts caller: aw-implement and behaves as with aw-conver
 });
 
 test('under aw-implement the convergence procedure takes its limit, journal and seams from the arguments', () => {
-  assert.match(line(underImplement, '- **The limit**'), /`limit:`/);
-  assert.match(line(underImplement, '- **The journal.**'), /`journal:`/);
-  assert.match(line(underImplement, '- **Seams.**'), /`agreed seams:`/);
-  assert.match(line(underImplement, '- **Seams.**'), /`Agreed seam: /);
+  assert.match(textLine(underImplement, '- **The limit**'), /`limit:`/);
+  assert.match(textLine(underImplement, '- **The journal.**'), /`journal:`/);
+  assert.match(textLine(underImplement, '- **Seams.**'), /`agreed seams:`/);
+  assert.match(textLine(underImplement, '- **Seams.**'), /`Agreed seam: /);
 });
 
 test('under aw-implement a round number survives compaction, and a new call starts a new count', () => {
-  assert.match(line(underImplement, '- **The round number.**'), /latest heading/);
+  assert.match(textLine(underImplement, '- **The round number.**'), /latest heading/);
 });
 
 test('under aw-implement every Spec change line reaches the journal', () => {
-  assert.match(line(underImplement, '- **Spec changes.**'), /journal/);
+  assert.match(textLine(underImplement, '- **Spec changes.**'), /journal/);
 });
 
 test('under aw-implement the rounds end with one line that aw-implement reads, a refusal included', () => {
-  const end = line(underImplement, '- **The end.**');
+  const end = textLine(underImplement, '- **The end.**');
   assert.match(end, /`Converge: clean`/);
   assert.match(end, /`Converge: limit reached`/);
   assert.match(end, /`Converge: stopped: /);
@@ -389,7 +382,7 @@ for (const [skill, where, wording] of [
   ['aw-intake', '- **fast**: `/aw-build`', /`\/aw-implement`/],
 ]) {
   test(`${skill} names /aw-implement beside /aw-build, and the manual path stays`, () => {
-    const named = line(read(`skills/${skill}/SKILL.md`), where);
+    const named = textLine(read(`skills/${skill}/SKILL.md`), where);
     assert.match(named, wording);
     assert.match(named, /`\/aw-build`/);
   });

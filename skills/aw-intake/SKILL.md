@@ -86,7 +86,7 @@ Report in chat, in this shape:
 **Task:** <one or two sentences; the ticket key when there is one>
 **Type:** <type>, because <reason>
 **Route:** <route>, because <reason>
-**Pre-step:** <what ran and what it showed: the reproduction command, the characterization tests and their result, the baseline numbers, or "none">
+**Pre-step:** <what ran and what it showed: the reproduction command, the characterization tests and their result, the baseline's median and spread (with the figure the task states, when it states one, and whether they match), or "none">
 **Done when:** <fast route, except an investigation: 1 to 3 criteria>
 **Next:** <the skill to run>
 ```

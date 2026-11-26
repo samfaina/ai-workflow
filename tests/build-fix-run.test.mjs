@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 
-import { repoRoot, textSection, writeFiles } from './fixtures.mjs';
+import { repoRoot, skillLine, textLine, textSection, writeFiles } from './fixtures.mjs';
 import { git, tempDir } from './uat-fixtures.mjs';
 
 const read = (path) => readFileSync(join(repoRoot, path), 'utf8').replaceAll('\r\n', '\n');
@@ -19,29 +19,22 @@ const fixRun = textSection(skill, '## The fix run');
 const stepOne = textSection(skill, '### 1. Take the spec and the slice');
 const fastRoute = textSection(skill, '## The fast route');
 
-// The paragraph that opens with these words, in the given text.
-function paragraph(text, start) {
-  const found = text.split('\n').find((line) => line.startsWith(start));
-  assert.ok(found, `no line starting "${start}"`);
-  return found;
-}
-
 // The step or item of the fix run with this bold name.
-const step = (name) => paragraph(fixRun, `**${name}`);
-const item = (name) => paragraph(fixRun, `- **${name}`);
+const step = (name) => textLine(fixRun, `**${name}`);
+const item = (name) => textLine(fixRun, `- **${name}`);
 
 test('with every slice done, an introduced defect in a report at HEAD starts a fix run instead of naming /aw-verify', () => {
-  const pick = paragraph(stepOne, 'Pick the slice');
+  const pick = textLine(stepOne, 'Pick the slice');
   assert.match(pick, /When every slice is done, and the latest review report names `HEAD` and holds an introduced defect, go to \*\*The fix run\*\*/);
   assert.match(pick, /Otherwise, when every slice is done, say so and name `\/aw-verify`/);
 });
 
 test('a user who asks for a fix run gets one, whatever is left to build', () => {
-  assert.match(paragraph(stepOne, 'Pick the slice'), /When the user asks for a fix run, go to \*\*The fix run\*\*/);
+  assert.match(textLine(stepOne, 'Pick the slice'), /When the user asks for a fix run, go to \*\*The fix run\*\*/);
 });
 
 test('on the fast route, with no slices to wait for, the report alone starts a fix run', () => {
-  const start = paragraph(fastRoute, '**Fix run.**');
+  const start = textLine(fastRoute, '**Fix run.**');
   assert.match(start, /the user asks for one/);
   assert.match(start, /latest review report names `HEAD` and holds an introduced defect/);
   assert.match(start, /go to \*\*The fix run\*\*/);
@@ -158,7 +151,7 @@ test('no done marker changes, and Traceability grows only when a new test proves
 });
 
 test('the fix run edits the spec no further than the skill says it may', () => {
-  const rule = paragraph(skill, 'This skill edits only three things in the spec');
+  const rule = textLine(skill, 'This skill edits only three things in the spec');
   assert.match(rule, /A fix run edits the spec only as \*\*The fix run\*\* says/);
 });
 
@@ -212,8 +205,7 @@ for (const [skillName, start] of [
   ['aw-ship', '- **An introduced defect:**'],
 ]) {
   test(`${skillName} sends an introduced defect to the fix run`, () => {
-    const line = read(`skills/${skillName}/SKILL.md`).split('\n').find((candidate) => candidate.startsWith(start));
-    assert.ok(line, `${skillName} has no line "${start}"`);
+    const line = skillLine(skillName, start);
     assert.match(line, /fix run of `\/aw-build`/);
   });
 }

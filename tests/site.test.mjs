@@ -8,7 +8,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { markdownFiles, repoRoot } from './fixtures.mjs';
+import { markdownFiles, repoRoot, textLine } from './fixtures.mjs';
 import {
   FILE_TREE,
   PRE_STEPS,
@@ -294,7 +294,7 @@ test('the simulator starts from the unconfigured defaults of docs/configuration.
     'open-review': 'draft',
     merge: 'draft',
   });
-  const defaults = read('docs/configuration.md').split('\n').find((line) => line.startsWith('| VCS |'));
+  const defaults = textLine(read('docs/configuration.md'), '| VCS |');
   assert.ok(defaults.includes('`start-branch` and `commit` are at `write`; `push`, `open-review` and `merge` are at `draft`'), defaults);
 });
 

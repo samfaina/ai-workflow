@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 
-import { repoRoot, skillSection, writeFiles } from './fixtures.mjs';
+import { repoRoot, skillSection, textLine, writeFiles } from './fixtures.mjs';
 import { tempDir } from './uat-fixtures.mjs';
 
 const skill = readFileSync(join(repoRoot, 'skills', 'aw-ship', 'SKILL.md'), 'utf8').replaceAll('\r\n', '\n');
@@ -121,8 +121,7 @@ test('step 2 keeps the commits after the reviewed one for the Evidence section',
 });
 
 test('the review request\'s Evidence names each commit the review did not cover', () => {
-  const evidence = skill.split('\n').find((line) => line.startsWith('- **After the review:**'));
-  assert.ok(evidence, 'the Evidence template has no "After the review" line');
+  const evidence = textLine(skill, '- **After the review:**');
   assert.match(evidence, /one line per commit in `<short hash>\.\.HEAD`/);
   assert.match(evidence, /`<short hash>` <subject>/);
   assert.match(evidence, /changed only adapters/);

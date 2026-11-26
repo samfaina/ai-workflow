@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { repoRoot, textSection } from './fixtures.mjs';
+import { repoRoot, textLine, textSection } from './fixtures.mjs';
 
 const skillDir = join(repoRoot, 'skills/aw-unslop');
 const skill = readFileSync(join(skillDir, 'SKILL.md'), 'utf8');
@@ -169,8 +169,7 @@ test('no other skill names it, so no phase refers to it', () => {
 });
 
 test('its NOTICE row credits pstack by repo, folder and pin, and says what it takes and what it changes', () => {
-  const row = repoText('NOTICE.md').split('\n').find((line) => line.startsWith('| `aw-unslop` |'));
-  assert.ok(row, 'no NOTICE row');
+  const row = textLine(repoText('NOTICE.md'), '| `aw-unslop` |');
   assert.match(row, /\| adaptation \|$/);
   assert.match(row, /Lauren Tan/);
   assert.match(row, /\[`cursor\/plugins`\]\(https:\/\/github\.com\/cursor\/plugins\)/);
@@ -185,7 +184,7 @@ test('its NOTICE row credits pstack by repo, folder and pin, and says what it ta
 });
 
 test('the NOTICE opening names it among the adaptations that carry the license', () => {
-  const opening = repoText('NOTICE.md').split('\n').find((line) => line.startsWith('This file lists every skill'));
+  const opening = textLine(repoText('NOTICE.md'), 'This file lists every skill');
   assert.match(opening, /`aw-unslop`[^.]*LICENSE.upstream/);
 });
 
@@ -217,7 +216,7 @@ test('ADR 0010 lists it among the phase-free adaptations', () => {
 test('the README says upstreams.json pins the upstreams the kit copies from, and that pstack is not one', () => {
   const readme = repoText('README.md');
   assert.match(readme, /`upstreams\.json` pins each upstream the kit copies from to a commit/);
-  const line = readme.split('\n').find((candidate) => candidate.startsWith('`upstreams.json` pins'));
+  const line = textLine(readme, '`upstreams.json` pins');
   assert.match(line, /pstack \(`cursor\/plugins`, folder `pstack`\)/);
   assert.match(line, /only adaptations and inspired skills/);
   assert.match(line, /nothing syncs it/);
@@ -225,7 +224,7 @@ test('the README says upstreams.json pins the upstreams the kit copies from, and
 });
 
 test('the README status paragraph describes it and counts it', () => {
-  const status = repoText('README.md').split('\n').find((line) => line.startsWith('> Status:'));
+  const status = textLine(repoText('README.md'), '> Status:');
   assert.match(status, /twenty-five kit skills/);
   assert.match(status, /`aw-unslop`, [^;]*which no phase requires/);
 });
