@@ -367,3 +367,15 @@ _Avoid_: manual case, interactive case
 **Stop point**:
 A question in a UAT case that the step must leave unanswered, because the case checks that the agent stops there. The UAT conductor proposes `hecho` there, and the UAT driver ends the step.
 _Avoid_: human gate (a point in the kit's own workflow where a person decides), checkpoint
+
+**Unreviewed run**:
+A finished UAT run whose change to the UAT ledger has not reached `main` yet. Merging that change, with the run's drift, is its review.
+_Avoid_: pending run, open run
+
+**UAT queue**:
+The due UAT batches run one after another as unattended runs, each in a run folder of its own, from a checkout of `main` kept apart from the person's own work. It does not start while an unreviewed run exists, and it passes over a batch whose last run did not pass until the person retries it or the case changes.
+_Avoid_: night run, nightly batch, schedule
+
+**UAT board**:
+The local page that shows the state of UAT: each batch with whether it is due, the runs under way case by case, and the unreviewed runs ready for review. From it the person starts an unattended run or the UAT queue, or copies a batch's `/uat` line to conduct it instead.
+_Avoid_: dashboard, panel, UI
