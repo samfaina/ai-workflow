@@ -1413,3 +1413,100 @@ test('status gives a case due as not-passed the date of its last run and the iss
   assert.deepEqual(dueLines.slice(0, 2), ['  - `failed`: not-passed, last run 2026-11-18, #126', '  - `unproven`: not-passed, last run 2026-11-17']);
   assert.deepEqual(dueLines.slice(2), ['  - `edited`: changed']);
 });
+
+// What `status` prints for each run of a section, parsed back into the shape
+// of `status --json`'s runs, without the fields Markdown spells out apart.
+function statusRuns(markdown, heading) {
+  const section = markdown.split(/^## /m).find((part) => part.startsWith(heading)) ?? '';
+  return section.split(/^### /m).slice(1).map((run) => {
+    const tracking = run.match(/^- Tracking issue: ([^\n]*)/m)[1];
+    const token = run.match(/^- `UAT_GH_TOKEN`: ([^\n]*)/m)?.[1];
+    const cases = run.match(/--cases (\S+)\n```/)[1].split(',');
+    assert.match(run, new RegExp(`^\\d+\\. From \`${cases[0]}\`, ${cases.length} cases?\\n`));
+    return {
+      cases,
+      due: [...run.matchAll(/^ {2}- `([^`]+)`: ([^\n]*)/gm)].map(([, id, reason]) => `${id}: ${reason}`),
+      runsToo: [...(run.match(/^- Runs too, for the restore points the due cases start from: ([^\n]*)/m)?.[1].matchAll(/`([^`]+)`/g) ?? [])].map(([, id]) => id),
+      line: run.match(/```text\n([^\n]*)\n```/)[1],
+      tracking: tracking.startsWith('not looked up') ? null : [...tracking.matchAll(/#(\d+)/g)].map(([, number]) => Number(number)),
+      ...(token === undefined ? {} : { needsToken: token.startsWith('needed') }),
+    };
+  });
+}
+
+test('status --json prints the state status renders: the same batches, gate, token, assisted runs, tracking issues, last runs and passes', (t) => {
+  const run = makeRun(t, [
+    caseFile('root', { order: 1 }),
+    caseFile('point', { order: 2, from: { case: 'root' } }),
+    caseFile('session', { order: 3, from: undefined, continues: 'point', assisted: TERMINAL }),
+    caseFile('github', { order: 4, shell: ['gh issue list --repo owner/scratch'] }),
+    caseFile('apart', { order: 5 }),
+  ]);
+  runCases(run, pass(), pass(), pass(), fail, pass());
+  run.cli('report', '--issue', '126');
+  datePasses(run, { root: '2026-03-01T10:00:00.000Z', point: '2026-03-01T10:00:00.000Z', session: '2026-03-01T10:00:00.000Z', github: '2026-11-18T10:00:00.000Z', apart: '2026-03-02T10:00:00.000Z' });
+  tagRelease(run, 'v1.0.0', '2026-02-01T10:00:00Z');
+  run.writeCase({ ...run.readCase('point'), title: 'renamed' });
+  const file = issuesFile(run, [{ number: 7, title: 'UAT batch 7', state: 'OPEN', body: '`root,point`\n' }]);
+
+  const json = run.status('--issues', file, '--json');
+  const markdown = run.status('--issues', file).stdout;
+
+  assert.equal(json.status, 0, json.stdout);
+  const auto = 'node .claude/skills/uat/scripts/run.mjs auto --run <run> --source <clone>';
+  assert.deepEqual(json.output, {
+    commit: git(run.root, 'rev-parse', 'HEAD'),
+    release: { name: 'v1.0.0', date: '2026-02-01T10:00:00.000Z' },
+    cases: 5,
+    due: [{ case: 'point', reason: 'changed' }, { case: 'session', reason: 'upstream-due' }, { case: 'github', reason: 'not-passed' }],
+    gate: 'closed',
+    batches: [
+      { cases: ['root', 'point'], due: [{ case: 'point', reason: 'changed' }], runsToo: ['root'], paste: '--cases root,point', line: `${auto} --cases root,point`, tracking: [7], needsToken: false },
+      {
+        cases: ['github'],
+        due: [{ case: 'github', reason: 'not-passed', lastRun: { date: '2026-11-18T10:00:00.000Z', issue: 126 } }],
+        runsToo: [],
+        paste: '--cases github',
+        line: `${auto} --cases github`,
+        tracking: [],
+        needsToken: true,
+      },
+    ],
+    assisted: [
+      {
+        cases: ['root', 'point', 'session'],
+        due: [{ case: 'session', reason: 'upstream-due', assisted: TERMINAL }],
+        runsToo: ['root', 'point'],
+        paste: '--cases root,point,session',
+        line: '/uat <clone> --cases root,point,session',
+        tracking: [],
+      },
+    ],
+    passed: [{ case: 'root', date: '2026-03-01T10:00:00.000Z', issue: 126 }, { case: 'apart', date: '2026-03-02T10:00:00.000Z', issue: 126 }],
+  });
+
+  // The Markdown, read back, says what the data says.
+  const state = json.output;
+  assert.equal(progressOf(markdown), `**${state.passed.length} of ${state.cases}** UAT cases have passed since the latest release tag, \`${state.release.name}\`. The release gate is **${state.gate}**: 3 cases are due.`);
+  const dueLine = (entry) => `${entry.case}: ${entry.reason}${entry.lastRun ? `, last run ${entry.lastRun.date.slice(0, 10)}, #${entry.lastRun.issue}` : ''}${entry.assisted ? `. Assisted: ${entry.assisted}` : ''}`;
+  const shown = ({ paste, ...rest }) => ({ ...rest, due: rest.due.map(dueLine) });
+  assert.deepEqual(statusRuns(markdown, 'UAT batches'), state.batches.map(shown));
+  assert.deepEqual(statusRuns(markdown, 'Assisted UAT cases'), state.assisted.map(shown));
+  const passes = [...markdown.matchAll(/^- `([^`]+)`: Pass on (\d{4}-\d{2}-\d{2}), #(\d+)$/gm)].map(([, id, date, issue]) => ({ case: id, date, issue: Number(issue) }));
+  assert.deepEqual(passes, state.passed.map((entry) => ({ ...entry, date: entry.date.slice(0, 10) })));
+  assert.equal(markdown.trimEnd().split('\n').at(-1), `Built from commit ${state.commit}.`);
+});
+
+test('due and status still list a case that continues a case no file holds, which needs no UAT_GH_TOKEN for it', (t) => {
+  const run = makeRun(t, [caseFile('a', { order: 1 })]);
+  run.writeCase(caseFile('orphan', { order: 2, from: undefined, continues: 'gone' }));
+  commitKit(run, '2026-02-01T10:00:00Z');
+
+  const due = run.due();
+  const status = run.status('--json');
+
+  assert.equal(due.status, 0, due.stdout + due.stderr);
+  assert.deepEqual(due.output.batches.find((batch) => batch.cases.includes('orphan')), { cases: ['orphan'], due: ['orphan'], paste: '--cases orphan' });
+  assert.equal(status.status, 0, status.stdout + status.stderr);
+  assert.equal(status.output.batches.find((batch) => batch.cases.includes('orphan')).needsToken, false);
+});
