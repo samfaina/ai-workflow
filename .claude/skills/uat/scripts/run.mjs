@@ -13,7 +13,7 @@
 //   node run.mjs report --run <dir> [--issue <n>]
 //   node run.mjs clean  --run <dir>
 //   node run.mjs due    [--cases-dir <dir>] [--release]
-//   node run.mjs status [--cases-dir <dir>] [--issues <file>]
+//   node run.mjs status [--cases-dir <dir>] [--issues <file>] [--json]
 //   node run.mjs auto   --run <dir> [--source <repo>] [--cases a,b] [--cases-dir <dir>] [--judge-model <m>] [--max-five-hour <pct>] [--max-weekly <pct>]
 //
 // Each command takes only the options on its line, and any other option is a
@@ -24,7 +24,8 @@
 // <UAT_TARGET>/<yyyymmdd>; every other command needs the run folder by name,
 // except due, which reads only the case files and the UAT ledger, and with
 // --release the release tags of the repo that holds them, and status, which
-// reads what due --release reads and prints it as Markdown.
+// reads what due --release reads and prints it as Markdown, or with --json as
+// the data the Markdown is rendered from.
 //
 // auto is the UAT driver (driver.mjs): it runs one UAT batch unattended,
 // through the other commands, and resumes the run folder's state, or starts a
@@ -66,7 +67,7 @@ function usage(message) {
 }
 
 // Options that take no value.
-const FLAGS = new Set(['release']);
+const FLAGS = new Set(['release', 'json']);
 
 // The command's options, from the command line. An option the command does not
 // take is a usage error, so a typo is never dropped without a word.
@@ -627,17 +628,47 @@ function latestRelease(casesDir) {
   return latest ? { name: latest[0], date: new Date(latest[1]) } : null;
 }
 
+// What is due, from the state of UAT: each due case with its reason, then the
+// batches and the assisted runs, each listed where its first due case is, and
+// each run's due cases by id.
 function due(options) {
   const casesDir = resolve(options['cases-dir'] ?? join(skillDir, 'cases'));
-  const { due: dueCases, batches, assisted } = dueOf(casesDir, options.release ? latestRelease(casesDir) : null);
-  print({ due: dueCases, batches, assisted });
+  const state = uatState(casesDir, { release: options.release ? latestRelease(casesDir) : null });
+  const position = new Map(state.due.map((entry, index) => [entry.case, index]));
+  const firstDue = (run) => Math.min(...run.due.map((entry) => position.get(entry.case)));
+  const inDueOrder = (runs) => [...runs].sort((a, b) => firstDue(a) - firstDue(b));
+  const ids = (run) => run.due.map((entry) => entry.case);
+  print({
+    due: state.due,
+    batches: inDueOrder(state.batches).map((batch) => ({ cases: batch.cases, due: ids(batch), paste: batch.paste })),
+    assisted: inDueOrder(state.assisted).map((group) => ({
+      cases: group.cases,
+      due: ids(group),
+      paste: group.paste,
+      assisted: group.due.map((entry) => ({ case: entry.case, reason: entry.assisted })),
+    })),
+  });
   // The release gate: tagging waits until every case has passed since the last release.
-  if (options.release && dueCases.length > 0) process.exitCode = EXIT_DUE;
+  if (options.release && state.due.length > 0) process.exitCode = EXIT_DUE;
 }
 
-// What is due, as `due` prints it, with the cases and the ledger it read. With
-// a release, a pass dated before it is due too.
-function dueOf(casesDir, release) {
+const AUTO_LINE = 'node .claude/skills/uat/scripts/run.mjs auto --run <run> --source <clone>';
+
+// The state of UAT, as data: the one derivation that `due` prints and `status`
+// renders. With a release, a pass dated before it is due too. With issues, as
+// `gh issue list --json number,title,body` prints them, each run names the
+// open "UAT batch" issues that track it; without, its tracking is null.
+//
+// - due: each due case and its reason, in case order.
+// - gate: 'clear' when no case is due, else 'closed'.
+// - batches and assisted: the runs, in run order (the order of their first
+//   case). Each has its cases, its due cases with their reasons (and, for one
+//   that did not pass, its last run; for an assisted run, why it needs a
+//   person), the cases it runs too for the restore points they start from,
+//   its --cases list and the line that starts it. A batch says too whether it
+//   needs UAT_GH_TOKEN.
+// - passed: each case with a Pass for what it holds now, with that run.
+function uatState(casesDir, { release = null, issues = null } = {}) {
   const releaseDate = release?.date ?? null;
   const ledger = loadLedger(casesDir);
   const cases = allCases(casesDir);
@@ -661,15 +692,38 @@ function dueOf(casesDir, release) {
     const assistedCase = assistedOn(uatCase);
     return assistedCase === uatCase ? uatCase.assisted : `starts from ${assistedCase.id}: ${assistedCase.assisted}`;
   };
+  // A ledger entry's run, as its date and the issue that reports it.
+  const runOf = (entry) => ({ date: entry.date, ...(entry.issue === undefined ? {} : { issue: entry.issue }) });
+  // A case that did not pass names its last run, so whoever runs it again
+  // finds why in that run's issue. Every other reason says all there is.
+  const dueEntry = (id) => ({ case: id, reason: reasonOf(id), ...(reasonOf(id) === 'not-passed' ? { lastRun: runOf(ledger[id]) } : {}) });
+  const runFields = (batch, command) => ({
+    cases: batch.cases,
+    runsToo: batch.cases.filter((id) => !batch.due.includes(id)),
+    paste: batch.paste,
+    line: `${command} ${batch.paste}`,
+    tracking: issues ? trackingIssues(issues, batch.cases) : null,
+  });
+  const orderOf = (batch) => byId.get(batch.cases[0]).order;
+  const inRunOrder = (list) => [...list].sort((a, b) => orderOf(a) - orderOf(b));
+  const needsToken = (batch) => batch.cases.some((id) => needsGitHub((caseId) => byId.get(caseId), byId.get(id)));
+  const batches = inRunOrder(batchesOf(chains, dueCases.filter((uatCase) => !assistedOn(uatCase)))).map((batch) => ({
+    ...runFields(batch, AUTO_LINE),
+    due: batch.due.map(dueEntry),
+    needsToken: needsToken(batch),
+  }));
+  const assisted = inRunOrder(batchesOf(chains, dueCases.filter(assistedOn))).map((group) => ({
+    ...runFields(group, '/uat <clone>'),
+    due: group.due.map((id) => ({ ...dueEntry(id), assisted: assistedWhy(byId.get(id)) })),
+  }));
   return {
+    release: release ? { name: release.name, date: release.date.toISOString() } : null,
+    cases: cases.length,
     due: dueCases.map((uatCase) => ({ case: uatCase.id, reason: reasonOf(uatCase.id) })),
-    batches: batchesOf(chains, dueCases.filter((uatCase) => !assistedOn(uatCase))),
-    assisted: batchesOf(chains, dueCases.filter(assistedOn)).map((batch) => ({
-      ...batch,
-      assisted: batch.due.map((id) => ({ case: id, reason: assistedWhy(byId.get(id)) })),
-    })),
-    cases,
-    ledger,
+    gate: dueCases.length === 0 ? 'clear' : 'closed',
+    batches,
+    assisted,
+    passed: cases.filter((uatCase) => reasonOf(uatCase.id) === null).map((uatCase) => ({ case: uatCase.id, ...runOf(ledger[uatCase.id]) })),
   };
 }
 
@@ -688,93 +742,87 @@ function trackingIssues(issues, ids) {
 }
 
 const plural = (count, noun, many = `${noun}s`) => `${count} ${count === 1 ? noun : many}`;
-const AUTO_LINE = 'node .claude/skills/uat/scripts/run.mjs auto --run <run> --source <clone>';
 
-// The state of UAT as Markdown, for the status issue: the progress against the
-// release gate, each batch and assisted case as `due --release` lists them,
-// in run order, and the passes. It holds no path outside the repo and no quota
+// The state of UAT as `due --release` derives it, for the status issue, with
+// the commit it was built from: as Markdown, or with --json as the data the
+// Markdown is rendered from. It holds no path outside the repo and no quota
 // figure, as the ledger does not. --issues names a file of issues, as `gh
 // issue list --json number,title,body` prints them, to find each batch's issue
 // in: an issue with a `state` other than open is left out.
 function status(options) {
   const casesDir = resolve(options['cases-dir'] ?? join(skillDir, 'cases'));
   const release = latestRelease(casesDir);
-  const { due: dueCases, batches, assisted, cases, ledger } = dueOf(casesDir, release);
   const issues = options.issues ? readJson(options.issues) : null;
-  const byId = new Map(cases.map((uatCase) => [uatCase.id, uatCase]));
-  const reasonOf = new Map(dueCases.map((entry) => [entry.case, entry.reason]));
-  const orderOf = (batch) => byId.get(batch.cases[0]).order;
-  const inRunOrder = (list) => [...list].sort((a, b) => orderOf(a) - orderOf(b));
-  const tracking = (ids) => {
-    if (!issues) return '- Tracking issue: not looked up, as no `--issues` file was given.';
-    const found = trackingIssues(issues, ids);
-    return found.length === 0
+  const state = uatState(casesDir, { release, issues });
+  const built = { commit: git(casesDir, ['rev-parse', 'HEAD']), ...state };
+  if (options.json) print(built);
+  else process.stdout.write(statusMarkdown(built));
+}
+
+// The Markdown of `status`, from the state of UAT and its commit: the progress
+// against the release gate, each batch and assisted run in run order, and the
+// passes.
+function statusMarkdown(state) {
+  const tracking = (run) => {
+    if (run.tracking === null) return '- Tracking issue: not looked up, as no `--issues` file was given.';
+    return run.tracking.length === 0
       ? '- Tracking issue: none. No open "UAT batch" issue names this `--cases` list.'
-      : `- Tracking issue: ${found.map((number) => `#${number}`).join(', ')}`;
+      : `- Tracking issue: ${run.tracking.map((number) => `#${number}`).join(', ')}`;
   };
-  // A ledger entry's run, as its date and the issue that reports it.
-  const runOf = (entry) => `${entry.date.slice(0, 10)}${entry.issue === undefined ? '' : `, #${entry.issue}`}`;
-  // A case that did not pass names its last run, so whoever runs it again
-  // finds why in that run's issue. Every other reason says all there is.
-  const dueReason = (id) => (reasonOf.get(id) === 'not-passed' ? `not-passed, last run ${runOf(ledger[id])}` : reasonOf.get(id));
-  const startsFromLine = (batch) => {
-    const others = batch.cases.filter((id) => !batch.due.includes(id));
-    return others.length === 0 ? [] : [`- Runs too, for the restore points the due cases start from: ${others.map((id) => `\`${id}\``).join(', ')}`];
-  };
+  // A run, as its date and the issue that reports it.
+  const runOf = (run) => `${run.date.slice(0, 10)}${run.issue === undefined ? '' : `, #${run.issue}`}`;
+  const dueReason = (entry) => (entry.lastRun ? `${entry.reason}, last run ${runOf(entry.lastRun)}` : entry.reason);
+  const runsTooLine = (run) =>
+    run.runsToo.length === 0 ? [] : [`- Runs too, for the restore points the due cases start from: ${run.runsToo.map((id) => `\`${id}\``).join(', ')}`];
   // One run: a batch, or the assisted cases due cases start from, which only
-  // differ in the lines below the tracking issue, their reasons and the
-  // command that starts them.
-  const runSection = (run, index, { extra = [], reason, command }) => [
+  // differ in the lines below the tracking issue and their reasons.
+  const runSection = (run, index, { extra = [], reason }) => [
     `### ${index + 1}. From \`${run.cases[0]}\`, ${plural(run.cases.length, 'case')}`,
     '',
-    tracking(run.cases),
+    tracking(run),
     ...extra,
     '- Due:',
-    ...run.due.map((id) => `  - \`${id}\`: ${reason(id)}`),
-    ...startsFromLine(run),
+    ...run.due.map((entry) => `  - \`${entry.case}\`: ${reason(entry)}`),
+    ...runsTooLine(run),
     '',
     '```text',
-    `${command} ${run.paste}`,
+    run.line,
     '```',
   ].join('\n');
   const batchSection = (batch, index) => {
-    const token = batch.cases.some((id) => needsGitHub((caseId) => byId.get(caseId), byId.get(id)))
+    const token = batch.needsToken
       ? '- `UAT_GH_TOKEN`: needed, since a case runs `gh` or reaches GitHub.'
       : '- `UAT_GH_TOKEN`: not needed.';
-    return runSection(batch, index, { extra: [token], reason: dueReason, command: AUTO_LINE });
+    return runSection(batch, index, { extra: [token], reason: dueReason });
   };
-  const assistedSection = (group, index) => {
-    const why = new Map(group.assisted.map((entry) => [entry.case, entry.reason]));
-    return runSection(group, index, { reason: (id) => `${dueReason(id)}. Assisted: ${why.get(id)}`, command: '/uat <clone>' });
-  };
+  const assistedSection = (group, index) => runSection(group, index, { reason: (entry) => `${dueReason(entry)}. Assisted: ${entry.assisted}` });
 
-  const passed = cases.filter((uatCase) => !reasonOf.has(uatCase.id));
+  const { release, due: dueCases, batches, assisted, passed } = state;
   const progress = release
     ? `UAT cases have passed since the latest release tag, \`${release.name}\`.`
     : 'UAT cases have a Pass in the UAT ledger for what they hold now, and there is no `vX.Y.Z` release tag yet.';
-  const gate = dueCases.length === 0
+  const gate = state.gate === 'clear'
     ? 'The release gate is **clear**: no case is due.'
     : `The release gate is **closed**: ${plural(dueCases.length, 'case')} ${dueCases.length === 1 ? 'is' : 'are'} due.`;
-  const passLine = (uatCase) => `- \`${uatCase.id}\`: Pass on ${runOf(ledger[uatCase.id])}`;
-  const commit = git(casesDir, ['rev-parse', 'HEAD']);
+  const passLine = (entry) => `- \`${entry.case}\`: Pass on ${runOf(entry)}`;
   const sections = [
     '# UAT status',
-    `**${passed.length} of ${cases.length}** ${progress} ${gate}`,
+    `**${passed.length} of ${state.cases}** ${progress} ${gate}`,
     '## UAT batches',
     batches.length === 0
       ? 'No batch is due.'
       : `${plural(batches.length, 'batch', 'batches')}, in run order. Each runs in a run folder of its own, unattended with \`auto\` or with \`/uat\`.`,
-    ...inRunOrder(batches).map(batchSection),
+    ...batches.map(batchSection),
     '## Assisted UAT cases',
     assisted.length === 0
       ? 'No assisted case is due.'
       : `${plural(assisted.length, 'run')}, in run order, grouped as batches are. Each runs only with a person, through \`/uat\`, in a run folder of its own.`,
-    ...inRunOrder(assisted).map(assistedSection),
+    ...assisted.map(assistedSection),
     '## Passed',
     ['<details>', `<summary>${plural(passed.length, 'case')} passed</summary>`, '', ...passed.map(passLine), '', '</details>'].join('\n'),
-    `Built from commit ${commit}.`,
+    `Built from commit ${state.commit}.`,
   ];
-  process.stdout.write(`${sections.join('\n\n')}\n`);
+  return `${sections.join('\n\n')}\n`;
 }
 
 // The case's chain back to the case that starts from a ref: itself first.
@@ -841,7 +889,7 @@ const COMMANDS = {
   report: { action: report, usage: '--run <dir> [--issue <n>]' },
   clean: { action: clean, usage: '--run <dir>' },
   due: { action: due, usage: '[--cases-dir <dir>] [--release]' },
-  status: { action: status, usage: '[--cases-dir <dir>] [--issues <file>]' },
+  status: { action: status, usage: '[--cases-dir <dir>] [--issues <file>] [--json]' },
   auto: { action: async (options) => print(await auto(options)), usage: '--run <dir> [--source <repo>] [--cases a,b] [--cases-dir <dir>] [--judge-model <m>] [--max-five-hour <pct>] [--max-weekly <pct>]' },
 };
 const usageLine = (command) => `node run.mjs ${command} ${COMMANDS[command].usage}`;
