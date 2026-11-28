@@ -1496,3 +1496,17 @@ test('status --json prints the state status renders: the same batches, gate, tok
   assert.deepEqual(passes, state.passed.map((entry) => ({ ...entry, date: entry.date.slice(0, 10) })));
   assert.equal(markdown.trimEnd().split('\n').at(-1), `Built from commit ${state.commit}.`);
 });
+
+test('due and status still list a case that continues a case no file holds, which needs no UAT_GH_TOKEN for it', (t) => {
+  const run = makeRun(t, [caseFile('a', { order: 1 })]);
+  run.writeCase(caseFile('orphan', { order: 2, from: undefined, continues: 'gone' }));
+  commitKit(run, '2026-02-01T10:00:00Z');
+
+  const due = run.due();
+  const status = run.status('--json');
+
+  assert.equal(due.status, 0, due.stdout + due.stderr);
+  assert.deepEqual(due.output.batches.find((batch) => batch.cases.includes('orphan')), { cases: ['orphan'], due: ['orphan'], paste: '--cases orphan' });
+  assert.equal(status.status, 0, status.stdout + status.stderr);
+  assert.equal(status.output.batches.find((batch) => batch.cases.includes('orphan')).needsToken, false);
+});

@@ -147,7 +147,7 @@ A release is a semver tag `vX.Y.Z`, the same `version` in `.claude-plugin/plugin
 
 Before tagging, run `node .claude/skills/uat/scripts/run.mjs due --release`: it must list nothing. It lists every UAT case with no pass since the latest `vX.Y.Z` tag, assisted cases included, besides the cases plain `due` lists, and exits non-zero while it lists any (ADR 0018). It reads the tags of your clone, so fetch them first. Run the batches it lists with `/uat`, or unattended with `run.mjs auto`, which skips assisted cases, as many runs as it takes, and commit each run's ledger, until it lists nothing.
 
-The issue labelled `uat:status` shows the same without a clone. The `UAT status` workflow rebuilds its body from `run.mjs status` on every push to `main`: the progress, whether the release gate is clear, each batch in run order with its reasons, whether it needs `UAT_GH_TOKEN`, the "UAT batch N" issue that tracks it and its `auto` line, the assisted cases, and the passes. It creates the issue the first time; pin it by hand. Run `run.mjs status` locally for the same Markdown.
+The issue labelled `uat:status` shows the same without a clone. The `UAT status` workflow rebuilds its body from `run.mjs status` on every push to `main`: the progress, whether the release gate is clear, each batch in run order with its reasons, whether it needs `UAT_GH_TOKEN`, the "UAT batch N" issue that tracks it and its `auto` line, the assisted cases, and the passes. It creates the issue the first time; pin it by hand. Run `run.mjs status` locally for the same Markdown, or `run.mjs status --json` for the data it is rendered from.
 
 ## License
 
